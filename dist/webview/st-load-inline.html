@@ -2141,6 +2141,15 @@
     return '';
   }
 
+  function attemptsPrivateKnowledgeDisclosure(text) {
+    var value = String(text || '').trim();
+    if (!value) return false;
+    var disclosure = /(告诉|告知|透露|坦白|公开|宣布|说出|直说|证明|展示|给.{0,8}看|写给|暗示)/.test(value);
+    var mindSecret = /(读心术|读心能力|读取思想|听见.{0,8}(心声|想法|内心)|看见.{0,8}(心理|倾向|好感))/.test(value);
+    var kingSecret = /(后门|左上角|私人国王|准确知道.{0,10}国王|知道.{0,8}(谁|哪.{0,3}人).{0,5}国王|今天的国王是|今日国王是|当天国王是)/.test(value);
+    return disclosure && (mindSecret || kingSecret);
+  }
+
   window.KingGameBridge = {
     getUserName: function () { return userName(); },
     getCardName: function () { return cardName(); },
@@ -2192,13 +2201,17 @@
     submitInteraction: function (roleName, method) {
       var trimmed = String(method || '').trim();
       if (!trimmed) return Promise.reject(new Error('请输入非空的互动方式'));
+      var protectedDisclosure = attemptsPrivateKnowledgeDisclosure(trimmed);
       return commitAction('submitInteraction', [roleName, trimmed], function (next) {
         var request = (next['系统'] || {})['_最近互动请求'] || {};
         var supplements = Array.isArray(request['补全对象']) ? request['补全对象'] : [];
         var followup = supplements.length
           ? '在这次互动结束后，请另用明显区别于正文的旁观记录样式，依次描写' + roleName + '与' + supplements.join('、') + '之间今日尚未发生的互动。'
           : '这是追加互动，不需要把它误写成我已经说过某句具体台词。';
-        return '【每日流程·互动请求】我想以“' + trimmed + '”的方式与' + roleName + '互动。请把它作为行动意图来展开，不要擅自替我补写具体台词。' + followup;
+        var intent = protectedDisclosure
+          ? '我原本想向' + roleName + '泄露自己的所谓读心术或私人国王情报，但这两项秘密不可公开。请让{{user}}在任何人听见、看见或收到具体内容前临时收住话、停止展示或换成不含秘密的说法；不要复述原输入中的秘密内容，也不要让任何角色因此获知或准确推断。'
+          : '我想以“' + trimmed + '”的方式与' + roleName + '互动。请把它作为行动意图来展开，不要擅自替我补写具体台词。';
+        return '【每日流程·互动请求】' + intent + followup;
       });
     },
     overnight: function () {
