@@ -708,8 +708,11 @@
     }
     .portrait-viewer-head h2 { min-width: 0; margin: 0; overflow: hidden; color: #eee2ca; font-size: 20px; text-overflow: ellipsis; white-space: nowrap; }
     .portrait-close, .ending-close { width: 42px; min-width: 42px; min-height: 38px; padding: 0; }
-    .portrait-full-stage { position: relative; min-width: 0; min-height: 0; padding: 14px; overflow: hidden; }
-    .portrait-full-stage img { position: absolute; inset: 14px; width: calc(100% - 28px); height: calc(100% - 28px); display: block; object-fit: contain; object-position: center; }
+    .portrait-full-stage { position: relative; min-width: 0; min-height: 0; display: grid; place-items: center; padding: 14px; overflow: hidden; }
+    .portrait-full-stage img { width: 100%; height: 100%; min-width: 0; min-height: 0; display: block; object-fit: contain; object-position: center; }
+    .portrait-full-fallback { display: none; max-width: 420px; color: #bba982; text-align: center; font: 700 12px/1.8 ui-sans-serif, system-ui, sans-serif; }
+    .portrait-full-stage.has-error img { display: none; }
+    .portrait-full-stage.has-error .portrait-full-fallback { display: block; }
     .portrait-viewer-note { margin: 0; padding: 10px 14px 13px; color: #8f8879; text-align: center; font: 10px/1.5 ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; }
 
     .ending-entry {
@@ -842,7 +845,7 @@
       .portrait-backdrop { padding: 8px; }
       .portrait-viewer { height: min(90dvh, 760px); }
       .portrait-full-stage { padding: 8px; }
-      .portrait-full-stage img { inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px); }
+      .portrait-full-stage img { width: 100%; height: 100%; }
       .ending-card { padding: 36px 24px 28px; }
       .ending-close { top: 14px; right: 14px; }
       .ending-meta { grid-template-columns: 1fr; }
@@ -1768,7 +1771,7 @@
 <script>(function () {
   'use strict';
 
-  var INITIAL_STATE = {"系统":{"_版本":6,"_日程已锁定":false,"_当前天数":1,"_当前国王":"","_国王次数":{"玩家":0,"林安":0,"穆裳希":0,"张曲溪":0,"王可可":0},"_每日阶段":"待颁布法令","_今日法令已广播":false,"_女性互动矩阵":{"林安":{"林安":true,"穆裳希":false,"张曲溪":false,"王可可":false},"穆裳希":{"林安":false,"穆裳希":true,"张曲溪":false,"王可可":false},"张曲溪":{"林安":false,"穆裳希":false,"张曲溪":true,"王可可":false},"王可可":{"林安":false,"穆裳希":false,"张曲溪":false,"王可可":true}},"_玩家已互动角色":[],"_最近互动请求":null,"_可过夜":false,"当前时间":"第1日 08:10","当前地点":"中央大厅","当前阶段":"苏醒","公开线索":[]},"玩家":{"颁布规则":[]},"角色":{"林安":{"信息":{"年龄":25,"公开身份":"自诩女侦探的无业家里蹲"},"状态":{"身体":"正常，刚从熟睡中醒来","当前行动":"循着广播声检查墙面与扬声器"},"上衣":{"衣着":"棕色猎鹿帽、格纹短披肩与米白衬衫","肉体":"上半身无明显外伤，脸侧留有贴桌熟睡的浅印"},"下衣":{"衣着":"深棕灯芯绒马裤与系带短靴","肉体":"下半身活动正常，无明显外伤"},"心理":"完了，我刚才是不是把桌子舔干净了……旁边那个人应该没看见吧？等等，自由侦探怎么就成“自居”了？","行动倾向":["检查录音来源","勘查环境"],"颁布规则":[],"关系":{"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":3}}},"穆裳希":{"信息":{"年龄":27,"公开身份":"企业创办人与经营者"},"状态":{"身体":"正常，情绪高度紧绷","当前行动":"记录广播内容并观察房间设施"},"上衣":{"衣着":"炭黑修身西装与暗红丝质上衣","肉体":"呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红"},"下衣":{"衣着":"同色西装长裤与黑色尖头短靴","肉体":"站姿稳定，下半身无明显外伤"},"心理":"连公益项目都翻过。公司里有谁碰得到这么完整的资料？……该死，手怎么还在抖。","行动倾向":["稳定秩序","核对环境线索"],"颁布规则":[],"关系":{"林安":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-8}}},"张曲溪":{"信息":{"年龄":22,"公开身份":"长发高马尾的英气女大学生"},"状态":{"身体":"正常，肌肉线条饱满","当前行动":"守住安全距离并观察出口与广播设施"},"上衣":{"衣着":"暗绿短款大学棒球夹克与黑色圆领上衣","肉体":"肩背与前臂活动正常，无明显伤口、红肿或疼痛反应"},"下衣":{"衣着":"深色工装长裤与运动鞋","肉体":"双腿活动正常，无明显伤口或红肿"},"心理":"“王子”……连这种破外号都知道。到底是谁把我翻得这么干净？","行动倾向":["防备录音者","守住安全距离"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-2}}},"王可可":{"信息":{"年龄":32,"公开身份":"高中女教师"},"状态":{"身体":"正常，表面惊魂未定","当前行动":"调停互疑并提议先核对广播与环境"},"上衣":{"衣着":"浅蓝针织开衫与象牙白衬衫","肉体":"双肩略紧，按在项圈边缘的指尖微凉"},"下衣":{"衣着":"烟灰色过膝百褶裙与浅口皮鞋","肉体":"步态正常，无明显外伤"},"心理":"学生那边不会也被盯上了吧……别抖，至少让大家把这段录音听完。","行动倾向":["调停冲突","组织环境检查"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"玩家":{"好感度":8}}}}};
+  var INITIAL_STATE = {"系统":{"_版本":6,"_日程已锁定":false,"_当前天数":1,"_当前国王":"","_国王次数":{"玩家":0,"林安":0,"穆裳希":0,"张曲溪":0,"王可可":0},"_每日阶段":"待颁布法令","_今日法令已广播":false,"_女性互动矩阵":{"林安":{"林安":true,"穆裳希":false,"张曲溪":false,"王可可":false},"穆裳希":{"林安":false,"穆裳希":true,"张曲溪":false,"王可可":false},"张曲溪":{"林安":false,"穆裳希":false,"张曲溪":true,"王可可":false},"王可可":{"林安":false,"穆裳希":false,"张曲溪":false,"王可可":true}},"_玩家已互动角色":[],"_最近互动请求":null,"_可过夜":false,"当前时间":"第1日 08:10","当前地点":"个人房间","当前阶段":"等待法令","公开线索":[]},"玩家":{"颁布规则":[]},"角色":{"林安":{"信息":{"年龄":25,"公开身份":"自诩女侦探的无业家里蹲"},"状态":{"身体":"正常，刚从熟睡中醒来","当前行动":"循着广播声检查墙面与扬声器"},"上衣":{"衣着":"棕色猎鹿帽、格纹短披肩与米白衬衫","肉体":"上半身无明显外伤，脸侧留有贴桌熟睡的浅印"},"下衣":{"衣着":"深棕灯芯绒马裤与系带短靴","肉体":"下半身活动正常，无明显外伤"},"心理":"完了，我刚才是不是把桌子舔干净了……旁边那个人应该没看见吧？等等，自由侦探怎么就成“自居”了？","行动倾向":["检查录音来源","勘查环境"],"颁布规则":[],"关系":{"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":3}}},"穆裳希":{"信息":{"年龄":27,"公开身份":"企业创办人与经营者"},"状态":{"身体":"正常，情绪高度紧绷","当前行动":"记录广播内容并观察房间设施"},"上衣":{"衣着":"炭黑修身西装与暗红丝质上衣","肉体":"呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红"},"下衣":{"衣着":"同色西装长裤与黑色尖头短靴","肉体":"站姿稳定，下半身无明显外伤"},"心理":"连公益项目都翻过。公司里有谁碰得到这么完整的资料？……该死，手怎么还在抖。","行动倾向":["稳定秩序","核对环境线索"],"颁布规则":[],"关系":{"林安":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-8}}},"张曲溪":{"信息":{"年龄":22,"公开身份":"长发高马尾的英气女大学生"},"状态":{"身体":"正常，肌肉线条饱满","当前行动":"守住安全距离并观察出口与广播设施"},"上衣":{"衣着":"暗绿短款大学棒球夹克与黑色圆领上衣","肉体":"肩背与前臂活动正常，无明显伤口、红肿或疼痛反应"},"下衣":{"衣着":"深色工装长裤与运动鞋","肉体":"双腿活动正常，无明显伤口或红肿"},"心理":"“王子”……连这种破外号都知道。到底是谁把我翻得这么干净？","行动倾向":["防备录音者","守住安全距离"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-2}}},"王可可":{"信息":{"年龄":32,"公开身份":"高中女教师"},"状态":{"身体":"正常，表面惊魂未定","当前行动":"调停互疑并提议先核对广播与环境"},"上衣":{"衣着":"浅蓝针织开衫与象牙白衬衫","肉体":"双肩略紧，按在项圈边缘的指尖微凉"},"下衣":{"衣着":"烟灰色过膝百褶裙与浅口皮鞋","肉体":"步态正常，无明显外伤"},"心理":"学生那边不会也被盯上了吧……别抖，至少让大家把这段录音听完。","行动倾向":["调停冲突","组织环境检查"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"玩家":{"好感度":8}}}}};
   var EXPECTED_CARD_NAME = "读心术者的匿名国王游戏（louisHM制作）";
   var listeners = [];
   var cachedState = null;
@@ -2195,7 +2198,7 @@
         var playerSubmission = system['_当前国王'] === '玩家'
           ? '玩家提交的新法令内容或撤销目标是：“' + submitted + '”。请据此完成正式颁布或撤销。'
           : '宿主已经确定当日国王为“' + system['_当前国王'] + '”。必须只由此人依据其人设和当前关系决定法令内容。';
-        return '【前端私密操作，不是公开发言】【每日流程·颁布法令】我已启动第' + system['_当前天数'] + '日的匿名法令终端。只读宿主变量中的当日国王是“' + system['_当前国王'] + '”，不得重新抽签、改选、猜测或让另一人代为颁布。' + playerSubmission + '完成后向全员广播法令正文，但不要公开国王身份。';
+        return '【前端私密操作，不是公开发言】【每日流程·房间平板颁布法令】五人此刻分别被锁在各自房间。玩家平板私下显示、只读宿主变量中的当日国王是“' + system['_当前国王'] + '”，不得重新抽签、改选、猜测或让另一人代为颁布。只有当日国王自己的平板开放颁布或撤销界面，其余四台只显示等待。' + playerSubmission + '完成后先向全员广播法令正文但不公开国王身份，再让五间房门同时解锁；广播与解锁以前不得让任何人进入大厅、串门或当面互动。';
       });
     },
     submitInteraction: function (roleName, method) {
@@ -2219,7 +2222,7 @@
         var system = next['系统'] || {};
         return system['_每日阶段'] === '终局'
           ? '【每日流程·过夜】第15日已经结束。请描写最后一夜与国王游戏终局。'
-          : '【每日流程·过夜】今日互动已经完成，我选择结束本日并过夜。请描写夜间结算与第' + system['_当前天数'] + '日清晨的统一广播。';
+          : '【每日流程·过夜】今日互动已经完成，我选择结束本日并过夜。请描写夜间结算；第' + system['_当前天数'] + '日清晨五人分别在各自房间醒来，房门锁闭，床边平板显示等待当日法令。法令尚未广播，不得让任何人提前进入大厅或串门。';
       });
     }
   };
@@ -2230,7 +2233,7 @@
       <section class="status-card">
         <p class="eyebrow">Private backdoor</p>
         <div class="king-line"><span class="king-name" id="currentKing">—</span><span class="day-seal" id="currentDay">第 1 / 15 日</span></div>
-        <div class="scene-line"><span id="sceneInfo">第1日 08:10 · 中央大厅 · 苏醒</span><br>匿名权限 · 仅你可见 · 请勿泄露</div>
+        <div class="scene-line"><span id="sceneInfo">第1日 08:10 · 个人房间 · 等待法令</span><br>玩家平板后门 · 仅你可见 · 请勿泄露</div>
       </section>
 
       <nav class="map-card" aria-label="密室四面地图">
@@ -2300,7 +2303,10 @@
         <h2 id="portraitViewerTitle">人物证件照</h2>
         <button class="modal-btn portrait-close" id="closePortrait" type="button" aria-label="关闭证件照全图">×</button>
       
-      <div class="portrait-full-stage"><img id="portraitFullImage" alt=""></div>
+      <div class="portrait-full-stage" id="portraitFullStage">
+        <img id="portraitFullImage" alt="">
+        <span class="portrait-full-fallback" id="portraitFullFallback">证件照加载失败，请检查网络后重新打开。</span>
+      </div>
       <p class="portrait-viewer-note">完整档案影像 · 点击背景或按 Escape 返回</p>
     </section>
   </div>
@@ -2344,7 +2350,7 @@
         "_国王次数": { "玩家": 0, "林安": 0, "穆裳希": 0, "张曲溪": 0, "王可可": 0 },
         "_每日阶段": "待颁布法令", "_今日法令已广播": false,
         "_玩家已互动角色": [], "_最近互动请求": null, "_可过夜": false,
-        "当前时间": "第1日 08:10", "当前地点": "中央大厅", "当前阶段": "苏醒",
+        "当前时间": "第1日 08:10", "当前地点": "个人房间", "当前阶段": "等待法令",
         "公开线索": []
       },
       "玩家": { "颁布规则": [] },
@@ -2599,7 +2605,11 @@
       activePortraitName = name;
       $("#portraitViewerTitle").textContent = `${name} · 证件照全图`;
       const image = $("#portraitFullImage");
-      image.src = PORTRAITS[name];
+      const thumbnail = document.querySelector(`.portrait[data-portrait-name="${name}"] img`);
+      const resolvedSource = thumbnail?.currentSrc || thumbnail?.src || PORTRAITS[name] || "";
+      $("#portraitFullStage").classList.remove("has-error");
+      image.hidden = false;
+      if (image.src !== resolvedSource) image.src = resolvedSource;
       image.alt = `${name}的完整证件照`;
       const backdrop = $("#portraitBackdrop");
       backdrop.classList.add("is-open");
@@ -2735,8 +2745,8 @@
       if (stage === "待颁布法令") {
         const day = Math.round(num(system._当前天数, 1, 15, 1));
         status.textContent = day === 1
-          ? "序章圆桌苏醒 · 待匿名国王颁布法令，广播后开放今日互动"
-          : "清晨各自在房间醒来 · 待匿名国王颁布法令，广播前不得离房互动";
+          ? "各自在房间等待 · 国王将通过平板颁布法令，广播后门锁开放"
+          : "清晨各自在房间等待 · 国王将通过平板颁布法令，广播前不得离房";
         button.textContent = actionBusy ? "正在提交……" : "颁布法令";
         button.dataset.action = "decree";
         button.hidden = false;
@@ -3068,6 +3078,9 @@
     function bindMediaModals() {
       const portraitBackdrop = $("#portraitBackdrop");
       const endingBackdrop = $("#endingBackdrop");
+      const portraitFullImage = $("#portraitFullImage");
+      portraitFullImage.addEventListener("load", () => $("#portraitFullStage").classList.remove("has-error"));
+      portraitFullImage.addEventListener("error", () => $("#portraitFullStage").classList.add("has-error"));
       $("#portraitHitTarget").addEventListener("click", event => {
         const name = event.currentTarget.dataset.portraitName || NAMES[((faceIndex % NAMES.length) + NAMES.length) % NAMES.length];
         const visual = document.querySelector(`.face[data-name="${name}"] .portrait`);
