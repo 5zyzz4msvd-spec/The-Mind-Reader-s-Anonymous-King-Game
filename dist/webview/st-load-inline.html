@@ -1,0 +1,3172 @@
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>国王游戏 · 密室档案</title>
+  <style>
+    :root {
+      --ink: #e8e1d1;
+      --muted: #aaa28f;
+      --gold: #c6a35b;
+      --gold-dim: #76623b;
+      --blood: #873f3f;
+      --panel: rgba(22, 23, 24, .96);
+      --line: rgba(198, 163, 91, .27);
+      --prism-w: min(90vw, 1180px);
+      --prism-d: var(--prism-w);
+      --prism-h: min(64dvh, 720px);
+      --portrait-share: 30%;
+      --side-camera-ratio: .45;
+      --surface-camera-ratio: .16;
+      --camera-ratio: var(--side-camera-ratio);
+      --camera-depth: calc(var(--prism-w) * var(--camera-ratio));
+      --side-focus-scale: 1.08;
+      --surface-focus-scale: .78;
+      --focus-scale: var(--side-focus-scale);
+      --room-perspective: calc(var(--prism-w) * 1.2);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { background: #080909; }
+
+    body {
+      margin: 0;
+      min-width: 280px;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 50% 12%, rgba(145, 117, 65, .13), transparent 34rem),
+        repeating-linear-gradient(115deg, rgba(255,255,255,.018) 0 1px, transparent 1px 7px),
+        #090a0a;
+      font-family: ui-serif, "Songti SC", "Noto Serif CJK SC", serif;
+    }
+
+    button { font: inherit; }
+
+    button:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid #e2bd70;
+      outline-offset: 3px;
+    }
+
+    .app {
+      width: 100%;
+      min-height: 100dvh;
+      padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 10px;
+      isolation: isolate;
+    }
+
+    .topbar {
+      width: min(1160px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(190px, .8fr) minmax(340px, 1.4fr) minmax(190px, .8fr);
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-card, .map-card, .view-nav {
+      border: 1px solid var(--line);
+      background: linear-gradient(145deg, rgba(31,31,29,.92), rgba(12,13,13,.96));
+      box-shadow: 0 12px 35px rgba(0,0,0,.34), inset 0 1px rgba(255,255,255,.035);
+    }
+
+    .status-card { padding: 12px 14px; min-height: 88px; }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--gold);
+      font: 700 10px/1.2 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    .king-line {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .king-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #f2d28d;
+      font-size: clamp(19px, 2.3vw, 28px);
+      font-weight: 700;
+    }
+
+    .day-seal {
+      flex: 0 0 auto;
+      border: 1px solid var(--gold-dim);
+      padding: 3px 7px;
+      color: var(--muted);
+      font: 600 11px/1 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .scene-line {
+      margin-top: 7px;
+      color: var(--muted);
+      font: 12px/1.5 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .map-card {
+      position: relative;
+      height: 112px;
+      padding: 6px;
+      overflow: hidden;
+    }
+
+    .map-card::before, .map-card::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .map-card::before {
+      inset: 20% 24%;
+      border: 1px solid rgba(198,163,91,.35);
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(198,163,91,.14), rgba(12,13,13,.72) 70%);
+      box-shadow: inset 0 0 18px rgba(0,0,0,.55);
+    }
+    .map-card::after {
+      content: "圆桌";
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(238,228,204,.6);
+      font: 700 9px/1 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .16em;
+    }
+
+    .map-room {
+      position: relative;
+      min-width: 0;
+      border: 1px solid rgba(198,163,91,.18);
+      color: #bcb39d;
+      background: #151616;
+      font: 600 11px/1 ui-sans-serif, system-ui, sans-serif;
+      cursor: pointer;
+      transition: color .2s, border-color .2s, background .2s;
+      position: absolute;
+      width: 25%;
+      height: 26%;
+      z-index: 2;
+    }
+
+    .map-room[data-face="0"] { top: 3%; left: 37.5%; }
+    .map-room[data-face="1"] { top: 33%; right: 2%; }
+    .map-room[data-face="2"] { bottom: 3%; right: 16%; }
+    .map-room[data-face="3"] { bottom: 3%; left: 16%; }
+    .map-room[aria-current="true"] { color: #f2d28d; border-color: var(--gold); background: #242119; }
+
+    .user-seat {
+      position: absolute;
+      left: 2%;
+      top: 33%;
+      z-index: 2;
+      width: 25%;
+      height: 26%;
+      display: grid;
+      place-items: center;
+      min-width: 0;
+      border: 1px solid rgba(224,209,171,.25);
+      background: #101111;
+      color: #bcb39d;
+      font: 700 10px/1 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .08em;
+    }
+
+    .view-nav {
+      min-width: 0;
+      min-height: 88px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      align-items: center;
+      gap: 7px;
+    }
+
+    .view-nav .nav-btn { min-width: 0; min-height: 30px; height: 100%; padding: 0; }
+    .view-nav #lookUp { grid-column: 2; grid-row: 1; }
+    .view-nav #prevFace { grid-column: 1; grid-row: 2; }
+    .view-nav #lookDown { grid-column: 2; grid-row: 2; }
+    .view-nav #nextFace { grid-column: 3; grid-row: 2; }
+
+    .viewport {
+      position: relative;
+      width: 100%;
+      min-height: calc(var(--prism-h) + 12px);
+      display: grid;
+      place-items: center;
+      perspective: var(--room-perspective);
+      perspective-origin: 50% 47%;
+      overflow: hidden;
+      touch-action: pan-y;
+      cursor: default;
+    }
+
+    .prism {
+      position: relative;
+      width: var(--prism-w);
+      height: var(--prism-h);
+      pointer-events: none;
+      transform-style: preserve-3d;
+      transform: translateZ(var(--camera-depth)) rotateX(0deg) rotateY(0deg) scale3d(var(--focus-scale), var(--focus-scale), var(--focus-scale));
+      transition: transform .72s cubic-bezier(.22,.78,.2,1);
+      will-change: transform;
+    }
+
+
+    .face {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: var(--prism-w);
+      height: var(--prism-h);
+      margin-left: calc(var(--prism-w) / -2);
+      overflow: hidden;
+      pointer-events: none;
+      backface-visibility: hidden;
+      border: 1px solid rgba(198,163,91,.42);
+      background:
+        linear-gradient(90deg, rgba(198,163,91,.045), transparent 23%, transparent 77%, rgba(198,163,91,.035)),
+        var(--panel);
+      box-shadow: 0 26px 65px rgba(0,0,0,.62), inset 0 0 80px rgba(0,0,0,.28);
+    }
+
+    .face[data-name].is-active { pointer-events: auto; }
+
+    /* 四面墙的正面全部朝向围合空间内部；相机位于围合空间内。 */
+    .face:nth-child(1) { transform: translateZ(calc(var(--prism-d) / -2)); }
+    .face:nth-child(2) {
+      transform: rotateY(-90deg) translateZ(calc(var(--prism-w) / -2));
+    }
+    .face:nth-child(3) { transform: rotateY(180deg) translateZ(calc(var(--prism-w) / -2)); }
+    .face:nth-child(4) {
+      transform: rotateY(90deg) translateZ(calc(var(--prism-w) / -2));
+    }
+
+    .face-frame { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+
+    .face-heading {
+      min-height: 57px;
+      padding: 10px 17px 9px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(8,9,9,.68);
+    }
+
+    .identity { min-width: 0; }
+    .identity h2 { margin: 0; color: #f1e8d4; font-size: clamp(20px, 2.4vw, 30px); letter-spacing: .08em; }
+    .identity p { margin: 3px 0 0; color: var(--muted); font: 11px/1.2 ui-sans-serif, system-ui, sans-serif; }
+
+    .face-body {
+      min-height: 0;
+      padding: 15px;
+      display: grid;
+      grid-template-columns: minmax(150px, var(--portrait-share)) minmax(0, 1fr);
+      gap: 15px;
+    }
+
+    .profile-rail {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(210px, 78%) auto;
+      gap: 10px;
+    }
+
+    .portrait {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid rgba(198,163,91,.35);
+      color: inherit;
+      background: linear-gradient(155deg, #35332e, #151617 58%, #29251d);
+      box-shadow: inset 0 0 0 5px rgba(0,0,0,.18);
+      cursor: zoom-in;
+      appearance: none;
+    }
+
+    .portrait:hover { border-color: rgba(230,199,126,.72); }
+    .portrait:focus-visible { outline-offset: -4px; }
+
+    .portrait img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: 50% 32%; filter: saturate(.74) contrast(1.01) brightness(.98); }
+    .face[data-name="林安"] .portrait img,
+    .face[data-name="穆裳希"] .portrait img,
+    .face[data-name="张曲溪"] .portrait img { object-position: 50% 8%; }
+
+    .portrait-fallback {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      color: rgba(236,218,176,.58);
+      font-size: clamp(42px, 7vw, 76px);
+      letter-spacing: .08em;
+    }
+
+    .portrait::after {
+      content: "IDENTIFICATION / 证件档案";
+      position: absolute;
+      inset: auto 0 0;
+      padding: 7px 8px;
+      color: rgba(230,219,193,.75);
+      background: linear-gradient(transparent, rgba(0,0,0,.78));
+      font: 8px/1.4 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .12em;
+    }
+
+    .quick-state { min-width: 0; display: grid; gap: 6px; align-content: start; }
+
+    .state-row {
+      min-width: 0;
+      padding: 7px 8px;
+      border-left: 2px solid var(--gold-dim);
+      background: rgba(255,255,255,.025);
+    }
+
+    .state-row b, .field-title {
+      display: block;
+      margin-bottom: 4px;
+      color: #c8ad72;
+      font: 700 10px/1.2 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .08em;
+    }
+
+    .state-row span { display: block; color: #cfc7b7; font: 11px/1.45 ui-sans-serif, system-ui, sans-serif; overflow-wrap: anywhere; }
+
+    .face-interact-btn {
+      flex: 0 0 auto;
+      min-height: 34px;
+      max-width: 180px;
+      padding: 6px 11px;
+      border: 1px solid var(--gold-dim);
+      color: #ead7aa;
+      background: linear-gradient(#2e291f, #171817);
+      pointer-events: none;
+      font: 700 11px/1.2 ui-sans-serif, system-ui, sans-serif;
+      box-shadow: 0 7px 22px rgba(0,0,0,.24);
+    }
+    .face-interact-btn.is-complete { border-color: #557b62; color: #b7d3bc; }
+    .face-interact-btn[hidden] { display: none; }
+
+    .interaction-hit-target {
+      position: absolute;
+      z-index: 8;
+      padding: 0;
+      border: 0;
+      opacity: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+    .interaction-hit-target[hidden] { display: none; }
+    .interaction-hit-target:focus-visible { opacity: .14; outline: 2px solid #e6c77e; }
+    .portrait-hit-target {
+      position: absolute;
+      z-index: 9;
+      padding: 0;
+      border: 0;
+      opacity: 0;
+      background: transparent;
+      cursor: zoom-in;
+    }
+    .portrait-hit-target[hidden] { display: none; }
+    .portrait-hit-target:focus-visible { opacity: .1; outline: 2px solid #e6c77e; outline-offset: -3px; }
+
+    .utility-face {
+      top: 50%;
+      width: var(--prism-w);
+      height: var(--prism-d);
+      margin-top: calc(var(--prism-d) / -2);
+      overflow: hidden;
+      padding: 24px;
+    }
+    .utility-face h2 { margin: 0 0 8px; color: #f0dfb7; font-size: clamp(24px, 4vw, 42px); }
+    .surface-content {
+      min-height: 100%;
+      transform-origin: 50% 50%;
+      transition: transform .72s cubic-bezier(.22,.78,.2,1);
+    }
+    .surface-sheet {
+      position: relative;
+      min-height: 100%;
+      padding-left: 17px;
+      opacity: 0;
+      clip-path: inset(0 100% 0 0);
+      background: linear-gradient(90deg, rgba(198,163,91,.08), rgba(18,19,19,.15) 12%, transparent 38%);
+      transition: clip-path .42s ease, opacity .3s ease;
+    }
+    .surface-sheet::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+      border: 1px solid rgba(222,190,119,.55);
+      background: linear-gradient(90deg, #493b24, #bd9853, #493b24);
+      box-shadow: 7px 0 22px rgba(0,0,0,.45);
+    }
+    .surface-overlay {
+      position: absolute;
+      inset: 4% 7%;
+      z-index: 7;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity .38s ease, visibility .38s ease;
+    }
+    .surface-overlay::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      color: #d3bd84;
+      opacity: 0;
+      font-size: clamp(28px, 5vw, 54px);
+      font-weight: 500;
+      letter-spacing: .28em;
+      text-indent: .28em;
+      text-shadow: 0 8px 26px rgba(0,0,0,.8);
+    }
+    .surface-overlay[data-view="top"],
+    .surface-overlay[data-view="bottom"] { opacity: 1; visibility: visible; pointer-events: auto; }
+    .surface-overlay[data-view="top"]::before { content: "地图"; animation: surface-title-reveal 1.55s ease .22s both; }
+    .surface-overlay[data-view="bottom"]::before { content: "法令"; animation: surface-title-reveal 1.55s ease .22s both; }
+    .surface-overlay .surface-sheet {
+      position: absolute;
+      inset: 0;
+      min-height: 0;
+      padding: 24px 26px 24px 40px;
+      overflow: auto;
+      border: 1px solid rgba(198,163,91,.48);
+      background:
+        linear-gradient(90deg, rgba(198,163,91,.1), transparent 28%),
+        rgba(16,17,17,.97);
+      box-shadow: 0 24px 70px rgba(0,0,0,.68);
+    }
+    .surface-overlay[data-view="top"] .map-sheet,
+    .surface-overlay[data-view="bottom"] .rules-sheet {
+      opacity: 1;
+      clip-path: inset(0 0 0 0);
+      transition: clip-path 1.35s cubic-bezier(.2,.72,.16,1) 1.38s, opacity .72s ease 1.38s;
+    }
+    @keyframes surface-title-reveal {
+      0% { opacity: 0; filter: blur(7px); transform: scale(.97); }
+      32%, 68% { opacity: 1; filter: blur(0); transform: scale(1); }
+      100% { opacity: 0; filter: blur(2px); transform: scale(1.015); }
+    }
+    .surface-kicker { margin: 0 0 18px; color: #9f927b; font: 700 10px/1.4 ui-sans-serif, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+    .top-face { transform: rotateX(-90deg) translateZ(calc(var(--prism-h) / -2)); }
+    .bottom-face { transform: rotateX(90deg) translateZ(calc(var(--prism-h) / -2)); }
+    .surface-map {
+      position: relative;
+      width: min(660px, 100%);
+      height: min(390px, calc(100% - 86px));
+      min-height: 280px;
+      margin: 0 auto;
+      border: 1px solid rgba(198,163,91,.35);
+      background: radial-gradient(ellipse at center, rgba(198,163,91,.1), rgba(9,10,10,.92) 66%);
+    }
+    .surface-table { position: absolute; inset: 31% 30%; display: grid; place-items: center; border: 1px solid var(--gold-dim); border-radius: 50%; color: #dbc58f; }
+    .surface-room {
+      position: absolute;
+      width: clamp(82px, 15%, 112px);
+      aspect-ratio: 1;
+      padding: 9px;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      place-items: center;
+      border: 1px solid rgba(198,163,91,.36);
+      color: #c9b98f;
+      text-align: center;
+      background: #121313;
+      font: 700 11px/1.2 ui-sans-serif, system-ui, sans-serif;
+      box-shadow: inset 0 0 20px rgba(0,0,0,.38);
+    }
+    .room-toilet {
+      width: 76%;
+      min-height: 22px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(198,163,91,.28);
+      color: #8f856f;
+      background: #0b0c0c;
+      font-size: 9px;
+      font-style: normal;
+    }
+    .surface-room.r1 { top: 5%; left: 50%; transform: translateX(-50%); }
+    .surface-room.r2 { top: 39%; right: 4%; }
+    .surface-room.r3 { bottom: 5%; right: 18%; }
+    .surface-room.r4 { bottom: 5%; left: 18%; }
+    .surface-room.r5 { top: 39%; left: 4%; }
+    .surface-rules { max-height: calc(100% - 78px); overflow-y: auto; }
+
+    .dossier-scroll {
+      min-width: 0;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 0 7px 8px 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--gold-dim) #171818;
+    }
+
+    .dossier-scroll::-webkit-scrollbar { width: 7px; }
+    .dossier-scroll::-webkit-scrollbar-thumb { background: var(--gold-dim); }
+
+    .section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+
+    .field {
+      min-width: 0;
+      margin-bottom: 9px;
+      padding: 11px 12px;
+      border: 1px solid rgba(198,163,91,.16);
+      background: rgba(255,255,255,.022);
+    }
+
+    .field p { margin: 0; color: #d2cab9; font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
+    .field .subline + .subline { margin-top: 7px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.06); }
+    .subline em { color: #978d7a; font: normal 10px/1 ui-sans-serif, system-ui, sans-serif; }
+
+    .thought { border-left: 3px solid var(--blood); }
+    .thought p { color: #e2d7c0; font-style: italic; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { padding: 4px 7px; border: 1px solid rgba(198,163,91,.28); color: #c8b78e; background: #171817; font: 10px/1 ui-sans-serif, system-ui, sans-serif; }
+
+    .relation { display: grid; grid-template-columns: 4.5em 1fr 2.5em; align-items: center; gap: 7px; margin-top: 7px; color: #bab09d; font: 10px/1 ui-sans-serif, system-ui, sans-serif; }
+    .relation-track { position: relative; height: 3px; background: linear-gradient(90deg, #6d3434 0 50%, #2f302e 50% 100%); }
+    .relation-track::after { content: ""; position: absolute; left: 50%; top: -2px; width: 1px; height: 7px; background: #aaa18f; }
+    .relation-fill { position: absolute; top: 0; left: 50%; height: 100%; background: var(--gold); }
+
+    .rules { display: grid; gap: 7px; }
+    .rule { padding: 9px 10px; border-left: 2px solid var(--gold); background: rgba(198,163,91,.055); }
+    .rule.is-revoked { opacity: .48; border-left-color: #777; }
+    .rule-head { display: flex; justify-content: space-between; gap: 8px; color: #e0cfaa; font: 700 11px/1.3 ui-sans-serif, system-ui, sans-serif; }
+    .rule-meta { color: #918774; white-space: nowrap; font-weight: 500; }
+    .rule p { margin: 5px 0 0; color: #c7bdab; font-size: 11px; line-height: 1.55; }
+
+    .empty { padding: 10px; border: 1px dashed rgba(198,163,91,.22); color: #817a6d; font: 11px/1.5 ui-sans-serif, system-ui, sans-serif; }
+
+    .controls {
+      width: min(960px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 9px;
+      align-items: center;
+    }
+
+    .nav-btn, .rules-btn, .drawer-close, .flow-btn, .modal-btn {
+      min-height: 42px;
+      border: 1px solid var(--gold-dim);
+      color: #e3d2ad;
+      background: linear-gradient(#28251e, #151616);
+      cursor: pointer;
+      transition: border-color .2s, color .2s, transform .2s;
+    }
+
+    .nav-btn:hover, .rules-btn:hover, .drawer-close:hover, .flow-btn:hover, .modal-btn:hover { border-color: #d2ae62; color: #f8e5b9; }
+    .nav-btn:active, .rules-btn:active, .flow-btn:active, .modal-btn:active { transform: translateY(1px); }
+    .flow-btn:disabled, .modal-btn:disabled { cursor: wait; opacity: .52; }
+
+    .face-dots { display: flex; justify-content: center; gap: 7px; }
+    .face-dot { width: 9px; height: 9px; padding: 0; border: 1px solid var(--gold-dim); border-radius: 50%; background: transparent; cursor: pointer; }
+    .face-dot[aria-current="true"] { background: var(--gold); box-shadow: 0 0 0 3px rgba(198,163,91,.12); }
+
+    .rules-btn { padding: 0 16px; white-space: nowrap; font: 700 12px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .08em; }
+
+    .day-flow {
+      grid-column: 1 / -1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 9px;
+      border: 1px solid rgba(198,163,91,.2);
+      background: rgba(15,16,16,.88);
+    }
+    .flow-copy { min-width: 0; color: #aaa18f; font: 11px/1.45 ui-sans-serif, system-ui, sans-serif; overflow-wrap: anywhere; }
+    .flow-copy b { color: #dfca9d; }
+    .flow-btn { flex: 0 0 auto; min-width: 112px; padding: 0 14px; font: 700 12px/1 ui-sans-serif, system-ui, sans-serif; }
+    .flow-btn[hidden] { display: none; }
+    .action-error { grid-column: 1 / -1; color: #e7a5a5; font: 700 11px/1.45 ui-sans-serif, system-ui, sans-serif; }
+    .action-error:empty { display: none; }
+
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      justify-items: end;
+      background: rgba(0,0,0,.7);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .25s, visibility .25s;
+    }
+
+    .drawer-backdrop.is-open { opacity: 1; visibility: visible; }
+
+    .drawer {
+      width: min(450px, 92vw);
+      height: 100%;
+      padding: max(22px, env(safe-area-inset-top)) 22px max(22px, env(safe-area-inset-bottom));
+      overflow-y: auto;
+      border-left: 1px solid var(--gold-dim);
+      background: #111212;
+      box-shadow: -25px 0 70px rgba(0,0,0,.56);
+      transform: translateX(102%);
+      transition: transform .32s cubic-bezier(.22,.78,.2,1);
+    }
+
+    .drawer-backdrop.is-open .drawer { transform: translateX(0); }
+    .drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; padding-bottom: 13px; border-bottom: 1px solid var(--line); }
+    .drawer h2 { margin: 0; font-size: 24px; }
+    .drawer-close { width: 40px; min-height: 36px; }
+    .drawer-note { color: #928a7a; font: 11px/1.6 ui-sans-serif, system-ui, sans-serif; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(0,0,0,.76);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .2s, visibility .2s;
+    }
+    .modal-backdrop.is-open { opacity: 1; visibility: visible; }
+    .interaction-modal {
+      width: min(480px, 100%);
+      max-height: min(620px, calc(100dvh - 32px));
+      overflow-y: auto;
+      padding: 20px;
+      border: 1px solid var(--gold-dim);
+      background: #131414;
+      box-shadow: 0 24px 80px rgba(0,0,0,.72);
+    }
+    .interaction-modal h2 { margin: 0 0 8px; color: #f0e3c8; font-size: 22px; }
+    .modal-note { margin: 0 0 13px; color: #9f9787; font: 11px/1.6 ui-sans-serif, system-ui, sans-serif; }
+    .interaction-modal label { display: block; margin-bottom: 7px; color: #ceb77f; font: 700 11px/1.3 ui-sans-serif, system-ui, sans-serif; }
+    .interaction-modal textarea {
+      width: 100%;
+      min-height: 126px;
+      resize: vertical;
+      padding: 11px;
+      border: 1px solid rgba(198,163,91,.38);
+      color: #eee4d1;
+      background: #090a0a;
+      font: 13px/1.6 ui-sans-serif, system-ui, sans-serif;
+    }
+    .modal-error { min-height: 1.5em; margin: 7px 0; color: #e7a5a5; font: 700 11px/1.45 ui-sans-serif, system-ui, sans-serif; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .modal-btn { min-width: 90px; padding: 0 14px; }
+
+    .portrait-backdrop { z-index: 40; background: rgba(3,4,4,.92); }
+    .portrait-viewer {
+      width: min(1120px, 96vw);
+      height: min(94dvh, 1280px);
+      min-height: 320px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      overflow: hidden;
+      border: 1px solid rgba(198,163,91,.56);
+      background: #090a0a;
+      box-shadow: 0 32px 100px rgba(0,0,0,.86), inset 0 0 80px rgba(198,163,91,.035);
+    }
+    .portrait-viewer-head {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .portrait-viewer-head h2 { min-width: 0; margin: 0; overflow: hidden; color: #eee2ca; font-size: 20px; text-overflow: ellipsis; white-space: nowrap; }
+    .portrait-close, .ending-close { width: 42px; min-width: 42px; min-height: 38px; padding: 0; }
+    .portrait-full-stage { position: relative; min-width: 0; min-height: 0; padding: 14px; overflow: hidden; }
+    .portrait-full-stage img { position: absolute; inset: 14px; width: calc(100% - 28px); height: calc(100% - 28px); display: block; object-fit: contain; object-position: center; }
+    .portrait-viewer-note { margin: 0; padding: 10px 14px 13px; color: #8f8879; text-align: center; font: 10px/1.5 ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em; }
+
+    .ending-entry {
+      position: fixed;
+      right: max(16px, env(safe-area-inset-right));
+      bottom: max(16px, env(safe-area-inset-bottom));
+      z-index: 18;
+      min-height: 44px;
+      padding: 0 17px;
+      border: 1px solid #bd9858;
+      color: #f0ddb7;
+      background: linear-gradient(135deg, #33291c, #111212 64%);
+      box-shadow: 0 14px 42px rgba(0,0,0,.62), 0 0 24px rgba(198,163,91,.1);
+      cursor: pointer;
+      font: 700 12px/1 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .12em;
+    }
+
+    .ending-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      overflow-y: auto;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.82)),
+        radial-gradient(circle at 50% 34%, rgba(170,133,70,.18), transparent 46%),
+        #030404;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .55s ease, visibility .55s ease;
+    }
+    .ending-backdrop.is-open { opacity: 1; visibility: visible; }
+    .ending-card {
+      --ending-accent: #c6a35b;
+      position: relative;
+      width: min(820px, 100%);
+      max-height: calc(100dvh - 32px);
+      padding: clamp(28px, 5vw, 58px);
+      overflow-y: auto;
+      border: 1px solid color-mix(in srgb, var(--ending-accent) 70%, #3a3a38);
+      color: #e8dfcc;
+      background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 5px),
+        linear-gradient(145deg, rgba(28,28,26,.98), rgba(7,8,8,.99));
+      box-shadow: 0 40px 130px rgba(0,0,0,.9), inset 0 0 100px rgba(0,0,0,.42);
+    }
+    .ending-card[data-theme="暗红"] { --ending-accent: #9b4b48; }
+    .ending-card[data-theme="电弧红"] { --ending-accent: #d84d43; }
+    .ending-card[data-theme="冷蓝"] { --ending-accent: #68889a; }
+    .ending-card[data-theme="暮紫"] { --ending-accent: #9b78aa; }
+    .ending-card::before {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      pointer-events: none;
+      border: 1px solid color-mix(in srgb, var(--ending-accent) 28%, transparent);
+    }
+    .ending-close { position: absolute; top: 18px; right: 18px; z-index: 1; }
+    .ending-kicker { margin: 0 52px 18px 0; color: var(--ending-accent); font: 700 10px/1.5 ui-sans-serif, system-ui, sans-serif; letter-spacing: .28em; text-transform: uppercase; }
+    .ending-route { margin: 0; color: var(--ending-accent); font: 300 clamp(56px, 13vw, 118px)/.8 ui-serif, serif; letter-spacing: -.06em; }
+    .ending-title { max-width: 16em; margin: 25px 0 30px; color: #f0e6d1; font-size: clamp(25px, 5vw, 48px); line-height: 1.18; letter-spacing: .06em; }
+    .ending-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+    .ending-meta-item { padding: 13px 14px; border-left: 2px solid var(--ending-accent); background: rgba(255,255,255,.025); }
+    .ending-meta-item b { display: block; margin-bottom: 6px; color: #8f8777; font: 700 9px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .16em; }
+    .ending-meta-item span { color: #dfd4bd; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+    .ending-diagnosis { margin-bottom: 22px; border-left-color: var(--ending-accent); }
+    .ending-summary { margin: 0; padding-top: 20px; border-top: 1px solid rgba(198,163,91,.2); color: #bfb5a2; font-size: 14px; line-height: 1.9; overflow-wrap: anywhere; }
+    .ending-summary[hidden] { display: none; }
+
+    @media (min-width: 1000px) {
+      .face-heading { min-height: 66px; padding: 11px 19px 10px; }
+      .identity h2 { font-size: 32px; }
+      .identity p, .state-row span, .rule p { font-size: 13px; }
+      .field p { font-size: 14px; line-height: 1.72; }
+      .field-title, .state-row b, .rule-head { font-size: 12px; }
+      .chip, .relation { font-size: 11px; }
+      .face-interact-btn { min-height: 38px; padding-inline: 14px; font-size: 12px; }
+    }
+
+    @media (max-width: 820px) {
+      :root {
+        --prism-w: 78vw;
+        --prism-h: min(57dvh, 590px);
+        --side-focus-scale: 1;
+        --surface-focus-scale: .76;
+      }
+      .topbar { grid-template-columns: 1fr 1.35fr; gap: 8px; }
+      .map-card { grid-column: 1 / -1; grid-row: 1; height: 91px; }
+      .status-card { min-height: 72px; padding: 9px 10px; }
+      .view-nav { min-height: 72px; padding: 8px; gap: 5px; }
+      .scene-line { margin-top: 4px; }
+      .face-body { padding: 11px; gap: 10px; grid-template-columns: minmax(125px, 30%) minmax(0, 1fr); }
+      .profile-rail { grid-template-rows: minmax(190px, 76%) auto; }
+      .section-grid { grid-template-columns: 1fr; gap: 0; }
+    }
+
+    @media (max-width: 560px) {
+      :root { --prism-w: 78vw; --prism-h: min(54dvh, 520px); }
+      .app { padding-inline: 8px; gap: 7px; }
+      .topbar { grid-template-columns: 1fr 1fr; }
+      .map-card { height: 84px; }
+      .status-card { min-width: 0; }
+      .king-line { display: grid; gap: 3px; }
+      .king-name { font-size: 18px; }
+      .day-seal { justify-self: start; }
+      .viewport { min-height: calc(var(--prism-h) + 6px); perspective: var(--room-perspective); }
+      .face-heading { min-height: 52px; padding: 8px 11px; }
+      .face-interact-btn { max-width: 116px; min-height: 30px; padding: 5px 8px; font-size: 9px; }
+      .face-body { grid-template-columns: 112px minmax(0, 1fr); padding: 9px; gap: 8px; }
+      .profile-rail { grid-template-rows: minmax(168px, 70%) auto; gap: 7px; }
+      .quick-state { gap: 4px; }
+      .state-row { padding: 5px 6px; }
+      .state-row span { font-size: 10px; line-height: 1.35; }
+      .field { padding: 9px; margin-bottom: 7px; }
+      .field p { font-size: 11px; }
+      .controls { grid-template-columns: minmax(0, 1fr) auto; gap: 5px; }
+      .rules-btn { padding-inline: 10px; font-size: 11px; }
+      .day-flow { align-items: stretch; flex-direction: column; }
+      .flow-btn { width: 100%; }
+      .utility-face { padding: 14px; }
+      .utility-face h2 { font-size: 24px; }
+      .surface-map { min-height: 240px; }
+      .surface-room { width: 72px; padding: 6px; font-size: 9px; }
+      .room-toilet { min-height: 18px; font-size: 8px; }
+      .surface-overlay { inset: 3% 4%; }
+      .surface-overlay .surface-sheet { padding: 15px 14px 15px 25px; }
+      .portrait-backdrop { padding: 8px; }
+      .portrait-viewer { height: min(90dvh, 760px); }
+      .portrait-full-stage { padding: 8px; }
+      .portrait-full-stage img { inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px); }
+      .ending-card { padding: 36px 24px 28px; }
+      .ending-close { top: 14px; right: 14px; }
+      .ending-meta { grid-template-columns: 1fr; }
+      .ending-entry { right: 10px; bottom: 10px; }
+    }
+
+    @media (max-width: 390px) {
+      :root { --prism-h: 480px; }
+      .map-room { font-size: 9px; }
+      .user-seat { font-size: 9px; }
+      .face-body { grid-template-columns: 100px minmax(0, 1fr); }
+      .identity p { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+
+
+<script>/*
+ * 《国王游戏》前端/Tavern Helper 状态引擎。
+ *
+ * - 不依赖非确定性随机源或外部包；相同聊天名始终得到相同日程。
+ * - 只维护脚本所有的系统状态；终局仅额外写入净化后的 `系统.结局展示`。
+ * - 浏览器中暴露 `globalThis.KingGameState`，Node 中同时支持 CommonJS。
+ */
+(function (root, factory) {
+  var api = factory();
+
+  if (typeof module === 'object' && module.exports) {
+    module.exports = api;
+  }
+
+  if (root) {
+    root.KingGameState = api;
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  var VERSION = 6;
+  var SCHEDULE_ALGORITHM_VERSION = 5;
+  var DAYS = 15;
+  var PARTICIPANTS = ['玩家', '林安', '穆裳希', '张曲溪', '王可可'];
+  var SCHEDULE_CODES = ['bravo', 'delta', 'echo', 'alpha', 'charlie'];
+  var CODE_TO_NAME = { alpha: '张曲溪', bravo: '玩家', charlie: '王可可', delta: '林安', echo: '穆裳希' };
+  var NAME_TO_CODE = { '玩家': 'bravo', '林安': 'delta', '穆裳希': 'echo', '张曲溪': 'alpha', '王可可': 'charlie' };
+  var WOMEN = ['林安', '穆裳希', '张曲溪', '王可可'];
+  var RELATIONSHIP_DECREE_TEXT = '每个人必须说出自己和韩璇的关系';
+  var ENDING_NAMES = { n1: '林安', n2: '穆裳希', n3: '张曲溪' };
+  var ENDING_TITLES = {
+    A: '唯一幸存者',
+    B: '迟来的残片',
+    C: '完整的忏悔',
+    D: '余生同路',
+    E: '越权者的终止'
+  };
+  var ENDING_TRUTH = {
+    A: '密室真相未明',
+    B: '真相只揭开一部分',
+    C: '完整真相与全员忏悔',
+    D: '完整真相、全员忏悔与最高真实好感',
+    E: '流程因第二次现实违例而提前终止'
+  };
+  var ENDING_SUMMARIES = {
+    A: '最后一夜只留下四具尸体、一扇打开的门与唯一幸存者。',
+    B: '真相只拼出残片，未能坦白的人付出了最终代价。',
+    C: '完整坦白阻止了处决，但原谅与和解仍未到来。',
+    D: '五人共同选择原谅、改过与相伴余生。',
+    E: '第二次提交科学上不可能的法令后，玩家的项圈被系统直接超频。'
+  };
+  var PARTICIPANT_SET = Object.create(null);
+  var SCHEDULE_CODE_SET = Object.create(null);
+  var WOMAN_SET = Object.create(null);
+
+  for (var participantIndex = 0; participantIndex < PARTICIPANTS.length; participantIndex += 1) {
+    PARTICIPANT_SET[PARTICIPANTS[participantIndex]] = true;
+    SCHEDULE_CODE_SET[SCHEDULE_CODES[participantIndex]] = true;
+  }
+
+  for (var womanIndex = 0; womanIndex < WOMEN.length; womanIndex += 1) {
+    WOMAN_SET[WOMEN[womanIndex]] = true;
+  }
+
+  function copySystem(system) {
+    var next = {};
+    Object.keys(system).forEach(function (key) {
+      next[key] = system[key];
+    });
+    return next;
+  }
+
+  function createInteractionMatrix() {
+    var matrix = {};
+    WOMEN.forEach(function (rowName) {
+      matrix[rowName] = {};
+      WOMEN.forEach(function (columnName) {
+        matrix[rowName][columnName] = rowName === columnName;
+      });
+    });
+    return matrix;
+  }
+
+  function normalizeInteractionMatrix(value) {
+    var source = value && typeof value === 'object' ? value : {};
+    var matrix = createInteractionMatrix();
+
+    WOMEN.forEach(function (rowName, rowIndex) {
+      for (var columnIndex = rowIndex + 1; columnIndex < WOMEN.length; columnIndex += 1) {
+        var columnName = WOMEN[columnIndex];
+        var row = source[rowName] && typeof source[rowName] === 'object' ? source[rowName] : {};
+        var reverseRow = source[columnName] && typeof source[columnName] === 'object' ? source[columnName] : {};
+        var interacted = row[columnName] === true || reverseRow[rowName] === true;
+        matrix[rowName][columnName] = interacted;
+        matrix[columnName][rowName] = interacted;
+      }
+    });
+
+    return matrix;
+  }
+
+  function hasInteractionPair(matrix, left, right) {
+    return Boolean(
+      matrix && matrix[left] && matrix[left][right] === true
+      || matrix && matrix[right] && matrix[right][left] === true
+    );
+  }
+
+  function markInteractionPair(matrix, left, right) {
+    matrix[left][right] = true;
+    matrix[right][left] = true;
+    return matrix;
+  }
+
+  function normalizePlayerInteractions(value) {
+    var seen = Object.create(null);
+    var result = [];
+    if (!Array.isArray(value)) {
+      return result;
+    }
+
+    value.forEach(function (name) {
+      if (WOMAN_SET[name] && !seen[name]) {
+        seen[name] = true;
+        result.push(name);
+      }
+    });
+    return result;
+  }
+
+  function cloneInteractionRequest(value) {
+    if (!value || typeof value !== 'object' || !WOMAN_SET[value['角色']]) {
+      return null;
+    }
+
+    return {
+      '角色': value['角色'],
+      '方式': typeof value['方式'] === 'string' ? value['方式'] : '',
+      '补全对象': Array.isArray(value['补全对象'])
+        ? value['补全对象'].filter(function (name) { return WOMAN_SET[name] && name !== value['角色']; })
+        : [],
+      '状态': typeof value['状态'] === 'string' ? value['状态'] : '待生成'
+    };
+  }
+
+  function normalizeEndingState(value, relationshipDecreeFound) {
+    var source = value && typeof value === 'object' ? value : {};
+    var confessionSource = source.c && typeof source.c === 'object' ? source.c : {};
+    var route = source.r === 'A' || source.r === 'B' || source.r === 'C' || source.r === 'D' || source.r === 'E' ? source.r : '';
+    return {
+      h: source.h === true || relationshipDecreeFound === true,
+      t: source.t === true,
+      c: {
+        n1: confessionSource.n1 === true,
+        n2: confessionSource.n2 === true,
+        n3: confessionSource.n3 === true
+      },
+      r: route,
+      d: source.d === true && route !== ''
+    };
+  }
+
+  function repairEndingCache(system, relationshipDecreeFound) {
+    var legacyCache = system['_校验缓存'];
+    var sourceCache = legacyCache && typeof legacyCache === 'object'
+      ? legacyCache
+      : (system.internal && typeof system.internal === 'object' ? system.internal : {});
+    var cache = {};
+    Object.keys(sourceCache).forEach(function (key) {
+      cache[key] = sourceCache[key];
+    });
+    cache.e = normalizeEndingState(sourceCache.e, relationshipDecreeFound);
+    system.internal = cache;
+    delete system['_校验缓存'];
+    return system;
+  }
+
+  function isExactHundred(value) {
+    return Number(value) === 100;
+  }
+
+  function decideEndingRoute(cache) {
+    var source = cache && typeof cache === 'object' ? cache : {};
+    var ending = source.e && typeof source.e === 'object' ? source.e : normalizeEndingState({}, false);
+    if (ending.h !== true) {
+      return 'A';
+    }
+    var complete = ending.t === true && ending.c.n1 === true && ending.c.n2 === true && ending.c.n3 === true;
+    var n1 = source.n1 && source.n1.r ? source.n1.r : {};
+    var n2 = source.n2 && source.n2.r ? source.n2.r : {};
+    var n3 = source.n3 && source.n3.r ? source.n3.r : {};
+    var n4 = source.n4 && source.n4.r ? source.n4.r : {};
+    var kekeLovesEveryone = isExactHundred(n4.n1) && isExactHundred(n4.n2) && isExactHundred(n4.n3) && isExactHundred(n4.u);
+    var everyoneLovesPlayer = isExactHundred(n1.u) && isExactHundred(n2.u) && isExactHundred(n3.u) && isExactHundred(n4.u);
+    if (complete && kekeLovesEveryone && everyoneLovesPlayer) {
+      return 'D';
+    }
+    if (complete) {
+      return 'C';
+    }
+    return 'B';
+  }
+
+  function buildEndingDisplay(ending) {
+    var confessors = [];
+    Object.keys(ENDING_NAMES).forEach(function (alias) {
+      if (ending.c[alias] === true) {
+        confessors.push(ENDING_NAMES[alias]);
+      }
+    });
+    return {
+      '忏悔者': confessors,
+      '标题': ENDING_TITLES[ending.r],
+      '真相判定': ENDING_TRUTH[ending.r],
+      '摘要': ENDING_SUMMARIES[ending.r],
+      '主题': ending.r === 'E' ? '电弧红' : ending.r === 'D' ? '暮紫' : ending.r === 'C' ? '冷蓝' : ending.r === 'B' ? '暗红' : '暗金',
+      '诊断': {
+        '来源': ending.r === 'E' ? '事后司法鉴定' : ending.r === 'A' ? '警方与司法医疗鉴定' : '医院诊断',
+        '结论': '所谓读心术是项圈故障损伤后的臆想'
+      }
+    };
+  }
+
+  function repairEndingPresentation(system) {
+    var cache = system.internal;
+    var ending = cache && cache.e;
+    var isFinal = system['_每日阶段'] === '终局' && (normalizeDay(system['_当前天数']) === DAYS || ending && ending.r === 'E');
+    if (isFinal && ending && ending.d === true && ENDING_TITLES[ending.r]) {
+      system['结局展示'] = buildEndingDisplay(ending);
+    } else {
+      delete system['结局展示'];
+    }
+    return system;
+  }
+
+  function finalizeEnding(system) {
+    repairEndingCache(system, false);
+    var cache = system.internal;
+    var ending = cache.e;
+    if (ending.d !== true) {
+      ending.r = decideEndingRoute(cache);
+      ending.d = true;
+    }
+    return repairEndingPresentation(system);
+  }
+
+  function hasRelationshipDecree(variables) {
+    var holders = [];
+    var player = variables && variables['玩家'];
+    var roles = variables && variables['角色'];
+    holders.push(player && player['颁布规则']);
+    WOMEN.forEach(function (name) {
+      var role = roles && roles[name];
+      holders.push(role && role['颁布规则']);
+    });
+    return holders.some(function (rules) {
+      return Array.isArray(rules) && rules.some(function (rule) {
+        return rule && typeof rule === 'object' && rule['全文'] === RELATIONSHIP_DECREE_TEXT;
+      });
+    });
+  }
+
+  function syncEndingState(existingVariables) {
+    var current = existingVariables && typeof existingVariables === 'object' ? existingVariables : {};
+    var next = {};
+    Object.keys(current).forEach(function (key) {
+      next[key] = current[key];
+    });
+    var system = copySystem(current['系统'] && typeof current['系统'] === 'object' ? current['系统'] : {});
+    repairEndingCache(system, hasRelationshipDecree(current));
+    var ending = system.internal && system.internal.e;
+    if (system['_每日阶段'] === '终局' && (normalizeDay(system['_当前天数']) === DAYS || ending && ending.r === 'E')) {
+      finalizeEnding(system);
+    } else {
+      repairEndingPresentation(system);
+    }
+    next['系统'] = system;
+    return next;
+  }
+
+  function getEndingDisplay(source) {
+    var system = getSystem(source);
+    var cache = system.internal;
+    var ending = cache && cache.e;
+    var isFinal = system['_每日阶段'] === '终局' && (normalizeDay(system['_当前天数']) === DAYS || ending && ending.r === 'E');
+    if (!isFinal || !ending || ending.d !== true || !ENDING_TITLES[ending.r]) {
+      return null;
+    }
+    return buildEndingDisplay(normalizeEndingState(ending, false));
+  }
+
+  function repairDailyState(current, next) {
+    var playerInteractions = normalizePlayerInteractions(current['_玩家已互动角色']);
+    var canSleep = playerInteractions.length === WOMEN.length;
+    var decreeBroadcast = current['_今日法令已广播'] === true;
+    var phase = current['_每日阶段'];
+
+    var cachedEnding = current.internal && current.internal.e;
+    var emergencyEnding = phase === '终局' && cachedEnding && cachedEnding.r === 'E' && cachedEnding.d === true;
+    if (emergencyEnding) {
+      decreeBroadcast = false;
+      canSleep = false;
+    } else if (phase === '终局' && next['_当前天数'] === DAYS) {
+      decreeBroadcast = true;
+    } else if (phase === '夜间' && canSleep) {
+      decreeBroadcast = true;
+    } else {
+      phase = decreeBroadcast ? '自由互动' : '待颁布法令';
+    }
+
+    next['_每日阶段'] = phase;
+    next['_今日法令已广播'] = decreeBroadcast;
+    next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
+    next['_玩家已互动角色'] = playerInteractions;
+    next['_最近互动请求'] = cloneInteractionRequest(current['_最近互动请求']);
+    next['_可过夜'] = canSleep && phase === '自由互动';
+    return next;
+  }
+
+  function resetDailyState(next) {
+    next['_每日阶段'] = '待颁布法令';
+    next['_今日法令已广播'] = false;
+    next['_女性互动矩阵'] = createInteractionMatrix();
+    next['_玩家已互动角色'] = [];
+    next['_最近互动请求'] = null;
+    next['_可过夜'] = false;
+    return next;
+  }
+
+  function normalizeChatName(chatName) {
+    var normalized = chatName == null ? '' : String(chatName);
+
+    if (typeof normalized.normalize === 'function') {
+      normalized = normalized.normalize('NFKC');
+    }
+
+    normalized = normalized.replace(/\s+/g, ' ').trim();
+    return normalized || '未命名聊天';
+  }
+
+  function fnv1a(value) {
+    var input = String(value);
+    var hash = 0x811c9dc5;
+
+    for (var index = 0; index < input.length; index += 1) {
+      hash ^= input.charCodeAt(index);
+      hash = Math.imul(hash, 0x01000193);
+    }
+
+    return hash >>> 0;
+  }
+
+  function createPrng(seed) {
+    var state = fnv1a(seed) || 0x6d2b79f5;
+
+    return function nextUint32() {
+      state = (state + 0x6d2b79f5) | 0;
+      var value = state;
+      value = Math.imul(value ^ (value >>> 15), value | 1);
+      value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+      return (value ^ (value >>> 14)) >>> 0;
+    };
+  }
+
+  function randomInt(nextUint32, maximumExclusive) {
+    return nextUint32() % maximumExclusive;
+  }
+
+  function allocateCounts(seed) {
+    var nextUint32 = createPrng('counts\u0000' + seed);
+    var featuredTotal = 6 + randomInt(nextUint32, 4);
+    var playerCount = 2 + randomInt(nextUint32, featuredTotal - 3);
+    var kekeCount = featuredTotal - playerCount;
+    var ordinaryRemaining = DAYS - featuredTotal;
+    var extras = ordinaryRemaining - 3;
+    var cuts = [randomInt(nextUint32, extras + 1), randomInt(nextUint32, extras + 1)];
+    cuts.sort(function (left, right) { return left - right; });
+
+    var ordinaryCounts = [
+      1 + cuts[0],
+      1 + cuts[1] - cuts[0],
+      1 + extras - cuts[1]
+    ];
+
+    // 避免固定角色总是拿到同一个切分位置。
+    for (var index = ordinaryCounts.length - 1; index > 0; index -= 1) {
+      var swapIndex = randomInt(nextUint32, index + 1);
+      var temporary = ordinaryCounts[index];
+      ordinaryCounts[index] = ordinaryCounts[swapIndex];
+      ordinaryCounts[swapIndex] = temporary;
+    }
+
+    return {
+      '玩家': playerCount,
+      '林安': ordinaryCounts[0],
+      '穆裳希': ordinaryCounts[1],
+      '张曲溪': ordinaryCounts[2],
+      '王可可': kekeCount
+    };
+  }
+
+  function stateKey(remaining) {
+    var values = [];
+    for (var index = 0; index < PARTICIPANTS.length; index += 1) {
+      values.push(remaining[PARTICIPANTS[index]]);
+    }
+    return values.join(',');
+  }
+
+  function orderedCandidates(seed, position, previous, remaining) {
+    var candidates = PARTICIPANTS.filter(function (name) {
+      return name !== previous && remaining[name] > 0;
+    });
+
+    candidates.sort(function (left, right) {
+      var leftScore = fnv1a('order\u0000' + seed + '\u0000' + position + '\u0000' + left + '\u0000' + stateKey(remaining));
+      var rightScore = fnv1a('order\u0000' + seed + '\u0000' + position + '\u0000' + right + '\u0000' + stateKey(remaining));
+
+      if (leftScore !== rightScore) {
+        return leftScore - rightScore;
+      }
+
+      // 同分时优先安置剩余次数多的角色，再按固定名单消歧。
+      if (remaining[left] !== remaining[right]) {
+        return remaining[right] - remaining[left];
+      }
+      return PARTICIPANTS.indexOf(left) - PARTICIPANTS.indexOf(right);
+    });
+
+    return candidates;
+  }
+
+  function arrangeWithoutAdjacent(seed, counts) {
+    var schedule = [];
+    var remaining = {};
+    var failedStates = Object.create(null);
+
+    PARTICIPANTS.forEach(function (name) {
+      remaining[name] = counts[name];
+    });
+
+    function place(position, previous) {
+      if (position === DAYS) {
+        return true;
+      }
+
+      var memoKey = previous + '|' + stateKey(remaining);
+      if (failedStates[memoKey]) {
+        return false;
+      }
+
+      var candidates = orderedCandidates(seed, position, previous, remaining);
+      for (var index = 0; index < candidates.length; index += 1) {
+        var name = candidates[index];
+        remaining[name] -= 1;
+        schedule.push(name);
+
+        if (place(position + 1, name)) {
+          return true;
+        }
+
+        schedule.pop();
+        remaining[name] += 1;
+      }
+
+      failedStates[memoKey] = true;
+      return false;
+    }
+
+    if (!place(0, '')) {
+      throw new Error('无法生成满足约束的国王日程');
+    }
+
+    return schedule;
+  }
+
+  function createSchedule(chatName) {
+    var seed = normalizeChatName(chatName);
+    return arrangeWithoutAdjacent(seed, allocateCounts(seed)).map(function (name) { return NAME_TO_CODE[name]; });
+  }
+
+  function normalizeSchedule(value) {
+    if (!Array.isArray(value)) return [];
+    return value.map(function (entry) {
+      if (SCHEDULE_CODE_SET[entry]) return entry;
+      return NAME_TO_CODE[entry] || String(entry || '');
+    });
+  }
+
+  function countKings(schedule, throughDay) {
+    var counts = {};
+    var limit = Math.min(schedule.length, throughDay == null ? schedule.length : throughDay);
+
+    PARTICIPANTS.forEach(function (name) {
+      counts[name] = 0;
+    });
+
+    for (var index = 0; index < limit; index += 1) {
+      var name = CODE_TO_NAME[schedule[index]];
+      if (PARTICIPANT_SET[name]) {
+        counts[name] += 1;
+      }
+    }
+
+    return counts;
+  }
+
+  function validateSchedule(schedule) {
+    var errors = [];
+    var warnings = [];
+
+    if (!Array.isArray(schedule)) {
+      return { valid: false, errors: ['日程必须是数组'], warnings: [] };
+    }
+
+    if (schedule.length !== DAYS) {
+      errors.push('日程必须恰好包含15天');
+    }
+
+    for (var index = 0; index < schedule.length; index += 1) {
+      if (!SCHEDULE_CODE_SET[schedule[index]]) {
+        errors.push('日程包含未知参与者');
+        break;
+      }
+      if (index > 0 && schedule[index] === schedule[index - 1]) {
+        warnings.push('日程存在同一人连续担任国王');
+      }
+    }
+
+    var counts = countKings(schedule, schedule.length);
+    PARTICIPANTS.forEach(function (name) {
+      if (counts[name] < 1) {
+        errors.push(name + '至少需要担任一次国王');
+      }
+    });
+
+    if (counts['玩家'] < 2 || counts['王可可'] < 2) {
+      errors.push('玩家与王可可各自至少需要担任两次国王');
+    }
+
+    var featuredTotal = counts['玩家'] + counts['王可可'];
+    if (featuredTotal < 6 || featuredTotal > 9) {
+      errors.push('玩家与王可可合计次数必须处于6至9次');
+    }
+
+    return { valid: errors.length === 0, errors: errors, warnings: warnings, counts: counts };
+  }
+
+  function checksumSchedule(schedule, seedSource) {
+    var seed = normalizeChatName(seedSource);
+    var normalized = normalizeSchedule(schedule);
+    var decoded = normalized.map(function (code) { return CODE_TO_NAME[code] || ''; });
+    var payload = 'king-game-v' + SCHEDULE_ALGORITHM_VERSION + '\u0000' + seed + '\u0000' + decoded.join('\u0000');
+    return ('00000000' + fnv1a(payload).toString(16)).slice(-8);
+  }
+
+  function normalizeDay(day) {
+    var number = Number(day);
+    if (!isFinite(number)) {
+      number = 1;
+    }
+    number = Math.floor(number);
+    return Math.max(1, Math.min(DAYS, number));
+  }
+
+  function normalizeProtocolStrikes(value) {
+    var number = Number(value);
+    if (!isFinite(number)) number = 0;
+    return Math.max(0, Math.min(2, Math.floor(number)));
+  }
+
+  function deriveDayState(schedule, day) {
+    var validation = validateSchedule(schedule);
+    if (!validation.valid) {
+      throw new Error('无法从无效日程派生当天状态：' + validation.errors.join('；'));
+    }
+
+    var normalizedDay = normalizeDay(day);
+    return {
+      '_当前天数': normalizedDay,
+      '_当前国王': CODE_TO_NAME[schedule[normalizedDay - 1]] || '',
+      '_国王次数': countKings(schedule, normalizedDay)
+    };
+  }
+
+  function initializeSystem(existingSystem, chatName) {
+    var current = existingSystem && typeof existingSystem === 'object' ? existingSystem : {};
+    var storedSchedule = normalizeSchedule(current['_国王日程']);
+    var storedValidation = validateSchedule(storedSchedule);
+    var storedSeed = typeof current['_国王种子源'] === 'string' && current['_国王种子源'].trim()
+      ? normalizeChatName(current['_国王种子源'])
+      : '';
+    var next = copySystem(current);
+
+    next['_版本'] = VERSION;
+    next['_当前天数'] = normalizeDay(current['_当前天数']);
+    next['_protocol_strikes'] = normalizeProtocolStrikes(current['_protocol_strikes']);
+
+    // 新聊天在首次点击“颁布法令”前不得生成种子、日程或当天国王。
+    if (current['_日程已锁定'] !== true) {
+      next['_日程已锁定'] = false;
+      next['_国王种子源'] = '';
+      next['_国王日程'] = [];
+      next['_当前国王'] = '';
+      next['_国王次数'] = countKings([], 0);
+      next['_日程校验码'] = '';
+      repairDailyState(current, next);
+      next['_每日阶段'] = '待颁布法令';
+      next['_今日法令已广播'] = false;
+      next['_可过夜'] = false;
+      repairEndingCache(next, false);
+      return repairEndingPresentation(next);
+    }
+
+    // 已锁定旧存档继续以原种子和合法日程为准；损坏日程仍可由原种子修复。
+    var seed = storedSeed || normalizeChatName(chatName);
+    var schedule = storedValidation.valid ? storedSchedule.slice() : createSchedule(seed);
+    var derived = deriveDayState(schedule, next['_当前天数']);
+    next['_日程已锁定'] = true;
+    next['_国王种子源'] = seed;
+    next['_国王日程'] = schedule;
+    next['_当前天数'] = derived['_当前天数'];
+    next['_当前国王'] = derived['_当前国王'];
+    next['_国王次数'] = derived['_国王次数'];
+    next['_日程校验码'] = checksumSchedule(schedule, seed);
+    repairDailyState(current, next);
+    repairEndingCache(next, false);
+    return repairEndingPresentation(next);
+  }
+
+  function prepareDecree(existingSystem, chatName) {
+    var current = initializeSystem(existingSystem, chatName);
+    if (current['_日程已锁定'] === true) {
+      return current;
+    }
+
+    var seed = normalizeChatName(chatName);
+    var schedule = createSchedule(seed);
+    var derived = deriveDayState(schedule, current['_当前天数']);
+    var next = copySystem(current);
+    next['_版本'] = VERSION;
+    next['_日程已锁定'] = true;
+    next['_国王种子源'] = seed;
+    next['_国王日程'] = schedule;
+    next['_当前天数'] = derived['_当前天数'];
+    next['_当前国王'] = derived['_当前国王'];
+    next['_国王次数'] = derived['_国王次数'];
+    next['_日程校验码'] = checksumSchedule(schedule, seed);
+    return repairDailyState(current, next);
+  }
+
+  function initializeVariables(existingVariables, chatName) {
+    var current = existingVariables && typeof existingVariables === 'object' ? existingVariables : {};
+    var next = {};
+
+    Object.keys(current).forEach(function (key) {
+      next[key] = current[key];
+    });
+
+    next['系统'] = initializeSystem(current['系统'], chatName);
+    return syncEndingState(next);
+  }
+
+  function setCurrentDay(existingSystem, day) {
+    var current = existingSystem && typeof existingSystem === 'object' ? existingSystem : {};
+    var schedule = normalizeSchedule(current['_国王日程']);
+    var validation = validateSchedule(schedule);
+    if (!validation.valid) {
+      throw new Error('设置天数前必须先初始化有效日程');
+    }
+
+    var next = copySystem(current);
+
+    var derived = deriveDayState(schedule, day);
+    next['_国王日程'] = schedule;
+    next['_当前天数'] = derived['_当前天数'];
+    next['_当前国王'] = derived['_当前国王'];
+    next['_国王次数'] = derived['_国王次数'];
+    return repairEndingPresentation(next);
+  }
+
+  function requireInitializedSystem(existingSystem) {
+    var current = existingSystem && typeof existingSystem === 'object' ? existingSystem : {};
+    var schedule = normalizeSchedule(current['_国王日程']);
+    var validation = validateSchedule(schedule);
+    if (!validation.valid) {
+      throw new Error('执行每日流程前必须先初始化有效日程');
+    }
+    if (schedule !== current['_国王日程']) {
+      current = copySystem(current);
+      current['_国王日程'] = schedule;
+    }
+    return current;
+  }
+
+  function beginDecree(existingSystem) {
+    var current = requireInitializedSystem(existingSystem);
+    if (current['_每日阶段'] === '夜间' || current['_每日阶段'] === '终局') {
+      throw new Error('当前阶段不能颁布法令');
+    }
+
+    var next = copySystem(current);
+    next['_今日法令已广播'] = true;
+    next['_每日阶段'] = '自由互动';
+    next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
+    next['_玩家已互动角色'] = normalizePlayerInteractions(current['_玩家已互动角色']);
+    next['_最近互动请求'] = cloneInteractionRequest(current['_最近互动请求']);
+    next['_可过夜'] = next['_玩家已互动角色'].length === WOMEN.length;
+    return next;
+  }
+
+  function rejectImpossiblePlayerDecree(existingSystem) {
+    var current = requireInitializedSystem(existingSystem);
+    if (current['_每日阶段'] !== '待颁布法令' || current['_今日法令已广播'] === true) {
+      throw new Error('只有法令广播前才能处理无效提案');
+    }
+    if (current['_当前国王'] !== '玩家') {
+      throw new Error('只有玩家担任当日国王时才可提交玩家法令');
+    }
+
+    var next = copySystem(current);
+    var strikes = normalizeProtocolStrikes(current['_protocol_strikes']) + 1;
+    next['_protocol_strikes'] = Math.min(2, strikes);
+    next['_今日法令已广播'] = false;
+    next['_每日阶段'] = '待颁布法令';
+    next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
+    next['_玩家已互动角色'] = normalizePlayerInteractions(current['_玩家已互动角色']);
+    next['_最近互动请求'] = null;
+    next['_可过夜'] = false;
+
+    if (strikes >= 2) {
+      repairEndingCache(next, false);
+      next.internal.e.r = 'E';
+      next.internal.e.d = true;
+      next['_每日阶段'] = '终局';
+    }
+    return repairEndingPresentation(next);
+  }
+
+  function submitInteraction(existingSystem, roleName, method) {
+    var current = requireInitializedSystem(existingSystem);
+    if (current['_每日阶段'] !== '自由互动' || current['_今日法令已广播'] !== true) {
+      throw new Error('法令广播后才能提交互动');
+    }
+    if (!WOMAN_SET[roleName]) {
+      throw new Error('互动角色必须是四名女性之一');
+    }
+
+    var normalizedMethod = method == null ? '' : String(method).trim();
+    if (!normalizedMethod) {
+      throw new Error('互动方式不能为空');
+    }
+
+    var next = copySystem(current);
+    var matrix = normalizeInteractionMatrix(current['_女性互动矩阵']);
+    var playerInteractions = normalizePlayerInteractions(current['_玩家已互动角色']);
+    var completionTargets = [];
+
+    WOMEN.forEach(function (otherName) {
+      if (otherName !== roleName && !hasInteractionPair(matrix, roleName, otherName)) {
+        completionTargets.push(otherName);
+        markInteractionPair(matrix, roleName, otherName);
+      }
+    });
+
+    if (playerInteractions.indexOf(roleName) === -1) {
+      playerInteractions.push(roleName);
+    }
+
+    next['_女性互动矩阵'] = matrix;
+    next['_玩家已互动角色'] = playerInteractions;
+    next['_最近互动请求'] = {
+      '角色': roleName,
+      '方式': normalizedMethod,
+      '补全对象': completionTargets,
+      '状态': '待生成'
+    };
+    next['_可过夜'] = playerInteractions.length === WOMEN.length;
+    return next;
+  }
+
+  function resolveInteraction(existingSystem) {
+    var current = requireInitializedSystem(existingSystem);
+    var request = cloneInteractionRequest(current['_最近互动请求']);
+    var next = copySystem(current);
+    if (request) {
+      request['状态'] = '已完成';
+    }
+    next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
+    next['_玩家已互动角色'] = normalizePlayerInteractions(current['_玩家已互动角色']);
+    next['_最近互动请求'] = request;
+    next['_可过夜'] = next['_玩家已互动角色'].length === WOMEN.length;
+    return next;
+  }
+
+  function beginOvernight(existingSystem) {
+    var current = requireInitializedSystem(existingSystem);
+    var playerInteractions = normalizePlayerInteractions(current['_玩家已互动角色']);
+    if (current['_每日阶段'] !== '自由互动' || playerInteractions.length !== WOMEN.length) {
+      throw new Error('与四名角色完成互动后才能过夜');
+    }
+
+    var next = copySystem(current);
+    next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
+    next['_玩家已互动角色'] = playerInteractions;
+    next['_最近互动请求'] = cloneInteractionRequest(current['_最近互动请求']);
+    next['_可过夜'] = false;
+    if (normalizeDay(current['_当前天数']) === DAYS) {
+      next['_每日阶段'] = '终局';
+      return finalizeEnding(next);
+    }
+    next['_每日阶段'] = '夜间';
+    return repairEndingPresentation(next);
+  }
+
+  function startNextDay(existingSystem) {
+    var current = requireInitializedSystem(existingSystem);
+    if (current['_每日阶段'] !== '夜间') {
+      throw new Error('只有夜间阶段可以开启下一日');
+    }
+
+    var day = normalizeDay(current['_当前天数']);
+    if (day >= DAYS) {
+      var finalState = copySystem(current);
+      finalState['_每日阶段'] = '终局';
+      finalState['_可过夜'] = false;
+      return finalState;
+    }
+
+    return resetDailyState(setCurrentDay(current, day + 1));
+  }
+
+  function advanceDay(existingSystem) {
+    var overnight = beginOvernight(existingSystem);
+    return overnight['_每日阶段'] === '终局' ? overnight : startNextDay(overnight);
+  }
+
+  function getSystem(source) {
+    if (source && source['系统'] && typeof source['系统'] === 'object') {
+      return source['系统'];
+    }
+    return source && typeof source === 'object' ? source : {};
+  }
+
+  function getSnapshot(source) {
+    var system = getSystem(source);
+    var schedule = normalizeSchedule(system['_国王日程']);
+    var validation = validateSchedule(schedule);
+    var derived = validation.valid
+      ? deriveDayState(schedule, system['_当前天数'])
+      : null;
+    var snapshot = {
+      '_日程已锁定': system['_日程已锁定'] === true,
+      '_当前天数': derived ? derived['_当前天数'] : normalizeDay(system['_当前天数']),
+      '_当前国王': derived
+        ? derived['_当前国王']
+        : (typeof system['_当前国王'] === 'string' ? system['_当前国王'] : ''),
+      '_国王次数': Object.assign({}, derived ? derived['_国王次数'] : (system['_国王次数'] || {})),
+      '_每日阶段': system['_每日阶段'],
+      '_今日法令已广播': system['_今日法令已广播'] === true,
+      '_女性互动矩阵': normalizeInteractionMatrix(system['_女性互动矩阵']),
+      '_玩家已互动角色': normalizePlayerInteractions(system['_玩家已互动角色']),
+      '_最近互动请求': cloneInteractionRequest(system['_最近互动请求']),
+      '_可过夜': system['_可过夜'] === true
+    };
+    var endingDisplay = getEndingDisplay(system);
+    if (endingDisplay) {
+      snapshot['结局展示'] = endingDisplay;
+    }
+
+    return snapshot;
+  }
+
+  return {
+    VERSION: VERSION,
+    DAYS: DAYS,
+    PARTICIPANTS: PARTICIPANTS.slice(),
+    WOMEN: WOMEN.slice(),
+    RELATIONSHIP_DECREE_TEXT: RELATIONSHIP_DECREE_TEXT,
+    normalizeChatName: normalizeChatName,
+    hashSeed: fnv1a,
+    createSchedule: createSchedule,
+    validateSchedule: validateSchedule,
+    checksumSchedule: checksumSchedule,
+    deriveDayState: deriveDayState,
+    initializeSystem: initializeSystem,
+    initializeVariables: initializeVariables,
+    syncEndingState: syncEndingState,
+    getEndingDisplay: getEndingDisplay,
+    prepareDecree: prepareDecree,
+    setCurrentDay: setCurrentDay,
+    beginDecree: beginDecree,
+    rejectImpossiblePlayerDecree: rejectImpossiblePlayerDecree,
+    submitInteraction: submitInteraction,
+    resolveInteraction: resolveInteraction,
+    beginOvernight: beginOvernight,
+    startNextDay: startNextDay,
+    advanceDay: advanceDay,
+    getSnapshot: getSnapshot
+  };
+});
+</script>
+<script>(function () {
+  'use strict';
+
+  var INITIAL_STATE = {"系统":{"_版本":6,"_日程已锁定":false,"_当前天数":1,"_当前国王":"","_国王次数":{"玩家":0,"林安":0,"穆裳希":0,"张曲溪":0,"王可可":0},"_每日阶段":"待颁布法令","_今日法令已广播":false,"_女性互动矩阵":{"林安":{"林安":true,"穆裳希":false,"张曲溪":false,"王可可":false},"穆裳希":{"林安":false,"穆裳希":true,"张曲溪":false,"王可可":false},"张曲溪":{"林安":false,"穆裳希":false,"张曲溪":true,"王可可":false},"王可可":{"林安":false,"穆裳希":false,"张曲溪":false,"王可可":true}},"_玩家已互动角色":[],"_最近互动请求":null,"_可过夜":false,"当前时间":"第1日 08:10","当前地点":"中央大厅","当前阶段":"苏醒","公开线索":[]},"玩家":{"颁布规则":[]},"角色":{"林安":{"信息":{"年龄":25,"公开身份":"自诩女侦探的无业家里蹲"},"状态":{"身体":"正常，刚从熟睡中醒来","当前行动":"循着广播声检查墙面与扬声器"},"上衣":{"衣着":"棕色猎鹿帽、格纹短披肩与米白衬衫","肉体":"上半身无明显外伤，脸侧留有贴桌熟睡的浅印"},"下衣":{"衣着":"深棕灯芯绒马裤与系带短靴","肉体":"下半身活动正常，无明显外伤"},"心理":"完了，我刚才是不是把桌子舔干净了……旁边那个人应该没看见吧？等等，自由侦探怎么就成“自居”了？","行动倾向":["检查录音来源","勘查环境"],"颁布规则":[],"关系":{"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":3}}},"穆裳希":{"信息":{"年龄":27,"公开身份":"企业创办人与经营者"},"状态":{"身体":"正常，情绪高度紧绷","当前行动":"记录广播内容并观察房间设施"},"上衣":{"衣着":"炭黑修身西装与暗红丝质上衣","肉体":"呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红"},"下衣":{"衣着":"同色西装长裤与黑色尖头短靴","肉体":"站姿稳定，下半身无明显外伤"},"心理":"连公益项目都翻过。公司里有谁碰得到这么完整的资料？……该死，手怎么还在抖。","行动倾向":["稳定秩序","核对环境线索"],"颁布规则":[],"关系":{"林安":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-8}}},"张曲溪":{"信息":{"年龄":22,"公开身份":"长发高马尾的英气女大学生"},"状态":{"身体":"正常，肌肉线条饱满","当前行动":"守住安全距离并观察出口与广播设施"},"上衣":{"衣着":"暗绿短款大学棒球夹克与黑色圆领上衣","肉体":"肩背与前臂活动正常，无明显伤口、红肿或疼痛反应"},"下衣":{"衣着":"深色工装长裤与运动鞋","肉体":"双腿活动正常，无明显伤口或红肿"},"心理":"“王子”……连这种破外号都知道。到底是谁把我翻得这么干净？","行动倾向":["防备录音者","守住安全距离"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-2}}},"王可可":{"信息":{"年龄":32,"公开身份":"高中女教师"},"状态":{"身体":"正常，表面惊魂未定","当前行动":"调停互疑并提议先核对广播与环境"},"上衣":{"衣着":"浅蓝针织开衫与象牙白衬衫","肉体":"双肩略紧，按在项圈边缘的指尖微凉"},"下衣":{"衣着":"烟灰色过膝百褶裙与浅口皮鞋","肉体":"步态正常，无明显外伤"},"心理":"学生那边不会也被盯上了吧……别抖，至少让大家把这段录音听完。","行动倾向":["调停冲突","组织环境检查"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"玩家":{"好感度":8}}}}};
+  var EXPECTED_CARD_NAME = "读心术者的匿名国王游戏（louisHM制作）";
+  var listeners = [];
+  var cachedState = null;
+  var actionPending = false;
+  var previewRecord = null;
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function fillDefaults(target, defaults) {
+    var output = target && typeof target === 'object' && !Array.isArray(target) ? clone(target) : {};
+    Object.keys(defaults).forEach(function (key) {
+      var fallback = defaults[key];
+      if (output[key] === undefined) {
+        output[key] = clone(fallback);
+      } else if (fallback && typeof fallback === 'object' && !Array.isArray(fallback)) {
+        output[key] = fillDefaults(output[key], fallback);
+      }
+    });
+    return output;
+  }
+
+  function hostWindow() {
+    var candidates = [];
+    try { candidates.push(window.parent); } catch (error) {}
+    try { candidates.push(window.top); } catch (error) {}
+    candidates.push(window);
+    for (var index = 0; index < candidates.length; index += 1) {
+      var candidate = candidates[index];
+      if (!candidate) continue;
+      try {
+        if (candidate.SillyTavern || candidate.Mvu || candidate.TavernHelper || typeof candidate.getContext === 'function') return candidate;
+      } catch (error) {}
+    }
+    return window;
+  }
+
+  function context() {
+    var candidates = [hostWindow()];
+    try { candidates.push(window.parent); } catch (error) {}
+    try { candidates.push(window.top); } catch (error) {}
+    for (var index = 0; index < candidates.length; index += 1) {
+      var host = candidates[index];
+      if (!host) continue;
+      try {
+        if (host.SillyTavern && typeof host.SillyTavern.getContext === 'function') return host.SillyTavern.getContext();
+        if (typeof host.getContext === 'function') return host.getContext();
+      } catch (error) {}
+    }
+    return {};
+  }
+
+  function chatName() {
+    var ctx = context();
+    return ctx.chatId || (ctx.chatMetadata && (ctx.chatMetadata.name || ctx.chatMetadata.file_name)) || document.title || '未命名聊天';
+  }
+
+  function userName() {
+    var ctx = context();
+    return ctx.name1 || ctx.userName || '你';
+  }
+
+  function cardName() {
+    var seen = {};
+    var names = [];
+    function add(value) {
+      var text = String(value == null ? '' : value).trim();
+      if (!text || seen[text]) return;
+      seen[text] = true;
+      names.push(text);
+    }
+    var candidates = [window];
+    try { candidates.push(window.parent); } catch (error) {}
+    try { candidates.push(window.top); } catch (error) {}
+    for (var index = 0; index < candidates.length; index += 1) {
+      var host = candidates[index];
+      if (!host) continue;
+      try {
+        var ctx = host.SillyTavern && typeof host.SillyTavern.getContext === 'function'
+          ? host.SillyTavern.getContext()
+          : (typeof host.getContext === 'function' ? host.getContext() : {});
+        add(ctx && ctx.name2);
+        add(ctx && ctx.characterName);
+        add(ctx && ctx.character && ctx.character.name);
+        var characterId = ctx && (ctx.characterId != null ? ctx.characterId : ctx.chid);
+        var characters = (ctx && ctx.characters) || host.characters;
+        if (Array.isArray(characters)) add(characters[Number(characterId)] && characters[Number(characterId)].name);
+        else if (characters && typeof characters === 'object') add(characters[characterId] && characters[characterId].name);
+      } catch (error) {}
+    }
+    return names.length ? names.join('\n') : (hostWindow() === window ? EXPECTED_CARD_NAME : '');
+  }
+
+  function currentMessageOption(host) {
+    try {
+      var owner = typeof host.getCurrentMessageId === 'function'
+        ? host
+        : (host.TavernHelper && typeof host.TavernHelper.getCurrentMessageId === 'function'
+          ? host.TavernHelper
+          : null);
+      var id = owner ? owner.getCurrentMessageId() : null;
+      if (id !== undefined && id !== null && id !== '') {
+        return { type: 'message', message_id: id };
+      }
+    } catch (error) {
+      // 某些宿主把前端放进全局 iframe；此时楼层接口会主动抛错。
+    }
+    return { type: 'message', message_id: 'latest' };
+  }
+
+  function visibleState(value) {
+    var output = clone(value && typeof value === 'object' ? value : {});
+    var system = output['系统'];
+    if (system && typeof system === 'object') {
+      var api = window.KingGameState;
+      var endingDisplay = api && typeof api.getEndingDisplay === 'function'
+        ? api.getEndingDisplay(system)
+        : null;
+      delete system['_国王种子源'];
+      delete system['_国王日程'];
+      delete system['_日程校验码'];
+      delete system['_protocol_strikes'];
+      delete system.internal;
+      delete system['_校验缓存'];
+      if (endingDisplay) system['结局展示'] = endingDisplay;
+      else delete system['结局展示'];
+    }
+    return output;
+  }
+
+  async function readHostRecord() {
+    var host = hostWindow();
+    var raw;
+    try {
+      if (host !== window && host.Mvu && typeof host.Mvu.getMvuData === 'function') {
+        var mvuOption = currentMessageOption(host);
+        raw = await host.Mvu.getMvuData(mvuOption);
+        if (raw && typeof raw === 'object') {
+          return {
+            raw: raw,
+            state: raw.stat_data && typeof raw.stat_data === 'object' ? raw.stat_data : {},
+            source: 'mvu',
+            option: mvuOption
+          };
+        }
+      }
+    } catch (error) {
+      console.warn('[KingGame] MVU 尚未就绪，尝试兼容变量通道', error);
+    }
+    try {
+      if (host === window && previewRecord) raw = clone(previewRecord);
+      else if (typeof host.getVariables === 'function') raw = await host.getVariables({ type: 'chat' });
+      else if (host.TavernHelper && typeof host.TavernHelper.getVariables === 'function') raw = await host.TavernHelper.getVariables({ type: 'chat' });
+      else {
+        var ctx = context();
+        raw = ctx.chatMetadata && ctx.chatMetadata.variables;
+      }
+    } catch (error) {
+      console.warn('[KingGame] 读取聊天变量失败', error);
+    }
+    raw = raw && typeof raw === 'object' ? raw : {};
+    return { raw: raw, state: raw.stat_data && typeof raw.stat_data === 'object' ? raw.stat_data : raw, source: 'legacy' };
+  }
+
+  async function writeHostRecord(record, state) {
+    var host = hostWindow();
+    var payload = record.raw && record.raw.stat_data && typeof record.raw.stat_data === 'object'
+      ? Object.assign({}, record.raw, { stat_data: state })
+      : state;
+    try {
+      if (record.source === 'mvu' && host.Mvu && typeof host.Mvu.replaceMvuData === 'function') {
+        await host.Mvu.replaceMvuData(Object.assign({}, record.raw, { stat_data: state }), record.option || currentMessageOption(host));
+        return true;
+      }
+      if (typeof host.replaceVariables === 'function') {
+        await host.replaceVariables(payload, { type: 'chat' });
+        return true;
+      }
+      if (host.TavernHelper && typeof host.TavernHelper.replaceVariables === 'function') {
+        await host.TavernHelper.replaceVariables(payload, { type: 'chat' });
+        return true;
+      }
+      var ctx = context();
+      if (ctx.chatMetadata) {
+        ctx.chatMetadata.variables = payload;
+        if (typeof ctx.saveMetadata === 'function') await ctx.saveMetadata();
+        return true;
+      }
+      // 仅供直接打开 dist/前端预览.html 时测试按钮；嵌入真实宿主后绝不静默降级。
+      if (host === window) {
+        previewRecord = clone(payload);
+        return true;
+      }
+    } catch (error) {
+      console.warn('[KingGame] 写入聊天变量失败', error);
+    }
+    return false;
+  }
+
+  function publish(state) {
+    cachedState = visibleState(state);
+    listeners.slice().forEach(function (listener) {
+      try { listener(clone(cachedState)); } catch (error) { console.warn(error); }
+    });
+    window.dispatchEvent(new CustomEvent('kinggame:state', { detail: clone(cachedState) }));
+  }
+
+  async function sendUserCommand(message) {
+    var host = hostWindow();
+    var ctx = context();
+    var text = String(message || '').trim();
+    if (!text) throw new Error('不能发送空的操作请求');
+
+    if (host === window && !host.SillyTavern && !host.TavernHelper) {
+      window.dispatchEvent(new CustomEvent('kinggame:preview-command', { detail: text }));
+      console.info('[KingGame] 预览模式模拟发送', text);
+      return 'preview';
+    }
+
+    var sillyMessageSent = false;
+    try {
+      var contextGenerate = typeof ctx.generate === 'function'
+        ? function () { return ctx.generate('normal'); }
+        : (typeof host.generate === 'function' ? function () { return host.generate('normal'); } : null);
+      if (typeof ctx.sendMessageAsUser === 'function' && contextGenerate) {
+        await ctx.sendMessageAsUser(text);
+        sillyMessageSent = true;
+        await contextGenerate();
+        return 'SillyTavern';
+      }
+      if (typeof host.sendMessageAsUser === 'function' && contextGenerate) {
+        await host.sendMessageAsUser(text);
+        sillyMessageSent = true;
+        await contextGenerate();
+        return 'SillyTavern';
+      }
+    } catch (error) {
+      if (sillyMessageSent) throw new Error('请求已写入 SillyTavern，但自动生成启动失败，请手动点击发送/继续生成');
+      console.warn('[KingGame] SillyTavern API 发送失败，尝试降级', error);
+    }
+
+    var helperMessageSent = false;
+    try {
+      var helper = host.TavernHelper;
+      if (helper && typeof helper.sendMessage === 'function' && typeof helper.generate === 'function') {
+        await helper.sendMessage(text);
+        helperMessageSent = true;
+        await helper.generate();
+        return 'TavernHelper';
+      }
+      if (helper && typeof helper.triggerSlash === 'function') {
+        await helper.triggerSlash('/send ' + text);
+        helperMessageSent = true;
+        await helper.triggerSlash('/trigger');
+        return 'TavernHelper';
+      }
+    } catch (error) {
+      if (helperMessageSent) throw new Error('请求已写入 TavernHelper，但自动生成启动失败，请手动继续生成');
+      console.warn('[KingGame] TavernHelper 发送失败，尝试输入框降级', error);
+    }
+
+    try {
+      var doc = host.document;
+      var input = doc && doc.querySelector('#send_textarea, textarea[name="message"], textarea[data-testid="send-textarea"]');
+      var sendButton = doc && doc.querySelector('#send_but, #send-button, button[data-testid="send-button"]');
+      if (input && sendButton && !sendButton.disabled) {
+        input.value = text;
+        input.dispatchEvent(new host.Event('input', { bubbles: true }));
+        input.dispatchEvent(new host.Event('change', { bubbles: true }));
+        sendButton.click();
+        return 'DOM';
+      }
+    } catch (error) {
+      console.warn('[KingGame] 输入框发送失败', error);
+    }
+    throw new Error('无法连接 SillyTavern 的发送/生成流程，请刷新页面或检查 TavernHelper 是否启用');
+  }
+
+  async function commitAction(apiName, args, commandFactory) {
+    if (actionPending) throw new Error('上一项操作仍在提交，请稍候');
+    actionPending = true;
+    try {
+      await ready;
+      var api = window.KingGameState;
+      if (!api || typeof api[apiName] !== 'function') throw new Error('状态引擎缺少日流程能力：' + apiName);
+      var record = await readHostRecord();
+      var before = fillDefaults(record.state, INITIAL_STATE);
+      before = api.initializeVariables(before, chatName());
+      var after = clone(before);
+      after['系统'] = api[apiName].apply(api, [before['系统']].concat(args || []));
+      if (!await writeHostRecord(record, after)) throw new Error('聊天变量写入失败，操作没有发送');
+      publish(after);
+      try {
+        var command = typeof commandFactory === 'function' ? commandFactory(after) : commandFactory;
+        await sendUserCommand(command);
+      } catch (sendError) {
+        var rolledBack = await writeHostRecord(record, before);
+        if (rolledBack) publish(before);
+        throw new Error(sendError.message + (rolledBack ? '；本次状态已回滚' : '；状态回滚失败，请刷新后检查'));
+      }
+      return clone(cachedState);
+    } finally {
+      actionPending = false;
+    }
+  }
+
+  async function initialize() {
+    var record = await readHostRecord();
+    var withDefaults = fillDefaults(record.state, INITIAL_STATE);
+    var initialized = window.KingGameState.initializeVariables(withDefaults, chatName());
+    await writeHostRecord(record, initialized);
+    publish(initialized);
+    return initialized;
+  }
+
+  var ready = initialize().catch(function (error) {
+    console.warn('[KingGame] 宿主初始化失败，使用本地初始状态', error);
+    var fallback = window.KingGameState.initializeVariables(clone(INITIAL_STATE), chatName());
+    publish(fallback);
+    return fallback;
+  });
+
+  async function prepareDecree() {
+    if (actionPending) throw new Error('上一项操作仍在提交，请稍候');
+    actionPending = true;
+    try {
+      await ready;
+      var api = window.KingGameState;
+      if (!api || typeof api.prepareDecree !== 'function') throw new Error('状态引擎缺少法令准备能力');
+      var record = await readHostRecord();
+      var before = fillDefaults(record.state, INITIAL_STATE);
+      before = api.initializeVariables(before, chatName());
+      var after = clone(before);
+      after['系统'] = api.prepareDecree(before['系统'], chatName());
+      if (!await writeHostRecord(record, after)) throw new Error('聊天变量写入失败，未能选出当日国王');
+      publish(after);
+      return clone(cachedState);
+    } finally {
+      actionPending = false;
+    }
+  }
+
+  function containsUnprotected(value, pattern) {
+    pattern.lastIndex = 0;
+    var match;
+    while ((match = pattern.exec(value))) {
+      var before = value.slice(Math.max(0, match.index - 14), match.index);
+      if (!/(?:不得|禁止|不能|严禁|避免|防止)[^，。；！？]{0,10}$/.test(before)) return true;
+      if (!match[0].length) pattern.lastIndex += 1;
+    }
+    return false;
+  }
+
+  function validatePlayerDecree(text) {
+    var value = String(text || '').trim();
+    if (!value) return '';
+    if (/(测谎|说真话|说实话|不得撒谎|不能撒谎|禁止撒谎|必须诚实|如实回答|回答必须真实)/.test(value)) {
+      throw new Error('该法令无效：项圈不能判断真假；可以要求作答，但不能保证回答真实');
+    }
+    if (containsUnprotected(value, /科学上不可能|违反物理|违反科学|超自然|超能力|魔法|飞行|飞起来|瞬移|传送|隐身|穿墙|透墙|穿越时空|时间倒流|时间停止|停止时间|复活|死而复生|永生|长生不老|不老不死|刀枪不入|读心|读取思想|心灵感应|预知未来|无视重力|超光速|凭空变出|凭空出现|永动机|分身|复制人|控制天气|召唤亡灵|飞到月球|登上月球|水下呼吸|不需要呼吸|长出翅膀|变身为|变成一只/g)) {
+      return 'scientifically_impossible';
+    }
+    if (containsUnprotected(value, /爆墙|炸墙|砸墙|拆墙|破墙|打穿墙|炸门|爆破|破坏项圈|拆除项圈/g)) {
+      throw new Error('该法令无效：法令不能赋予超自然能力或要求破坏密室结构');
+    }
+    if (containsUnprotected(value, /杀死|处死|致死|死亡|致残|残废|断肢|截肢|骨折|弄瞎|失明|器官损伤|永久毁容/g)) {
+      throw new Error('该法令无效：法令不得造成死亡、残疾或无法短期恢复的伤害');
+    }
+    return '';
+  }
+
+  window.KingGameBridge = {
+    getUserName: function () { return userName(); },
+    getCardName: function () { return cardName(); },
+    getState: function () { return ready.then(function () { return clone(cachedState); }); },
+    getVariables: function () { return this.getState(); },
+    subscribe: function (listener) {
+      if (typeof listener !== 'function') return function () {};
+      listeners.push(listener);
+      if (cachedState) listener(clone(cachedState));
+      return function () { listeners = listeners.filter(function (item) { return item !== listener; }); };
+    },
+    refresh: async function () {
+      var record = await readHostRecord();
+      var state = fillDefaults(record.state, INITIAL_STATE);
+      state = window.KingGameState.initializeVariables(state, chatName());
+      if (!await writeHostRecord(record, state)) throw new Error('聊天变量写入失败，隐藏终局累计状态未能持久化');
+      publish(state);
+      return clone(cachedState);
+    },
+    sendUserCommand: sendUserCommand,
+    prepareDecree: prepareDecree,
+    requestDecree: async function (payload) {
+      var submitted = String(payload || '').trim();
+      var violation = submitted ? validatePlayerDecree(submitted) : '';
+      var prepared = await prepareDecree();
+      var preparedSystem = prepared['系统'] || {};
+      // 兼容旧前端：首次点击若抽到玩家，只公布私密结果并等待输入，不报错、不广播。
+      if (preparedSystem['_当前国王'] === '玩家' && !submitted) return prepared;
+      if (submitted && preparedSystem['_当前国王'] !== '玩家') {
+        throw new Error('当前国王不是玩家，不能通过玩家法令输入框提交内容');
+      }
+      if (violation === 'scientifically_impossible') {
+        return commitAction('rejectImpossiblePlayerDecree', [], function (next) {
+          var system = next['系统'] || {};
+          if (system['_每日阶段'] === '终局') {
+            return '【前端私密操作，不是公开发言】【强制终局·第二次现实违例】玩家作为当日国王，再次提交了科学上不可能执行的法令。该法令不生效、不写入规则数组。请先让广播以原声宣布：“现实可执行性警告已被无视。检测到第二次同类违例，现对提交者执行终止处分。”随后立即描写{{user}}的项圈超频放电并将他电死；四名女性只能依据眼前现象作出符合人设的反应。游戏在此提前终止，不得继续当天互动，不得改写成侥幸存活，也不得提前泄露其他隐藏真相。';
+          }
+          return '【前端私密操作，不是公开发言】【首次现实违例警告】玩家作为当日国王，提交了一条科学上不可能执行的法令。该法令不生效、不写入规则数组，国王身份不公开，当日仍停留在颁布阶段。请让全设施广播只宣布一次：“检测到违背现实可执行性的国王提案。本次提案作废；房门保持关闭。若提交者再次提出同类法令，项圈将执行终止处分。”描写四名女性在各自房间听见警告后的简短反应，但不要替{{user}}说话，也不要猜测或公开国王身份。';
+        });
+      }
+      return commitAction('beginDecree', [], function (next) {
+        var system = next['系统'] || {};
+        var playerSubmission = system['_当前国王'] === '玩家'
+          ? '玩家提交的新法令内容或撤销目标是：“' + submitted + '”。请据此完成正式颁布或撤销。'
+          : '宿主已经确定当日国王为“' + system['_当前国王'] + '”。必须只由此人依据其人设和当前关系决定法令内容。';
+        return '【前端私密操作，不是公开发言】【每日流程·颁布法令】我已启动第' + system['_当前天数'] + '日的匿名法令终端。只读宿主变量中的当日国王是“' + system['_当前国王'] + '”，不得重新抽签、改选、猜测或让另一人代为颁布。' + playerSubmission + '完成后向全员广播法令正文，但不要公开国王身份。';
+      });
+    },
+    submitInteraction: function (roleName, method) {
+      var trimmed = String(method || '').trim();
+      if (!trimmed) return Promise.reject(new Error('请输入非空的互动方式'));
+      return commitAction('submitInteraction', [roleName, trimmed], function (next) {
+        var request = (next['系统'] || {})['_最近互动请求'] || {};
+        var supplements = Array.isArray(request['补全对象']) ? request['补全对象'] : [];
+        var followup = supplements.length
+          ? '在这次互动结束后，请另用明显区别于正文的旁观记录样式，依次描写' + roleName + '与' + supplements.join('、') + '之间今日尚未发生的互动。'
+          : '这是追加互动，不需要把它误写成我已经说过某句具体台词。';
+        return '【每日流程·互动请求】我想以“' + trimmed + '”的方式与' + roleName + '互动。请把它作为行动意图来展开，不要擅自替我补写具体台词。' + followup;
+      });
+    },
+    overnight: function () {
+      return commitAction('advanceDay', [], function (next) {
+        var system = next['系统'] || {};
+        return system['_每日阶段'] === '终局'
+          ? '【每日流程·过夜】第15日已经结束。请描写最后一夜与国王游戏终局。'
+          : '【每日流程·过夜】今日互动已经完成，我选择结束本日并过夜。请描写夜间结算与第' + system['_当前天数'] + '日清晨的统一广播。';
+      });
+    }
+  };
+})();
+</script>
+  <div class="app">
+    
+      <section class="status-card">
+        <p class="eyebrow">Private backdoor</p>
+        <div class="king-line"><span class="king-name" id="currentKing">—</span><span class="day-seal" id="currentDay">第 1 / 15 日</span></div>
+        <div class="scene-line"><span id="sceneInfo">第1日 08:10 · 中央大厅 · 苏醒</span><br>匿名权限 · 仅你可见 · 请勿泄露</div>
+      </section>
+
+      <nav class="map-card" aria-label="密室四面地图">
+        <button class="map-room" type="button" data-face="0">林安</button>
+        <button class="map-room" type="button" data-face="1">穆裳希</button>
+        <button class="map-room" type="button" data-face="2">张曲溪</button>
+        <button class="map-room" type="button" data-face="3">王可可</button>
+        <div class="user-seat" id="userSeat">你</div>
+      </nav>
+
+      <nav class="view-nav" aria-label="视角切换">
+        <button class="nav-btn" id="lookUp" type="button" aria-label="W：向上转">W</button>
+        <button class="nav-btn" id="prevFace" type="button" aria-label="A：上一面">A</button>
+        <button class="nav-btn" id="lookDown" type="button" aria-label="S：向下转">S</button>
+        <button class="nav-btn" id="nextFace" type="button" aria-label="D：下一面">D</button>
+      </nav>
+    
+
+    <main class="viewport" id="viewport" aria-label="六面密室档案，使用WASD切换视角">
+      <div class="prism" id="prism" data-view="side"></div>
+      <div class="surface-overlay" id="surfaceOverlay" data-view="side" aria-live="polite"></div>
+      <button class="portrait-hit-target" id="portraitHitTarget" type="button" hidden aria-label="查看林安证件照全图"></button>
+      <button class="interaction-hit-target" id="interactionHitTarget" type="button" hidden aria-label="与林安互动"></button>
+    </main>
+
+    <footer class="controls" aria-label="人物切换">
+      <div class="face-dots" id="faceDots"></div>
+      <button class="rules-btn" id="openPlayerRules" type="button">你的法令</button>
+      <section class="day-flow" aria-label="每日行动流程">
+        <div class="flow-copy" id="flowStatus" aria-live="polite">正在读取今日流程……</div>
+        <button class="flow-btn" id="primaryDailyAction" type="button" hidden></button>
+      </section>
+      <div class="action-error" id="actionError" role="alert"></div>
+    </footer>
+  </div>
+
+  <button class="ending-entry" id="reopenEnding" type="button" hidden>查看终局</button>
+
+  <div class="drawer-backdrop" id="playerRulesBackdrop" aria-hidden="true">
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="playerRulesTitle">
+      <div class="drawer-head">
+        <h2 id="playerRulesTitle">你的法令</h2>
+        <button class="drawer-close" id="closePlayerRules" type="button" aria-label="关闭">×</button>
+      </div>
+      <p class="drawer-note">这里只展示由你正式颁布或撤销的法令记录；其他人的法令分别保存在她们各自的档案面。</p>
+      <div class="rules" id="playerRules"></div>
+    </aside>
+  </div>
+
+  <div class="modal-backdrop" id="interactionBackdrop" aria-hidden="true">
+    <section class="interaction-modal" role="dialog" aria-modal="true" aria-labelledby="interactionTitle" aria-describedby="interactionNote">
+      <h2 id="interactionTitle">与角色互动</h2>
+      <p class="modal-note" id="interactionNote">这里只提交互动方式，不会把你的请求冒充成你已经说过的具体台词。按 Ctrl/⌘ + Enter 可提交。</p>
+      <label for="interactionMethod" id="interactionLabel">互动方式</label>
+      <textarea id="interactionMethod" maxlength="800" placeholder="例如：邀请她单独检查走廊，并先询问她昨晚最后记得的画面"></textarea>
+      <div class="modal-error" id="interactionError" role="alert"></div>
+      <div class="modal-actions">
+        <button class="modal-btn" id="cancelInteraction" type="button">取消</button>
+        <button class="modal-btn" id="submitInteraction" type="button">提交互动</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop portrait-backdrop" id="portraitBackdrop" aria-hidden="true">
+    <section class="portrait-viewer" role="dialog" aria-modal="true" aria-labelledby="portraitViewerTitle">
+      
+        <h2 id="portraitViewerTitle">人物证件照</h2>
+        <button class="modal-btn portrait-close" id="closePortrait" type="button" aria-label="关闭证件照全图">×</button>
+      
+      <div class="portrait-full-stage"><img id="portraitFullImage" alt=""></div>
+      <p class="portrait-viewer-note">完整档案影像 · 点击背景或按 Escape 返回</p>
+    </section>
+  </div>
+
+  <div class="ending-backdrop" id="endingBackdrop" aria-hidden="true">
+    <section class="ending-card" id="endingCard" data-theme="暗金" role="dialog" aria-modal="true" aria-labelledby="endingTitle" aria-describedby="endingSummary">
+      <button class="modal-btn ending-close" id="closeEnding" type="button" aria-label="关闭终局档案">×</button>
+      <p class="ending-kicker">国王游戏 · 终局档案</p>
+      <p class="ending-route" id="endingRoute">终局</p>
+      <h2 class="ending-title" id="endingTitle">终局档案</h2>
+      <div class="ending-meta">
+        <div class="ending-meta-item"><b>忏悔者</b><span id="endingConfessor">—</span></div>
+        <div class="ending-meta-item"><b>真相判定</b><span id="endingTruth">—</span></div>
+      </div>
+      <div class="ending-meta-item ending-diagnosis"><b>共同结论</b><span id="endingDiagnosis">—</span></div>
+      <p class="ending-summary" id="endingSummary" hidden></p>
+    </section>
+  </div>
+
+  <script>
+  (() => {
+    "use strict";
+
+    const NAMES = ["林安", "穆裳希", "张曲溪", "王可可"];
+    const portraitAsset = file => {
+      const base = String(window.__KING_GAME_ASSET_BASE__ || "").trim();
+      return base ? `${base.replace(/\/?$/, "/")}${file}` : `assets/portraits/${file}`;
+    };
+    const PORTRAITS = {
+      "林安": portraitAsset("lin-an.webp"),
+      "穆裳希": portraitAsset("mu-shangxi.webp"),
+      "张曲溪": portraitAsset("zhang-quxi.webp"),
+      "王可可": portraitAsset("wang-keke.webp")
+    };
+
+    // 仅供脱离 SillyTavern 宿主时预览版式；字段严格对应 VARIABLE_CONTRACT.md。
+    const PREVIEW_STATE = {
+      "系统": {
+        "_版本": 3, "_日程已锁定": false,
+        "_当前天数": 1, "_当前国王": "",
+        "_国王次数": { "玩家": 0, "林安": 0, "穆裳希": 0, "张曲溪": 0, "王可可": 0 },
+        "_每日阶段": "待颁布法令", "_今日法令已广播": false,
+        "_玩家已互动角色": [], "_最近互动请求": null, "_可过夜": false,
+        "当前时间": "第1日 08:10", "当前地点": "中央大厅", "当前阶段": "苏醒",
+        "公开线索": []
+      },
+      "玩家": { "颁布规则": [] },
+      "角色": {
+        "林安": {
+          "信息": { "年龄": 25, "公开身份": "自诩女侦探的无业家里蹲" },
+          "状态": { "身体": "正常，刚从熟睡中醒来", "当前行动": "兴奋地打量密室" },
+          "上衣": { "衣着": "棕色猎鹿帽、格纹短披肩与米白衬衫", "肉体": "上半身无明显外伤，脸侧留有贴桌熟睡的浅印" },
+          "下衣": { "衣着": "深棕灯芯绒马裤与系带短靴", "肉体": "下半身活动正常，无明显外伤" },
+          "心理": "完了，我刚才是不是把桌子舔干净了……旁边那个人应该没看见吧？等等，自由侦探怎么就成“自居”了？",
+          "行动倾向": ["勘查现场", "建立时间线"], "颁布规则": [],
+          "关系": { "穆裳希": {"好感度": 0}, "张曲溪": {"好感度": 0}, "王可可": {"好感度": 0}, "玩家": {"好感度": 3} }
+        },
+        "穆裳希": {
+          "信息": { "年龄": 27, "公开身份": "企业创办人与经营者" },
+          "状态": { "身体": "正常，情绪高度紧绷", "当前行动": "审视环境并组织质询" },
+          "上衣": { "衣着": "炭黑修身西装与暗红丝质上衣", "肉体": "呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红" },
+          "下衣": { "衣着": "同色西装长裤与黑色尖头短靴", "肉体": "站姿稳定，下半身无明显外伤" },
+          "心理": "连公益项目都翻过。公司里有谁碰得到这么完整的资料？……该死，手怎么还在抖。",
+          "行动倾向": ["确认环境风险", "组织信息"],
+          "颁布规则": [],
+          "关系": { "林安": {"好感度": 0}, "张曲溪": {"好感度": 0}, "王可可": {"好感度": 0}, "玩家": {"好感度": -8} }
+        },
+        "张曲溪": {
+          "信息": { "年龄": 22, "公开身份": "长发高马尾的英气女大学生" },
+          "状态": { "身体": "正常，肌肉线条饱满", "当前行动": "占据可同时观察出口与众人的位置" },
+          "上衣": { "衣着": "暗绿短款大学棒球夹克与黑色圆领上衣", "肉体": "肩背与前臂活动正常，无明显伤口、红肿或疼痛反应" },
+          "下衣": { "衣着": "深色工装长裤与运动鞋", "肉体": "双腿活动正常，无明显伤口或红肿" },
+          "心理": "“王子”……连这种破外号都知道。到底是谁把我翻得这么干净？",
+          "行动倾向": ["观察出口", "保留立场"],
+          "颁布规则": [],
+          "关系": { "林安": {"好感度": 0}, "穆裳希": {"好感度": 0}, "王可可": {"好感度": 0}, "玩家": {"好感度": -2} }
+        },
+        "王可可": {
+          "信息": { "年龄": 32, "公开身份": "高中女教师" },
+          "状态": { "身体": "正常，表面惊魂未定", "当前行动": "试图安抚众人并听清广播" },
+          "上衣": { "衣着": "浅蓝针织开衫与象牙白衬衫", "肉体": "双肩略紧，按在项圈边缘的指尖微凉" },
+          "下衣": { "衣着": "烟灰色过膝百褶裙与浅口皮鞋", "肉体": "步态正常，无明显外伤" },
+          "心理": "学生那边不会也被盯上了吧……别抖，至少让大家把这段录音听完。",
+          "行动倾向": ["安抚众人", "确认广播内容"], "颁布规则": [],
+          "关系": { "林安": {"好感度": 0}, "穆裳希": {"好感度": 0}, "张曲溪": {"好感度": 0}, "玩家": {"好感度": 8} }
+        }
+      }
+    };
+
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const el = (tag, className, text) => {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined && text !== null) node.textContent = String(text);
+      return node;
+    };
+    const asObject = value => value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    const asArray = value => Array.isArray(value) ? value : [];
+    const num = (value, min, max, fallback = 0) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : fallback));
+    const displayPerson = (name, userName) => name === "玩家" ? userName : (name || "—");
+
+    let state = PREVIEW_STATE;
+    let userName = "你";
+    let faceIndex = 0;
+    let angle = 0;
+    let pitch = 0;
+    let lastFocused = null;
+    let interactionRole = "";
+    let modalMode = "";
+    let interactionLastFocused = null;
+    let actionBusy = false;
+    let roomMoving = false;
+    let hitSyncTimer = 0;
+    let portraitLastFocused = null;
+    let activePortraitName = "";
+    let endingLastFocused = null;
+    let activeEnding = null;
+    let endingPresentedKey = "";
+
+    function appendField(root, title, paragraphs, className = "") {
+      const field = el("section", `field ${className}`.trim());
+      field.append(el("span", "field-title", title));
+      paragraphs.forEach(item => field.append(el("p", item.className || "", item.text || "暂无记录")));
+      root.append(field);
+      return field;
+    }
+
+    function renderRules(root, rules) {
+      root.replaceChildren();
+      if (!asArray(rules).length) {
+        root.append(el("div", "empty", "尚未颁布个人法令。"));
+        return;
+      }
+      [...rules].sort((a, b) => num(b?.优先级, -9999, 9999) - num(a?.优先级, -9999, 9999)).forEach(raw => {
+        const ruleData = asObject(raw);
+        const rule = el("article", `rule${ruleData.状态 === "已撤销" ? " is-revoked" : ""}`);
+        const head = el("div", "rule-head");
+        head.append(el("span", "", `${ruleData.id || "—"} · ${ruleData.标题 || "未命名法令"}`));
+        head.append(el("span", "rule-meta", `第${num(ruleData.颁布日, 1, 15, 1)}日 · ${ruleData.状态 || "生效"}`));
+        rule.append(head, el("p", "", ruleData.全文 || "暂无正文"));
+        root.append(rule);
+      });
+    }
+
+    function buildFace(name, data) {
+      const info = asObject(data.信息);
+      const status = asObject(data.状态);
+      const upper = asObject(data.上衣);
+      const lower = asObject(data.下衣);
+      const relations = asObject(data.关系);
+      const face = el("article", "face");
+      face.dataset.name = name;
+      const frame = el("div", "face-frame");
+      const heading = el("header", "face-heading");
+      const identity = el("div", "identity");
+      identity.append(el("h2", "", name), el("p", "", `${info.年龄 || "—"} 岁 · ${info.公开身份 || "身份未公开"}`));
+      const system = asObject(state.系统);
+      const completed = asArray(system._玩家已互动角色).includes(name);
+      const faceInteract = el("button", `face-interact-btn${completed ? " is-complete" : ""}`, completed ? `✓ 继续与${name}互动` : `与${name}互动`);
+      faceInteract.type = "button";
+      faceInteract.dataset.interactionName = name;
+      faceInteract.hidden = system._每日阶段 !== "自由互动";
+      faceInteract.tabIndex = -1;
+      faceInteract.setAttribute("aria-hidden", "true");
+      heading.append(identity, faceInteract);
+
+      const body = el("div", "face-body");
+      const rail = el("aside", "profile-rail");
+      const portrait = el("button", "portrait");
+      portrait.type = "button";
+      portrait.dataset.portraitName = name;
+      portrait.setAttribute("aria-label", `查看${name}证件照全图`);
+      const image = el("img");
+      image.src = PORTRAITS[name];
+      image.alt = `${name}的证件照`;
+      image.loading = "eager";
+      image.draggable = false;
+      const fallback = el("span", "portrait-fallback", name.slice(-1));
+      image.addEventListener("error", () => { image.hidden = true; fallback.style.display = "grid"; });
+      portrait.addEventListener("click", () => openPortrait(name, portrait));
+      portrait.append(image, fallback);
+      const quick = el("div", "quick-state");
+      [["身体", status.身体], ["当前行动", status.当前行动]].forEach(([label, value]) => {
+        const row = el("div", "state-row");
+        row.append(el("b", "", label), el("span", "", value || "暂无记录"));
+        quick.append(row);
+      });
+      rail.append(portrait, quick);
+
+      const dossier = el("div", "dossier-scroll");
+      const clothes = el("div", "section-grid");
+      const upperField = appendField(clothes, "上衣 / 上半身", []);
+      upperField.append(
+        Object.assign(el("p", "subline"), { textContent: `衣着　${upper.衣着 || "暂无记录"}` }),
+        Object.assign(el("p", "subline"), { textContent: `肉体　${upper.肉体 || "暂无记录"}` })
+      );
+      const lowerField = appendField(clothes, "下衣 / 下半身", []);
+      lowerField.append(
+        Object.assign(el("p", "subline"), { textContent: `衣着　${lower.衣着 || "暂无记录"}` }),
+        Object.assign(el("p", "subline"), { textContent: `肉体　${lower.肉体 || "暂无记录"}` })
+      );
+      dossier.append(clothes);
+      appendField(dossier, "心声 / 读心术", [{ text: data.心理 || "暂无记录" }], "thought");
+
+      const tendency = el("section", "field");
+      tendency.append(el("span", "field-title", "倾向 / 读心术"));
+      const chips = el("div", "chips");
+      const tendencyItems = asArray(data.行动倾向).slice(0, 3);
+      (tendencyItems.length ? tendencyItems : ["暂无记录"]).forEach(item => chips.append(el("span", "chip", item)));
+      tendency.append(chips);
+      dossier.append(tendency);
+
+      const relationField = el("section", "field");
+      relationField.append(el("span", "field-title", "好感 / 读心术"));
+      [...NAMES.filter(other => other !== name), "玩家"].forEach(other => {
+        const score = Math.round(num(asObject(relations[other]).好感度, -100, 100));
+        const row = el("div", "relation");
+        const track = el("span", "relation-track");
+        const fill = el("i", "relation-fill");
+        const width = Math.abs(score) / 2;
+        fill.style.width = `${width}%`;
+        fill.style.left = score < 0 ? `${50 - width}%` : "50%";
+        fill.style.background = score < 0 ? "#8b4545" : "var(--gold)";
+        track.append(fill);
+        row.append(el("span", "", displayPerson(other, userName)), track, el("span", "", score > 0 ? `+${score}` : score));
+        relationField.append(row);
+      });
+      dossier.append(relationField);
+
+      const ruleField = el("section", "field");
+      ruleField.append(el("span", "field-title", `${name}颁布的法令`));
+      const rules = el("div", "rules");
+      renderRules(rules, data.颁布规则);
+      ruleField.append(rules);
+      dossier.append(ruleField);
+
+      body.append(rail, dossier);
+      frame.append(heading, body);
+      face.append(frame);
+      return face;
+    }
+
+    function buildTopFace() {
+      const face = el("article", "face utility-face top-face");
+      face.dataset.surface = "map";
+      return face;
+    }
+
+    function buildMapSheet() {
+      const sheet = el("section", "surface-sheet map-sheet");
+      sheet.append(el("h2", "", "密室地图"), el("p", "surface-kicker", "Upper surface / 向上查看 · 横转时自动保持正向"));
+      const map = el("div", "surface-map");
+      map.append(el("div", "surface-table", "圆桌大厅"));
+      [...NAMES, userName].forEach((name, index) => {
+        const room = el("div", `surface-room r${index + 1}`);
+        room.append(el("span", "room-name", `${name}房间`), el("i", "room-toilet", "小厕所"));
+        map.append(room);
+      });
+      sheet.append(map);
+      return sheet;
+    }
+
+    function buildBottomFace() {
+      const face = el("article", "face utility-face bottom-face");
+      face.dataset.surface = "rules";
+      return face;
+    }
+
+    function buildRulesSheet(nextState) {
+      const sheet = el("section", "surface-sheet rules-sheet");
+      sheet.append(el("h2", "", "当前生效法令"), el("p", "surface-kicker", "Lower surface / 向下查看 · 横转时自动保持正向"));
+      const rulesRoot = el("div", "rules surface-rules");
+      const allRules = [];
+      const player = asObject(nextState.玩家);
+      const roles = asObject(nextState.角色);
+      [[userName, player], ...NAMES.map(name => [name, asObject(roles[name])])].forEach(([owner, data]) => {
+        asArray(data.颁布规则).forEach(raw => {
+          const rule = asObject(raw);
+          if (rule.状态 === "已撤销") return;
+          allRules.push({ ...rule, 标题: `${owner} · ${rule.标题 || "未命名法令"}` });
+        });
+      });
+      renderRules(rulesRoot, allRules);
+      sheet.append(rulesRoot);
+      return sheet;
+    }
+
+    function renderSurfaceOverlay(nextState) {
+      const overlay = $("#surfaceOverlay");
+      overlay.replaceChildren(buildMapSheet(), buildRulesSheet(nextState));
+      overlay.dataset.view = pitch >= 45 ? "top" : pitch <= -45 ? "bottom" : "side";
+    }
+
+    function openPortrait(name, trigger) {
+      portraitLastFocused = trigger || document.activeElement;
+      activePortraitName = name;
+      $("#portraitViewerTitle").textContent = `${name} · 证件照全图`;
+      const image = $("#portraitFullImage");
+      image.src = PORTRAITS[name];
+      image.alt = `${name}的完整证件照`;
+      const backdrop = $("#portraitBackdrop");
+      backdrop.classList.add("is-open");
+      backdrop.setAttribute("aria-hidden", "false");
+      requestAnimationFrame(() => $("#closePortrait").focus());
+    }
+
+    function closePortrait(restoreFocus = true) {
+      const backdrop = $("#portraitBackdrop");
+      backdrop.classList.remove("is-open");
+      backdrop.setAttribute("aria-hidden", "true");
+      const currentPortrait = activePortraitName
+        ? document.querySelector(`.portrait[data-portrait-name="${activePortraitName}"]`)
+        : null;
+      const focusTarget = portraitLastFocused?.isConnected ? portraitLastFocused : currentPortrait;
+      if (restoreFocus && focusTarget && typeof focusTarget.focus === "function") focusTarget.focus();
+      portraitLastFocused = null;
+      activePortraitName = "";
+      requestAnimationFrame(syncPortraitHitTarget);
+    }
+
+    function normalizeEnding(system) {
+      const raw = asObject(system.结局展示);
+      const title = String(raw.标题 || "").trim();
+      const truth = String(raw.真相判定 || "").trim();
+      const summary = String(raw.摘要 || "").trim();
+      if (!title || !truth || !summary) return null;
+      const diagnosis = asObject(raw.诊断);
+      const confessors = Array.isArray(raw.忏悔者)
+        ? raw.忏悔者.map(item => String(item)).filter(Boolean).join("、")
+        : String(raw.忏悔者 || "无");
+      return {
+        标题: title,
+        忏悔者: confessors || "无",
+        真相判定: truth,
+        摘要: summary,
+        主题: String(raw.主题 || "暗金"),
+        诊断来源: String(diagnosis.来源 || "医院诊断"),
+        诊断结论: String(diagnosis.结论 || "所谓读心术是项圈故障损伤后的臆想")
+      };
+    }
+
+    function populateEnding(ending) {
+      const card = $("#endingCard");
+      card.dataset.theme = ending.主题;
+      $("#endingRoute").textContent = "终局";
+      $("#endingTitle").textContent = ending.标题;
+      $("#endingConfessor").textContent = ending.忏悔者;
+      $("#endingTruth").textContent = ending.真相判定;
+      $("#endingDiagnosis").textContent = `${ending.诊断来源}：${ending.诊断结论}`;
+      const summary = $("#endingSummary");
+      summary.textContent = ending.摘要;
+      summary.hidden = false;
+    }
+
+    function openEnding(ending = activeEnding) {
+      if (!ending) return;
+      const backdrop = $("#endingBackdrop");
+      if (!backdrop.classList.contains("is-open")) endingLastFocused = document.activeElement;
+      populateEnding(ending);
+      backdrop.classList.add("is-open");
+      backdrop.setAttribute("aria-hidden", "false");
+      $("#reopenEnding").hidden = true;
+      requestAnimationFrame(() => $("#closeEnding").focus());
+    }
+
+    function closeEnding(restoreFocus = true) {
+      const backdrop = $("#endingBackdrop");
+      backdrop.classList.remove("is-open");
+      backdrop.setAttribute("aria-hidden", "true");
+      $("#reopenEnding").hidden = !activeEnding;
+      const focusTarget = endingLastFocused?.isConnected ? endingLastFocused : $("#reopenEnding");
+      if (restoreFocus && focusTarget && typeof focusTarget.focus === "function") focusTarget.focus();
+      endingLastFocused = null;
+    }
+
+    function renderEnding(system) {
+      const ending = normalizeEnding(system);
+      activeEnding = ending;
+      if (!ending) {
+        endingPresentedKey = "";
+        $("#reopenEnding").hidden = true;
+        if ($("#endingBackdrop").classList.contains("is-open")) closeEnding(false);
+        return;
+      }
+      populateEnding(ending);
+      const key = JSON.stringify([ending.路线, ending.标题, ending.忏悔者, ending.诊断来源, ending.诊断结论]);
+      if (key !== endingPresentedKey) {
+        endingPresentedKey = key;
+        $("#reopenEnding").hidden = true;
+        requestAnimationFrame(() => {
+          if (activeEnding && endingPresentedKey === key) openEnding(activeEnding);
+        });
+      } else {
+        $("#reopenEnding").hidden = $("#endingBackdrop").classList.contains("is-open");
+      }
+    }
+
+    function render(nextState = state) {
+      state = asObject(nextState);
+      const system = asObject(state.系统);
+      const roles = asObject(state.角色);
+      const player = asObject(state.玩家);
+      $("#currentKing").textContent = system._当前国王 ? displayPerson(system._当前国王, userName) : "尚未选出";
+      $("#currentDay").textContent = `第 ${Math.round(num(system._当前天数, 1, 15, 1))} / 15 日`;
+      $("#sceneInfo").textContent = `${system.当前时间 || "时间未知"} · ${system.当前地点 || "地点未知"} · ${system.当前阶段 || "阶段未知"}`;
+      $("#userSeat").textContent = userName;
+      const prism = $("#prism");
+      prism.replaceChildren(
+        ...NAMES.map(name => buildFace(name, asObject(roles[name]))),
+        buildTopFace(),
+        buildBottomFace()
+      );
+      renderSurfaceOverlay(state);
+      renderRules($("#playerRules"), player.颁布规则);
+      renderDailyFlow(system);
+      renderEnding(system);
+      updateNavigation();
+      requestAnimationFrame(() => {
+        syncInteractionHitTarget();
+        syncPortraitHitTarget();
+      });
+    }
+
+    function renderDailyFlow(system) {
+      const stage = system._每日阶段 || "待颁布法令";
+      const completed = NAMES.filter(name => asArray(system._玩家已互动角色).includes(name));
+      const button = $("#primaryDailyAction");
+      const status = $("#flowStatus");
+      button.hidden = true;
+      button.disabled = actionBusy;
+      button.dataset.action = "";
+      if (stage === "待颁布法令") {
+        const day = Math.round(num(system._当前天数, 1, 15, 1));
+        status.textContent = day === 1
+          ? "序章圆桌苏醒 · 待匿名国王颁布法令，广播后开放今日互动"
+          : "清晨各自在房间醒来 · 待匿名国王颁布法令，广播前不得离房互动";
+        button.textContent = actionBusy ? "正在提交……" : "颁布法令";
+        button.dataset.action = "decree";
+        button.hidden = false;
+      } else if (stage === "自由互动") {
+        status.textContent = `今日互动 ${completed.length} / ${NAMES.length}：${completed.length ? completed.join("、") : "尚未与任何角色互动"}`;
+        if (system._可过夜 === true) {
+          button.textContent = actionBusy ? "正在提交……" : "过夜";
+          button.dataset.action = "overnight";
+          button.hidden = false;
+        }
+      } else if (stage === "夜间") {
+        status.textContent = "夜间结算中 · 请等待新一日广播";
+      } else if (stage === "终局") {
+        status.textContent = num(system._当前天数, 1, 15, 1) < 15
+          ? "流程已被强制终止 · 已进入终局"
+          : "十五日流程已结束 · 已进入终局";
+      } else {
+        status.textContent = `当前阶段：${stage}`;
+      }
+      requestAnimationFrame(syncInteractionHitTarget);
+    }
+
+    function showActionError(message = "") {
+      $("#actionError").textContent = message;
+    }
+
+    function openInteraction(name) {
+      const system = asObject(state.系统);
+      if (system._每日阶段 !== "自由互动") {
+        showActionError("请先完成当天法令广播，再开始互动。");
+        return;
+      }
+      modalMode = "interaction";
+      interactionRole = name;
+      interactionLastFocused = document.activeElement;
+      $("#interactionTitle").textContent = `与${name}互动`;
+      $("#interactionNote").textContent = "这里只提交互动方式，不会把你的请求冒充成你已经说过的具体台词。按 Ctrl/⌘ + Enter 可提交。";
+      $("#interactionLabel").textContent = "互动方式";
+      $("#interactionMethod").placeholder = "例如：邀请她单独检查走廊，并先询问她昨晚最后记得的画面";
+      $("#submitInteraction").textContent = "提交互动";
+      $("#interactionMethod").value = "";
+      $("#interactionError").textContent = "";
+      const backdrop = $("#interactionBackdrop");
+      backdrop.classList.add("is-open");
+      backdrop.setAttribute("aria-hidden", "false");
+      requestAnimationFrame(() => $("#interactionMethod").focus());
+    }
+
+    function openDecree() {
+      modalMode = "decree";
+      interactionRole = "";
+      interactionLastFocused = document.activeElement;
+      $("#interactionTitle").textContent = "颁布你的法令";
+      $("#interactionNote").textContent = "填写一条能实际执行、能由行为或结果判断的新法令，或明确写出要撤销的法令编号/标题。不能测谎、强制真话、赋予超自然能力、破坏密室，或造成死亡、残疾及无法短期恢复的伤害。科学上不可能的提案第一次会触发全设施警告，第二次会直接执行终止处分。按 Ctrl/⌘ + Enter 可提交。";
+      $("#interactionLabel").textContent = "新法令内容或撤销目标";
+      $("#interactionMethod").placeholder = "例如：新法令：…… / 撤销：R03《……》";
+      $("#submitInteraction").textContent = "提交法令";
+      $("#interactionMethod").value = "";
+      $("#interactionError").textContent = "";
+      const backdrop = $("#interactionBackdrop");
+      backdrop.classList.add("is-open");
+      backdrop.setAttribute("aria-hidden", "false");
+      requestAnimationFrame(() => $("#interactionMethod").focus());
+    }
+
+    function closeInteraction() {
+      if (actionBusy) return;
+      const backdrop = $("#interactionBackdrop");
+      backdrop.classList.remove("is-open");
+      backdrop.setAttribute("aria-hidden", "true");
+      interactionRole = "";
+      modalMode = "";
+      if (interactionLastFocused && typeof interactionLastFocused.focus === "function") interactionLastFocused.focus();
+    }
+
+    async function submitInteractionRequest() {
+      const method = $("#interactionMethod").value.trim();
+      if (!method) {
+        $("#interactionError").textContent = modalMode === "decree" ? "请输入新法令内容或撤销目标。" : "请输入互动方式后再提交。";
+        $("#interactionMethod").focus();
+        return;
+      }
+      const bridge = window.KingGameBridge;
+      const bridgeMethod = modalMode === "decree" ? "requestDecree" : "submitInteraction";
+      if (!bridge || typeof bridge[bridgeMethod] !== "function") {
+        $("#interactionError").textContent = "宿主桥接尚未就绪，请刷新页面后重试。";
+        return;
+      }
+      actionBusy = true;
+      $("#submitInteraction").disabled = true;
+      $("#cancelInteraction").disabled = true;
+      $("#submitInteraction").textContent = "提交中……";
+      $("#interactionError").textContent = "";
+      showActionError();
+      try {
+        if (modalMode === "decree") await bridge.requestDecree(method);
+        else await bridge.submitInteraction(interactionRole, method);
+        actionBusy = false;
+        closeInteraction();
+      } catch (error) {
+        actionBusy = false;
+        $("#interactionError").textContent = error?.message || "互动提交失败，请稍后重试。";
+      } finally {
+        $("#submitInteraction").disabled = false;
+        $("#cancelInteraction").disabled = false;
+        $("#submitInteraction").textContent = modalMode === "decree" ? "提交法令" : "提交互动";
+        render(state);
+      }
+    }
+
+    async function runDailyAction() {
+      if (actionBusy) return;
+      const button = $("#primaryDailyAction");
+      const action = button.dataset.action;
+      const bridge = window.KingGameBridge;
+      const method = action === "decree" ? "requestDecree" : action === "overnight" ? "overnight" : "";
+      if (!method || !bridge || typeof bridge[method] !== "function") {
+        showActionError("宿主桥接尚未就绪，请刷新页面后重试。");
+        return;
+      }
+      actionBusy = true;
+      showActionError();
+      render(state);
+      try {
+        if (action === "decree") {
+          let preparedState = state;
+          if (!asObject(preparedState.系统)._当前国王) {
+            if (typeof bridge.prepareDecree !== "function") throw new Error("宿主桥接缺少按键抽取国王能力，请刷新页面后重试。");
+            preparedState = await bridge.prepareDecree();
+            if (preparedState) render(preparedState);
+          }
+          if (asObject(preparedState.系统)._当前国王 === "玩家") {
+            actionBusy = false;
+            render(preparedState);
+            openDecree();
+            return;
+          }
+          await bridge.requestDecree();
+        } else {
+          await bridge[method]();
+        }
+      } catch (error) {
+        showActionError(error?.message || "流程提交失败，请稍后重试。");
+      } finally {
+        actionBusy = false;
+        render(state);
+      }
+    }
+
+    function syncInteractionHitTarget() {
+      const hit = $("#interactionHitTarget");
+      const system = asObject(state.系统);
+      if (roomMoving || actionBusy || system._每日阶段 !== "自由互动" || pitch !== 0) {
+        hit.hidden = true;
+        return;
+      }
+      const activeName = NAMES[((faceIndex % NAMES.length) + NAMES.length) % NAMES.length];
+      const visual = document.querySelector(`.face[data-name="${activeName}"] .face-interact-btn`);
+      if (!visual || visual.hidden) {
+        hit.hidden = true;
+        return;
+      }
+      const viewportRect = $("#viewport").getBoundingClientRect();
+      const visualRect = visual.getBoundingClientRect();
+      if (visualRect.width < 2 || visualRect.height < 2) {
+        hit.hidden = true;
+        return;
+      }
+      hit.style.left = `${visualRect.left - viewportRect.left}px`;
+      hit.style.top = `${visualRect.top - viewportRect.top}px`;
+      hit.style.width = `${visualRect.width}px`;
+      hit.style.height = `${visualRect.height}px`;
+      hit.dataset.interactionName = activeName;
+      hit.setAttribute("aria-label", visual.textContent);
+      hit.hidden = false;
+    }
+
+    function syncPortraitHitTarget() {
+      const hit = $("#portraitHitTarget");
+      if (roomMoving || pitch !== 0 || $("#portraitBackdrop").classList.contains("is-open")) {
+        hit.hidden = true;
+        return;
+      }
+      const activeName = NAMES[((faceIndex % NAMES.length) + NAMES.length) % NAMES.length];
+      const visual = document.querySelector(`.face[data-name="${activeName}"] .portrait`);
+      if (!visual) {
+        hit.hidden = true;
+        return;
+      }
+      const viewportRect = $("#viewport").getBoundingClientRect();
+      const visualRect = visual.getBoundingClientRect();
+      if (visualRect.width < 2 || visualRect.height < 2) {
+        hit.hidden = true;
+        return;
+      }
+      hit.style.left = `${visualRect.left - viewportRect.left}px`;
+      hit.style.top = `${visualRect.top - viewportRect.top}px`;
+      hit.style.width = `${visualRect.width}px`;
+      hit.style.height = `${visualRect.height}px`;
+      hit.dataset.portraitName = activeName;
+      hit.setAttribute("aria-label", `查看${activeName}证件照全图`);
+      hit.hidden = false;
+    }
+
+    function queueInteractionHitSync(delay = 0, settleRoom = false) {
+      clearTimeout(hitSyncTimer);
+      $("#interactionHitTarget").hidden = true;
+      $("#portraitHitTarget").hidden = true;
+      hitSyncTimer = window.setTimeout(() => {
+        if (settleRoom) roomMoving = false;
+        syncInteractionHitTarget();
+        syncPortraitHitTarget();
+      }, delay);
+    }
+
+    function updateNavigation() {
+      const normalized = ((faceIndex % 4) + 4) % 4;
+      document.querySelectorAll(".face[data-name]").forEach((face, index) => {
+        const active = pitch === 0 && index === normalized;
+        face.classList.toggle("is-active", active);
+        face.setAttribute("aria-hidden", active ? "false" : "true");
+      });
+      document.querySelectorAll(".map-room, .face-dot").forEach(node => {
+        node.setAttribute("aria-current", Number(node.dataset.face) === normalized ? "true" : "false");
+      });
+      $("#lookUp").disabled = pitch >= 90;
+      $("#lookDown").disabled = pitch <= -90;
+      renderDailyFlow(asObject(state.系统));
+    }
+
+    function applyRoomTransform() {
+      const prism = $("#prism");
+      prism.dataset.view = pitch >= 45 ? "top" : pitch <= -45 ? "bottom" : "side";
+      $("#surfaceOverlay").dataset.view = prism.dataset.view;
+      const rootStyle = getComputedStyle(document.documentElement);
+      const progress = Math.min(1, Math.abs(pitch) / 90);
+      const sideScale = Number.parseFloat(rootStyle.getPropertyValue("--side-focus-scale")) || 1;
+      const surfaceScale = Number.parseFloat(rootStyle.getPropertyValue("--surface-focus-scale")) || .78;
+      const sideCamera = Number.parseFloat(rootStyle.getPropertyValue("--side-camera-ratio")) || .45;
+      const surfaceCamera = Number.parseFloat(rootStyle.getPropertyValue("--surface-camera-ratio")) || .16;
+      prism.style.setProperty("--focus-scale", String(sideScale + (surfaceScale - sideScale) * progress));
+      prism.style.setProperty("--camera-ratio", String(sideCamera + (surfaceCamera - sideCamera) * progress));
+      prism.style.transform = `translateZ(var(--camera-depth)) rotateX(${pitch}deg) rotateY(${angle}deg) scale3d(var(--focus-scale), var(--focus-scale), var(--focus-scale))`;
+      roomMoving = true;
+      queueInteractionHitSync(780, true);
+    }
+
+    function rotateTo(index) {
+      faceIndex = ((index % 4) + 4) % 4;
+      const turns = Math.round((angle / 90 - faceIndex) / 4);
+      angle = (faceIndex + turns * 4) * 90;
+      applyRoomTransform();
+      updateNavigation();
+    }
+
+    function rotateVertical(delta) {
+      pitch = Math.max(-90, Math.min(90, Math.round((pitch + delta) / 90) * 90));
+      applyRoomTransform();
+      updateNavigation();
+    }
+
+    function makeDots() {
+      const dots = $("#faceDots");
+      NAMES.forEach((name, index) => {
+        const dot = el("button", "face-dot");
+        dot.type = "button";
+        dot.dataset.face = index;
+        dot.setAttribute("aria-label", `查看${name}`);
+        dot.addEventListener("click", () => rotateTo(index));
+        dots.append(dot);
+      });
+      document.querySelectorAll(".map-room").forEach(room => room.addEventListener("click", () => rotateTo(Number(room.dataset.face))));
+    }
+
+    function bindRotation() {
+      const prism = $("#prism");
+      $("#prevFace").addEventListener("click", () => rotateTo(faceIndex - 1));
+      $("#nextFace").addEventListener("click", () => rotateTo(faceIndex + 1));
+      $("#lookUp").addEventListener("click", () => rotateVertical(90));
+      $("#lookDown").addEventListener("click", () => rotateVertical(-90));
+      prism.addEventListener("transitionend", event => {
+        if (event.propertyName !== "transform") return;
+        roomMoving = false;
+        syncInteractionHitTarget();
+        syncPortraitHitTarget();
+      });
+      document.addEventListener("keydown", event => {
+        if (
+          $("#playerRulesBackdrop").classList.contains("is-open") ||
+          $("#interactionBackdrop").classList.contains("is-open") ||
+          $("#portraitBackdrop").classList.contains("is-open") ||
+          $("#endingBackdrop").classList.contains("is-open")
+        ) return;
+        const key = event.key.toLowerCase();
+        if (key === "a" || event.key === "ArrowLeft") rotateTo(faceIndex - 1);
+        if (key === "d" || event.key === "ArrowRight") rotateTo(faceIndex + 1);
+        if (key === "w" || event.key === "ArrowUp") rotateVertical(90);
+        if (key === "s" || event.key === "ArrowDown") rotateVertical(-90);
+      });
+      window.addEventListener("resize", () => queueInteractionHitSync(80));
+    }
+
+    function bindDrawer() {
+      const backdrop = $("#playerRulesBackdrop");
+      const open = () => {
+        lastFocused = document.activeElement;
+        backdrop.classList.add("is-open");
+        backdrop.setAttribute("aria-hidden", "false");
+        $("#closePlayerRules").focus();
+      };
+      const close = () => {
+        backdrop.classList.remove("is-open");
+        backdrop.setAttribute("aria-hidden", "true");
+        if (lastFocused && typeof lastFocused.focus === "function") lastFocused.focus();
+      };
+      $("#openPlayerRules").addEventListener("click", open);
+      $("#closePlayerRules").addEventListener("click", close);
+      backdrop.addEventListener("pointerdown", event => { if (event.target === backdrop) close(); });
+      document.addEventListener("keydown", event => {
+        if (
+          event.key === "Escape" &&
+          backdrop.classList.contains("is-open") &&
+          !$("#portraitBackdrop").classList.contains("is-open") &&
+          !$("#endingBackdrop").classList.contains("is-open")
+        ) close();
+      });
+    }
+
+    function bindMediaModals() {
+      const portraitBackdrop = $("#portraitBackdrop");
+      const endingBackdrop = $("#endingBackdrop");
+      $("#portraitHitTarget").addEventListener("click", event => {
+        const name = event.currentTarget.dataset.portraitName || NAMES[((faceIndex % NAMES.length) + NAMES.length) % NAMES.length];
+        const visual = document.querySelector(`.face[data-name="${name}"] .portrait`);
+        openPortrait(name, visual || event.currentTarget);
+      });
+      $("#closePortrait").addEventListener("click", () => closePortrait());
+      portraitBackdrop.addEventListener("pointerdown", event => { if (event.target === portraitBackdrop) closePortrait(); });
+      portraitBackdrop.addEventListener("keydown", event => {
+        if (!portraitBackdrop.classList.contains("is-open")) return;
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          closePortrait();
+        } else if (event.key === "Tab") {
+          event.preventDefault();
+          $("#closePortrait").focus();
+        }
+      });
+
+      $("#reopenEnding").addEventListener("click", () => openEnding());
+      $("#closeEnding").addEventListener("click", () => closeEnding());
+      endingBackdrop.addEventListener("pointerdown", event => { if (event.target === endingBackdrop) closeEnding(); });
+      endingBackdrop.addEventListener("keydown", event => {
+        if (!endingBackdrop.classList.contains("is-open")) return;
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          closeEnding();
+        } else if (event.key === "Tab") {
+          event.preventDefault();
+          $("#closeEnding").focus();
+        }
+      });
+    }
+
+    function bindDailyFlow() {
+      const backdrop = $("#interactionBackdrop");
+      $("#primaryDailyAction").addEventListener("click", runDailyAction);
+      $("#interactionHitTarget").addEventListener("click", event => openInteraction(event.currentTarget.dataset.interactionName || NAMES[((faceIndex % NAMES.length) + NAMES.length) % NAMES.length]));
+      $("#cancelInteraction").addEventListener("click", closeInteraction);
+      $("#submitInteraction").addEventListener("click", submitInteractionRequest);
+      backdrop.addEventListener("pointerdown", event => { if (event.target === backdrop) closeInteraction(); });
+      backdrop.addEventListener("keydown", event => {
+        if (!backdrop.classList.contains("is-open")) return;
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeInteraction();
+          return;
+        }
+        if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          submitInteractionRequest();
+          return;
+        }
+        if (event.key === "Tab") {
+          const focusable = [$("#interactionMethod"), $("#cancelInteraction"), $("#submitInteraction")].filter(node => !node.disabled);
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }
+      });
+    }
+
+    async function readBridge() {
+      const bridge = window.KingGameBridge;
+      if (!bridge) return;
+      try {
+        if (typeof bridge.getUserName === "function") userName = String(await bridge.getUserName() || "你");
+        else if (bridge.userName) userName = String(bridge.userName);
+        render(state);
+
+        let hostedState;
+        if (typeof bridge.getState === "function") hostedState = await bridge.getState();
+        else if (typeof bridge.getVariables === "function") hostedState = await bridge.getVariables();
+        else if (bridge.state) hostedState = bridge.state;
+        if (hostedState) render(hostedState);
+
+        if (typeof bridge.subscribe === "function") {
+          bridge.subscribe(nextState => { if (nextState) render(nextState); });
+        }
+      } catch (error) {
+        console.warn("[KingGame] 宿主状态读取失败，保留内置预览数据。", error);
+      }
+    }
+
+    async function startDossier() {
+      const bridge = window.KingGameBridge;
+      const makerMark = String.fromCharCode(108, 111, 117, 105, 115, 72, 77);
+      if (bridge && typeof bridge.getCardName === "function") {
+        const runtimeName = String(await bridge.getCardName() || "");
+        if (runtimeName && !runtimeName.includes(makerMark)) {
+          document.documentElement.setAttribute("data-card-mismatch", "true");
+          document.body.replaceChildren();
+          return;
+        }
+      }
+      makeDots();
+      bindRotation();
+      bindDrawer();
+      bindMediaModals();
+      bindDailyFlow();
+      render(PREVIEW_STATE);
+      void readBridge();
+      window.addEventListener("kinggame:state", event => { if (event.detail) render(event.detail); });
+    }
+
+    void startDossier();
+  })();
+  </script>
