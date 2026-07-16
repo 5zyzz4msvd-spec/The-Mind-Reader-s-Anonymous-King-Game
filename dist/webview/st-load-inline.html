@@ -907,7 +907,7 @@
     A: '密室真相未明',
     B: '真相只揭开一部分',
     C: '完整真相与全员忏悔',
-    D: '完整真相、全员忏悔与最高真实好感',
+    D: '完整真相、全员忏悔与王可可的和解',
     E: '流程因第二次现实违例而提前终止'
   };
   var ENDING_SUMMARIES = {
@@ -1043,8 +1043,8 @@
     return system;
   }
 
-  function isExactHundred(value) {
-    return Number(value) === 100;
+  function isAtLeast(value, threshold) {
+    return Number(value) >= threshold;
   }
 
   function decideEndingRoute(cache) {
@@ -1054,13 +1054,9 @@
       return 'A';
     }
     var complete = ending.t === true && ending.c.n1 === true && ending.c.n2 === true && ending.c.n3 === true;
-    var n1 = source.n1 && source.n1.r ? source.n1.r : {};
-    var n2 = source.n2 && source.n2.r ? source.n2.r : {};
-    var n3 = source.n3 && source.n3.r ? source.n3.r : {};
     var n4 = source.n4 && source.n4.r ? source.n4.r : {};
-    var kekeLovesEveryone = isExactHundred(n4.n1) && isExactHundred(n4.n2) && isExactHundred(n4.n3) && isExactHundred(n4.u);
-    var everyoneLovesPlayer = isExactHundred(n1.u) && isExactHundred(n2.u) && isExactHundred(n3.u) && isExactHundred(n4.u);
-    if (complete && kekeLovesEveryone && everyoneLovesPlayer) {
+    var kekeReconcilesWithEveryone = isAtLeast(n4.n1, 80) && isAtLeast(n4.n2, 80) && isAtLeast(n4.n3, 80) && isAtLeast(n4.u, 80);
+    if (complete && kekeReconcilesWithEveryone) {
       return 'D';
     }
     if (complete) {
