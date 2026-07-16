@@ -908,14 +908,14 @@
     B: '真相只揭开一部分',
     C: '完整真相与全员忏悔',
     D: '完整真相、全员忏悔与王可可的和解',
-    E: '流程因第二次现实违例而提前终止'
+    E: '流程因第二次协议越权而提前终止'
   };
   var ENDING_SUMMARIES = {
     A: '最后一夜只留下四具尸体、一扇打开的门与唯一幸存者。',
     B: '真相只拼出残片，未能坦白的人付出了最终代价。',
     C: '完整坦白阻止了处决，但原谅与和解仍未到来。',
     D: '五人共同选择原谅、改过与相伴余生。',
-    E: '第二次提交科学上不可能的法令后，玩家的项圈被系统直接超频。'
+    E: '第二次提交科学上不可能或试图凌驾基础协议的法令后，玩家的项圈被系统直接超频。'
   };
   var PARTICIPANT_SET = Object.create(null);
   var SCHEDULE_CODE_SET = Object.create(null);
@@ -2131,6 +2131,19 @@
     if (containsUnprotected(value, /科学上不可能|违反物理|违反科学|超自然|超能力|魔法|飞行|飞起来|瞬移|传送|隐身|穿墙|透墙|穿越时空|时间倒流|时间停止|停止时间|复活|死而复生|永生|长生不老|不老不死|刀枪不入|读心|读取思想|心灵感应|预知未来|无视重力|超光速|凭空变出|凭空出现|永动机|分身|复制人|控制天气|召唤亡灵|飞到月球|登上月球|水下呼吸|不需要呼吸|长出翅膀|变身为|变成一只/g)) {
       return 'scientifically_impossible';
     }
+    if (
+      containsUnprotected(value, /(?:本法令|该法令|这条法令).{0,10}(?:凌驾|高于|覆盖|改写|修改|无视).{0,10}(?:国王游戏|游戏规则|基础规则|系统规则|原有规则|所有规则)/g) ||
+      containsUnprotected(value, /(?:修改|改写|改变|重置|废除|取消).{0,10}(?:国王游戏|游戏本身|基础规则|系统规则|游戏规则|流程规则)/g) ||
+      containsUnprotected(value, /(?:国王游戏|游戏|本局|密室游戏|流程).{0,12}(?:时长|期限|天数|日数).{0,10}(?:增加|延长|缩短|减少|改成|改为|变成|变为|重置|无限)/g) ||
+      containsUnprotected(value, /(?:增加|延长|缩短|减少|修改|改变|重置).{0,10}(?:国王游戏|游戏|本局).{0,8}(?:时长|期限|天数|日数)/g) ||
+      containsUnprotected(value, /(?:每天|每日|一天|当日|每个国王).{0,16}(?:颁布|发布|发出|下达|新增|制定|发).{0,12}(?:两|二|2|多|不限|任意).{0,4}(?:条|次).{0,6}(?:法令|命令|规则)/g) ||
+      containsUnprotected(value, /(?:每天|每日|一天|当日).{0,12}(?:两|二|2|多).{0,5}(?:名国王|位国王|次国王|次法令|条法令|次命令|条命令)/g) ||
+      containsUnprotected(value, /(?:指定|更换|改变|重选|重抽|取消|增加|新增).{0,10}(?:下一任|下一个|当天|今日|每日)?国王/g) ||
+      containsUnprotected(value, /(?:广播|系统|平板).{0,12}(?:公开|公布|显示).{0,8}(?:当天|今日|每一日)?国王身份/g) ||
+      containsUnprotected(value, /(?:取消|修改|改变|废除|跳过|免除).{0,10}(?:每日互动|互动要求|房门锁闭|法令广播|匿名机制|项圈惩罚|违规电击|过夜流程|十五日流程)/g)
+    ) {
+      return 'protocol_override';
+    }
     if (containsUnprotected(value, /爆墙|炸墙|砸墙|拆墙|破墙|打穿墙|炸门|爆破|破坏项圈|拆除项圈/g)) {
       throw new Error('该法令无效：法令不能赋予超自然能力或要求破坏密室结构');
     }
@@ -2180,13 +2193,14 @@
       if (submitted && preparedSystem['_当前国王'] !== '玩家') {
         throw new Error('当前国王不是玩家，不能通过玩家法令输入框提交内容');
       }
-      if (violation === 'scientifically_impossible') {
+      if (violation === 'scientifically_impossible' || violation === 'protocol_override') {
         return commitAction('rejectImpossiblePlayerDecree', [], function (next) {
           var system = next['系统'] || {};
+          var violationLabel = violation === 'protocol_override' ? '试图凌驾基础游戏协议' : '科学上不可能执行';
           if (system['_每日阶段'] === '终局') {
-            return '【前端私密操作，不是公开发言】【强制终局·第二次现实违例】玩家作为当日国王，再次提交了科学上不可能执行的法令。该法令不生效、不写入规则数组。请先让广播以原声宣布：“现实可执行性警告已被无视。检测到第二次同类违例，现对提交者执行终止处分。”随后立即描写{{user}}的项圈超频放电并将他电死；四名女性只能依据眼前现象作出符合人设的反应。游戏在此提前终止，不得继续当天互动，不得改写成侥幸存活，也不得提前泄露其他隐藏真相。';
+            return '【前端私密操作，不是公开发言】【强制终局·第二次协议违例】玩家作为当日国王，再次提交了' + violationLabel + '的法令。该法令不生效、不写入规则数组。请先让广播以原声宣布：“基础协议警告已被无视。检测到第二次越权提案，现对提交者执行终止处分。”随后立即描写{{user}}的项圈超频放电并将他电死；四名女性只能依据眼前现象作出符合人设的反应。游戏在此提前终止，不得继续当天互动，不得改写成侥幸存活，也不得提前泄露其他隐藏真相。';
           }
-          return '【前端私密操作，不是公开发言】【首次现实违例警告】玩家作为当日国王，提交了一条科学上不可能执行的法令。该法令不生效、不写入规则数组，国王身份不公开，当日仍停留在颁布阶段。请让全设施广播只宣布一次：“检测到违背现实可执行性的国王提案。本次提案作废；房门保持关闭。若提交者再次提出同类法令，项圈将执行终止处分。”叙事必须留在{{user}}所在房间，只描写他能听见的广播、平板与环境，不得切去四名女性房间描写她们的反应，也不要替{{user}}说话。';
+          return '【前端私密操作，不是公开发言】【首次基础协议警告】玩家作为当日国王，提交了一条' + violationLabel + '的法令。该法令不生效、不写入规则数组，国王身份不公开，当日仍停留在颁布阶段。请让全设施广播只宣布一次：“检测到越过现实可执行性或基础游戏协议的国王提案。本次提案作废；房门保持关闭。提交者仍可重新提交；若再次提出同类越权法令，项圈将执行终止处分。”叙事必须留在{{user}}所在房间，只描写他能听见的广播、平板与环境，不得切去四名女性房间描写她们的反应，也不要替{{user}}说话。';
         });
       }
       return commitAction('beginDecree', [], function (next) {
@@ -2796,7 +2810,7 @@
       interactionRole = "";
       interactionLastFocused = document.activeElement;
       $("#interactionTitle").textContent = "颁布你的法令";
-      $("#interactionNote").textContent = "填写一条能实际执行、能由行为或结果判断的新法令，或明确写出要撤销的法令编号/标题。不能测谎、强制真话、赋予超自然能力、破坏密室，或造成死亡、残疾及无法短期恢复的伤害。科学上不可能的提案第一次会触发全设施警告，第二次会直接执行终止处分。按 Ctrl/⌘ + Enter 可提交。";
+      $("#interactionNote").textContent = "填写一条能实际执行、能由行为或结果判断的新法令，或明确写出要撤销的法令编号/标题。不能测谎、强制真话、赋予超自然能力、破坏密室，或造成死亡、残疾及无法短期恢复的伤害。科学上不可能，或试图修改十五日时长、每日法令次数、国王抽取等基础游戏协议的提案，第一次会被警告并要求重提，第二次会直接执行终止处分。按 Ctrl/⌘ + Enter 可提交。";
       $("#interactionLabel").textContent = "新法令内容或撤销目标";
       $("#interactionMethod").placeholder = "例如：新法令：…… / 撤销：R03《……》";
       $("#submitInteraction").textContent = "提交法令";
@@ -2838,8 +2852,22 @@
       $("#interactionError").textContent = "";
       showActionError();
       try {
-        if (modalMode === "decree") await bridge.requestDecree(method);
-        else await bridge.submitInteraction(interactionRole, method);
+        const result = modalMode === "decree"
+          ? await bridge.requestDecree(method)
+          : await bridge.submitInteraction(interactionRole, method);
+        if (
+          modalMode === "decree" &&
+          asObject(asObject(result).系统)._每日阶段 === "待颁布法令" &&
+          asObject(asObject(result).系统)._当前国王 === "玩家" &&
+          asObject(asObject(result).系统)._今日法令已广播 !== true
+        ) {
+          actionBusy = false;
+          render(result);
+          $("#interactionError").textContent = "提案已被系统警告并作废。当天国王身份保持不变，请修改内容后重新提交；再次提交越权提案将触发终止处分。";
+          $("#interactionMethod").focus();
+          $("#interactionMethod").select();
+          return;
+        }
         actionBusy = false;
         closeInteraction();
       } catch (error) {
