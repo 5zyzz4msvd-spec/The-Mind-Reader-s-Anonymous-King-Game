@@ -1363,7 +1363,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var VERSION = 9;
+  var VERSION = 10;
   var SCHEDULE_ALGORITHM_VERSION = 6;
   var DAYS = 15;
   var FIXED_KEKE_DAY = 10;
@@ -1377,6 +1377,21 @@
   var INNER_NAMES = { n1: '林安', n2: '穆裳希', n3: '张曲溪', n4: '王可可', u: '玩家' };
   var ARCHIVE_ALIAS_BY_NAME = { '林安': 'n1', '穆裳希': 'n2', '张曲溪': 'n3', '王可可': 'n4' };
   var ARCHIVE_ALIASES = ['n1', 'n2', 'n3', 'n4'];
+  var COMPLIANCE_STATES = {
+    '未开放': true,
+    '待召开': true,
+    '待审计': true,
+    '需补履行': true,
+    '已通过': true
+  };
+  var COMPLIANCE_RESULTS = {
+    '已履行': true,
+    '持续合规': true,
+    '今日无到期义务': true,
+    '尚未到期': true,
+    '到期未完成': true,
+    '违令已处置': true
+  };
   var ENDING_TITLES = {
     A: '唯一幸存者',
     B: '迟来的残片',
@@ -1526,6 +1541,163 @@
       '基线': { n1: flags.n1, n2: flags.n2, n3: flags.n3, n4: flags.n4 },
       '授权': authorization
     };
+  }
+
+  function activeDecrees(source) {
+    var variables = source && typeof source === 'object' ? source : {};
+    var roles = variables['角色'] && typeof variables['角色'] === 'object' ? variables['角色'] : {};
+    var holders = [{ name: '玩家', value: variables['玩家'] }];
+    WOMEN.forEach(function (name) {
+      holders.push({ name: name, value: roles[name] });
+    });
+    var rules = [];
+    holders.forEach(function (holder) {
+      var list = holder.value && Array.isArray(holder.value['颁布规则']) ? holder.value['颁布规则'] : [];
+      list.forEach(function (rule) {
+        if (!rule || typeof rule !== 'object' || rule['状态'] !== '生效') return;
+        rules.push({
+          '颁布者': holder.name,
+          '规则ID': typeof rule.id === 'string' ? rule.id : '',
+          '标题': typeof rule['标题'] === 'string' ? rule['标题'] : '',
+          '全文': typeof rule['全文'] === 'string' ? rule['全文'] : '',
+          '颁布日': Number.isFinite(Number(rule['颁布日'])) ? Math.floor(Number(rule['颁布日'])) : 0,
+          '优先级': Number.isFinite(Number(rule['优先级'])) ? Math.floor(Number(rule['优先级'])) : 0
+        });
+      });
+    });
+    rules.sort(function (left, right) {
+      var ownerDifference = PARTICIPANTS.indexOf(left['颁布者']) - PARTICIPANTS.indexOf(right['颁布者']);
+      if (ownerDifference) return ownerDifference;
+      if (left['规则ID'] !== right['规则ID']) return left['规则ID'] < right['规则ID'] ? -1 : 1;
+      if (left['优先级'] !== right['优先级']) return left['优先级'] - right['优先级'];
+      return left['全文'] < right['全文'] ? -1 : left['全文'] > right['全文'] ? 1 : 0;
+    });
+    return rules;
+  }
+
+  function complianceRuleSignature(source) {
+    var payload = activeDecrees(source).map(function (rule) {
+      return [
+        rule['颁布者'], rule['规则ID'], rule['标题'], rule['全文'],
+        rule['颁布日'], rule['优先级']
+      ];
+    });
+    return ('00000000' + fnv1a('compliance-v1\u0000' + JSON.stringify(payload)).toString(16)).slice(-8);
+  }
+
+  function createComplianceMeeting(day, state, round, signature) {
+    return {
+      '日期': normalizeDay(day),
+      '轮次': Math.max(0, Math.floor(Number(round) || 0)),
+      '状态': COMPLIANCE_STATES[state] ? state : '未开放',
+      '规则签名': typeof signature === 'string' ? signature : ''
+    };
+  }
+
+  function normalizeComplianceMeeting(value, day, phase, playerInteractions) {
+    var source = value && typeof value === 'object' ? value : {};
+    var normalizedDay = normalizeDay(day);
+    var complete = normalizePlayerInteractions(playerInteractions).length === WOMEN.length;
+    var sameDay = Number(source['日期']) === normalizedDay;
+    var state = sameDay && COMPLIANCE_STATES[source['状态']] ? source['状态'] : '未开放';
+    var round = sameDay ? Math.max(0, Math.floor(Number(source['轮次']) || 0)) : 0;
+    var signature = sameDay && typeof source['规则签名'] === 'string' ? source['规则签名'] : '';
+
+    if (phase === '待颁布法令') {
+      return createComplianceMeeting(normalizedDay, '未开放', 0, '');
+    }
+    if (phase === '自由互动') {
+      if (!complete) return createComplianceMeeting(normalizedDay, '未开放', round, signature);
+      if (state === '未开放') state = '待召开';
+      return createComplianceMeeting(normalizedDay, state, round, signature);
+    }
+    if ((phase === '夜间' || phase === '终局') && !sameDay) {
+      return createComplianceMeeting(normalizedDay, '已通过', 0, '');
+    }
+    return createComplianceMeeting(normalizedDay, state, round, signature);
+  }
+
+  function complianceAuditResult(source, meeting, rules, signature) {
+    var variables = source && typeof source === 'object' ? source : {};
+    var system = variables['系统'] && typeof variables['系统'] === 'object' ? variables['系统'] : variables;
+    var audit = system && system['法令履行审计'] && typeof system['法令履行审计'] === 'object'
+      ? system['法令履行审计']
+      : {};
+    var result = Array.isArray(audit['结果']) ? audit['结果'] : [];
+    var expected = Object.create(null);
+    var duplicateExpected = false;
+    (rules || []).forEach(function (rule) {
+      var key = rule['颁布者'] + '\u0000' + rule['规则ID'];
+      if (expected[key]) duplicateExpected = true;
+      expected[key] = true;
+    });
+    var seen = Object.create(null);
+    var incomplete = 0;
+    var entriesValid = result.length === (rules || []).length && !duplicateExpected;
+    result.forEach(function (entry) {
+      if (!entry || typeof entry !== 'object') {
+        entriesValid = false;
+        return;
+      }
+      var owner = String(entry['颁布者'] || '');
+      var ruleId = String(entry['规则ID'] || '');
+      var judgement = String(entry['判定'] || '');
+      var key = owner + '\u0000' + ruleId;
+      if (!PARTICIPANT_SET[owner] || !expected[key] || seen[key] || !COMPLIANCE_RESULTS[judgement] || typeof entry['说明'] !== 'string') {
+        entriesValid = false;
+        return;
+      }
+      seen[key] = true;
+      if (judgement === '到期未完成') incomplete += 1;
+    });
+    Object.keys(expected).forEach(function (key) {
+      if (!seen[key]) entriesValid = false;
+    });
+    var fresh = meeting['轮次'] > 0
+      && Number(audit['日期']) === meeting['日期']
+      && Number(audit['会议轮次']) === meeting['轮次']
+      && String(audit['规则签名'] || '') === signature
+      && entriesValid;
+    return { fresh: fresh, incomplete: fresh ? incomplete : 0 };
+  }
+
+  function syncComplianceState(existingVariables) {
+    var current = existingVariables && typeof existingVariables === 'object' ? existingVariables : {};
+    var next = {};
+    Object.keys(current).forEach(function (key) { next[key] = current[key]; });
+    var system = copySystem(current['系统'] && typeof current['系统'] === 'object' ? current['系统'] : {});
+    var phase = system['_每日阶段'];
+    var interactions = normalizePlayerInteractions(system['_玩家已互动角色']);
+    var complete = interactions.length === WOMEN.length;
+    var rules = activeDecrees(current);
+    var signature = complianceRuleSignature(current);
+    var meeting = normalizeComplianceMeeting(system['_法令履行会议'], system['_当前天数'], phase, interactions);
+    var emergencyEnding = phase === '终局'
+      && system.internal && system.internal.e && system.internal.e.r === 'E' && system.internal.e.d === true;
+
+    if (phase === '自由互动' && complete) {
+      if (meeting['规则签名'] && meeting['规则签名'] !== signature) {
+        meeting['状态'] = '待召开';
+      }
+      meeting['规则签名'] = signature;
+      if (meeting['状态'] === '待审计' || meeting['状态'] === '需补履行' || meeting['状态'] === '已通过') {
+        var evaluation = complianceAuditResult(current, meeting, rules, signature);
+        if (evaluation.fresh) {
+          meeting['状态'] = evaluation.incomplete > 0 ? '需补履行' : '已通过';
+        } else if (meeting['状态'] !== '待审计') {
+          meeting['状态'] = '待召开';
+        }
+      }
+    }
+
+    system['_法令履行会议'] = meeting;
+    system['_可过夜'] = !emergencyEnding
+      && phase === '自由互动'
+      && complete
+      && meeting['日期'] === normalizeDay(system['_当前天数'])
+      && meeting['状态'] === '已通过';
+    next['系统'] = system;
+    return next;
   }
 
   function normalizeEndingState(value, relationshipDecreeFound) {
@@ -1726,7 +1898,6 @@
 
   function repairDailyState(current, next) {
     var playerInteractions = normalizePlayerInteractions(current['_玩家已互动角色']);
-    var canSleep = playerInteractions.length === WOMEN.length;
     var decreeBroadcast = current['_今日法令已广播'] === true;
     var phase = current['_每日阶段'];
 
@@ -1734,10 +1905,9 @@
     var emergencyEnding = phase === '终局' && cachedEnding && cachedEnding.r === 'E' && cachedEnding.d === true;
     if (emergencyEnding) {
       decreeBroadcast = false;
-      canSleep = false;
     } else if (phase === '终局' && next['_当前天数'] === DAYS) {
       decreeBroadcast = true;
-    } else if (phase === '夜间' && canSleep) {
+    } else if (phase === '夜间') {
       decreeBroadcast = true;
     } else {
       phase = decreeBroadcast ? '自由互动' : '待颁布法令';
@@ -1748,7 +1918,13 @@
     next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
     next['_玩家已互动角色'] = playerInteractions;
     next['_最近互动请求'] = cloneInteractionRequest(current['_最近互动请求']);
-    next['_可过夜'] = canSleep && phase === '自由互动';
+    next['_法令履行会议'] = normalizeComplianceMeeting(
+      current['_法令履行会议'],
+      next['_当前天数'],
+      phase,
+      playerInteractions
+    );
+    next['_可过夜'] = false;
     return next;
   }
 
@@ -1758,6 +1934,7 @@
     next['_女性互动矩阵'] = createInteractionMatrix();
     next['_玩家已互动角色'] = [];
     next['_最近互动请求'] = null;
+    next['_法令履行会议'] = createComplianceMeeting(next['_当前天数'], '未开放', 0, '');
     next['_可过夜'] = false;
     return next;
   }
@@ -2101,7 +2278,7 @@
     });
 
     next['系统'] = initializeSystem(current['系统'], chatName);
-    return syncEndingState(next);
+    return syncComplianceState(syncEndingState(next));
   }
 
   function setCurrentDay(existingSystem, day) {
@@ -2119,6 +2296,8 @@
     next['_当前天数'] = derived['_当前天数'];
     next['_当前国王'] = derived['_当前国王'];
     next['_国王次数'] = derived['_国王次数'];
+    next['_法令履行会议'] = createComplianceMeeting(derived['_当前天数'], '未开放', 0, '');
+    next['_可过夜'] = false;
     return repairEndingPresentation(next);
   }
 
@@ -2148,7 +2327,8 @@
     next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
     next['_玩家已互动角色'] = normalizePlayerInteractions(current['_玩家已互动角色']);
     next['_最近互动请求'] = cloneInteractionRequest(current['_最近互动请求']);
-    next['_可过夜'] = next['_玩家已互动角色'].length === WOMEN.length;
+    next['_法令履行会议'] = createComplianceMeeting(current['_当前天数'], '未开放', 0, '');
+    next['_可过夜'] = false;
     return next;
   }
 
@@ -2169,6 +2349,7 @@
     next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
     next['_玩家已互动角色'] = normalizePlayerInteractions(current['_玩家已互动角色']);
     next['_最近互动请求'] = null;
+    next['_法令履行会议'] = createComplianceMeeting(current['_当前天数'], '未开放', 0, '');
     next['_可过夜'] = false;
 
     if (strikes >= 2) {
@@ -2219,7 +2400,15 @@
       '状态': '待生成',
       '档案门控': buildArchiveGate(current, roleName)
     };
-    next['_可过夜'] = playerInteractions.length === WOMEN.length;
+    var meeting = normalizeComplianceMeeting(
+      current['_法令履行会议'],
+      current['_当前天数'],
+      '自由互动',
+      playerInteractions
+    );
+    meeting['状态'] = playerInteractions.length === WOMEN.length ? '待召开' : '未开放';
+    next['_法令履行会议'] = meeting;
+    next['_可过夜'] = false;
     return next;
   }
 
@@ -2233,21 +2422,74 @@
     next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
     next['_玩家已互动角色'] = normalizePlayerInteractions(current['_玩家已互动角色']);
     next['_最近互动请求'] = request;
-    next['_可过夜'] = next['_玩家已互动角色'].length === WOMEN.length;
+    next['_法令履行会议'] = normalizeComplianceMeeting(
+      current['_法令履行会议'],
+      current['_当前天数'],
+      current['_每日阶段'],
+      next['_玩家已互动角色']
+    );
+    next['_可过夜'] = current['_可过夜'] === true
+      && next['_法令履行会议']['状态'] === '已通过';
+    return next;
+  }
+
+  function beginComplianceMeeting(existingSystem, variables) {
+    var current = requireInitializedSystem(existingSystem);
+    var playerInteractions = normalizePlayerInteractions(current['_玩家已互动角色']);
+    if (current['_每日阶段'] !== '自由互动' || current['_今日法令已广播'] !== true) {
+      throw new Error('只有自由互动阶段可以召开法令履行会议');
+    }
+    if (playerInteractions.length !== WOMEN.length) {
+      throw new Error('与四名角色完成互动后才能召开法令履行会议');
+    }
+    var source = variables && typeof variables === 'object'
+      ? variables
+      : { '系统': current, '玩家': {}, '角色': {} };
+    var signature = complianceRuleSignature(source);
+    var previous = normalizeComplianceMeeting(
+      current['_法令履行会议'],
+      current['_当前天数'],
+      current['_每日阶段'],
+      playerInteractions
+    );
+    var next = copySystem(current);
+    next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
+    next['_玩家已互动角色'] = playerInteractions;
+    next['_最近互动请求'] = cloneInteractionRequest(current['_最近互动请求']);
+    next['_法令履行会议'] = createComplianceMeeting(
+      current['_当前天数'],
+      '待审计',
+      previous['轮次'] + 1,
+      signature
+    );
+    next['_可过夜'] = false;
     return next;
   }
 
   function beginOvernight(existingSystem) {
     var current = requireInitializedSystem(existingSystem);
     var playerInteractions = normalizePlayerInteractions(current['_玩家已互动角色']);
-    if (current['_每日阶段'] !== '自由互动' || playerInteractions.length !== WOMEN.length) {
-      throw new Error('与四名角色完成互动后才能过夜');
+    var meeting = normalizeComplianceMeeting(
+      current['_法令履行会议'],
+      current['_当前天数'],
+      current['_每日阶段'],
+      playerInteractions
+    );
+    if (
+      current['_每日阶段'] !== '自由互动'
+      || playerInteractions.length !== WOMEN.length
+      || current['_可过夜'] !== true
+      || meeting['日期'] !== normalizeDay(current['_当前天数'])
+      || meeting['状态'] !== '已通过'
+    ) {
+      throw new Error('完成四名角色互动并通过本日法令履行审计后才能过夜');
     }
 
     var next = copySystem(current);
     next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
     next['_玩家已互动角色'] = playerInteractions;
     next['_最近互动请求'] = cloneInteractionRequest(current['_最近互动请求']);
+    next['_法令履行会议'] = meeting;
     next['_可过夜'] = false;
     if (normalizeDay(current['_当前天数']) === DAYS) {
       next['_每日阶段'] = '终局';
@@ -2294,6 +2536,18 @@
     var derived = validation.valid
       ? deriveDayState(schedule, system['_当前天数'])
       : null;
+    var meeting = normalizeComplianceMeeting(
+      system['_法令履行会议'],
+      system['_当前天数'],
+      system['_每日阶段'],
+      system['_玩家已互动角色']
+    );
+    var rules = activeDecrees(source);
+    var signature = complianceRuleSignature(source);
+    var audit = complianceAuditResult(source, meeting, rules, signature);
+    var canOpenMeeting = system['_每日阶段'] === '自由互动'
+      && normalizePlayerInteractions(system['_玩家已互动角色']).length === WOMEN.length
+      && meeting['状态'] !== '已通过';
     var snapshot = {
       '_日程已锁定': system['_日程已锁定'] === true,
       '_当前天数': derived ? derived['_当前天数'] : normalizeDay(system['_当前天数']),
@@ -2306,6 +2560,9 @@
       '_女性互动矩阵': normalizeInteractionMatrix(system['_女性互动矩阵']),
       '_玩家已互动角色': normalizePlayerInteractions(system['_玩家已互动角色']),
       '_最近互动请求': cloneInteractionRequest(system['_最近互动请求'], false),
+      '_法令会议状态': meeting['状态'],
+      '_法令未完成数量': audit.incomplete,
+      '_可召开法令会议': canOpenMeeting,
       '_可过夜': system['_可过夜'] === true
     };
     var endingDisplay = getEndingDisplay(system);
@@ -2415,9 +2672,12 @@
     validateSchedule: validateSchedule,
     checksumSchedule: checksumSchedule,
     deriveDayState: deriveDayState,
+    getActiveDecrees: activeDecrees,
+    getActiveDecreeSignature: complianceRuleSignature,
     initializeSystem: initializeSystem,
     initializeVariables: initializeVariables,
     syncEndingState: syncEndingState,
+    syncComplianceState: syncComplianceState,
     getEndingDisplay: getEndingDisplay,
     prepareDecree: prepareDecree,
     setCurrentDay: setCurrentDay,
@@ -2425,6 +2685,7 @@
     rejectImpossiblePlayerDecree: rejectImpossiblePlayerDecree,
     submitInteraction: submitInteraction,
     resolveInteraction: resolveInteraction,
+    beginComplianceMeeting: beginComplianceMeeting,
     beginOvernight: beginOvernight,
     startNextDay: startNextDay,
     advanceDay: advanceDay,
@@ -2435,7 +2696,7 @@
 <script>(function () {
   'use strict';
 
-  var INITIAL_STATE = {"系统":{"_版本":9,"_日程已锁定":false,"_当前天数":1,"_当前国王":"","_国王次数":{"玩家":0,"林安":0,"穆裳希":0,"张曲溪":0,"王可可":0},"_每日阶段":"待颁布法令","_今日法令已广播":false,"_女性互动矩阵":{"林安":{"林安":true,"穆裳希":false,"张曲溪":false,"王可可":false},"穆裳希":{"林安":false,"穆裳希":true,"张曲溪":false,"王可可":false},"张曲溪":{"林安":false,"穆裳希":false,"张曲溪":true,"王可可":false},"王可可":{"林安":false,"穆裳希":false,"张曲溪":false,"王可可":true}},"_玩家已互动角色":[],"_最近互动请求":null,"_可过夜":false,"当前时间":"第1日 08:10","当前地点":"个人房间","当前阶段":"等待法令","公开线索":[]},"玩家":{"颁布规则":[]},"角色":{"林安":{"信息":{"年龄":25,"公开身份":"自诩女侦探的无业家里蹲"},"状态":{"身体":"正常，刚从熟睡中醒来","当前行动":"循着广播声检查墙面与扬声器"},"上衣":{"衣着":"棕色猎鹿帽、格纹短披肩与米白衬衫","肉体":"上半身无明显外伤，脸侧留有贴桌熟睡的浅印"},"下衣":{"衣着":"深棕灯芯绒马裤与系带短靴","肉体":"下半身活动正常，无明显外伤"},"心理":"完了，我刚才是不是把桌子舔干净了……旁边那个人应该没看见吧？等等，自由侦探怎么就成“自居”了？","行动倾向":["检查录音来源","勘查环境"],"颁布规则":[],"关系":{"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":3}}},"穆裳希":{"信息":{"年龄":27,"公开身份":"企业创办人与经营者"},"状态":{"身体":"正常，情绪高度紧绷","当前行动":"记录广播内容并观察房间设施"},"上衣":{"衣着":"炭黑修身西装与暗红丝质上衣","肉体":"呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红"},"下衣":{"衣着":"同色西装长裤与黑色尖头短靴","肉体":"站姿稳定，下半身无明显外伤"},"心理":"连公益项目都翻过。公司里有谁碰得到这么完整的资料？那个男人也不能排除……该死，手怎么还在抖。","行动倾向":["监视玩家动向","核对环境线索"],"颁布规则":[],"关系":{"林安":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-8}}},"张曲溪":{"信息":{"年龄":22,"公开身份":"长发高马尾的英气女大学生"},"状态":{"身体":"正常，肌肉线条饱满","当前行动":"守住安全距离并观察出口与广播设施"},"上衣":{"衣着":"暗绿短款大学棒球夹克与黑色圆领上衣","肉体":"肩背与前臂活动正常，无明显伤口、红肿或疼痛反应"},"下衣":{"衣着":"深色工装长裤与运动鞋","肉体":"双腿活动正常，无明显伤口或红肿"},"心理":"“王子”……连这种破外号都知道。到底是谁把我翻得这么干净？","行动倾向":["防备录音者","守住安全距离"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-2}}},"王可可":{"信息":{"年龄":32,"公开身份":"高中女教师"},"状态":{"身体":"正常，刚苏醒时呼吸略急","当前行动":"调停互疑并提议先核对广播与环境"},"上衣":{"衣着":"浅蓝针织开衫与象牙白衬衫","肉体":"双肩略紧，按在项圈边缘的指尖微凉"},"下衣":{"衣着":"烟灰色过膝百褶裙与浅口皮鞋","肉体":"步态正常，无明显外伤"},"心理":"学生那边不会也被盯上了吧……别抖，至少让大家把这段录音听完。","行动倾向":["调停冲突","组织环境检查"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"玩家":{"好感度":8}}}}};
+  var INITIAL_STATE = {"系统":{"_版本":10,"_日程已锁定":false,"_当前天数":1,"_当前国王":"","_国王次数":{"玩家":0,"林安":0,"穆裳希":0,"张曲溪":0,"王可可":0},"_每日阶段":"待颁布法令","_今日法令已广播":false,"_女性互动矩阵":{"林安":{"林安":true,"穆裳希":false,"张曲溪":false,"王可可":false},"穆裳希":{"林安":false,"穆裳希":true,"张曲溪":false,"王可可":false},"张曲溪":{"林安":false,"穆裳希":false,"张曲溪":true,"王可可":false},"王可可":{"林安":false,"穆裳希":false,"张曲溪":false,"王可可":true}},"_玩家已互动角色":[],"_最近互动请求":null,"_法令履行会议":{"日期":1,"轮次":0,"状态":"未开放","规则签名":""},"_可过夜":false,"玩家主观认知":{"林安":["她自称自由侦探，性格大大咧咧，对眼前的小说式展开明显兴奋","她醒来后既慌乱又好奇，目前没有表现出复杂心机"],"穆裳希":["她是企业创办人与经营者，习惯控制表情和局面","她醒来后首先怀疑唯一男性玩家，但紧张和手抖并未完全藏住"],"张曲溪":["她是外表英气、体格强健的女大学生","她醒来后对所有人保持距离，目前最明显的是警惕和质疑"],"王可可":["她公开身份是高中女教师，醒来时有真实可见的惊慌","她试图调停互疑并维持秩序，目前看不出比其他人掌握更多信息"]},"当前时间":"第1日 08:10","当前地点":"个人房间","当前阶段":"等待法令","公开线索":[]},"玩家":{"颁布规则":[]},"角色":{"林安":{"信息":{"年龄":25,"公开身份":"自诩女侦探的无业家里蹲"},"状态":{"身体":"正常，刚从熟睡中醒来","当前行动":"循着广播声检查墙面与扬声器"},"上衣":{"衣着":"棕色猎鹿帽、格纹短披肩与米白衬衫","肉体":"上半身无明显外伤，脸侧留有贴桌熟睡的浅印"},"下衣":{"衣着":"深棕灯芯绒马裤与系带短靴","肉体":"下半身活动正常，无明显外伤"},"心理":"完了，我刚才是不是把桌子舔干净了……旁边那个人应该没看见吧？等等，自由侦探怎么就成“自居”了？","行动倾向":["检查录音来源","勘查环境"],"颁布规则":[],"关系":{"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":3}}},"穆裳希":{"信息":{"年龄":27,"公开身份":"企业创办人与经营者"},"状态":{"身体":"正常，情绪高度紧绷","当前行动":"记录广播内容并观察房间设施"},"上衣":{"衣着":"炭黑修身西装与暗红丝质上衣","肉体":"呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红"},"下衣":{"衣着":"同色西装长裤与黑色尖头短靴","肉体":"站姿稳定，下半身无明显外伤"},"心理":"连公益项目都翻过。公司里有谁碰得到这么完整的资料？那个男人也不能排除……该死，手怎么还在抖。","行动倾向":["监视玩家动向","核对环境线索"],"颁布规则":[],"关系":{"林安":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-8}}},"张曲溪":{"信息":{"年龄":22,"公开身份":"长发高马尾的英气女大学生"},"状态":{"身体":"正常，肌肉线条饱满","当前行动":"守住安全距离并观察出口与广播设施"},"上衣":{"衣着":"暗绿短款大学棒球夹克与黑色圆领上衣","肉体":"肩背与前臂活动正常，无明显伤口、红肿或疼痛反应"},"下衣":{"衣着":"深色工装长裤与运动鞋","肉体":"双腿活动正常，无明显伤口或红肿"},"心理":"“王子”……连这种破外号都知道。到底是谁把我翻得这么干净？","行动倾向":["防备录音者","守住安全距离"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-2}}},"王可可":{"信息":{"年龄":32,"公开身份":"高中女教师"},"状态":{"身体":"正常，刚苏醒时呼吸略急","当前行动":"调停互疑并提议先核对广播与环境"},"上衣":{"衣着":"浅蓝针织开衫与象牙白衬衫","肉体":"双肩略紧，按在项圈边缘的指尖微凉"},"下衣":{"衣着":"烟灰色过膝百褶裙与浅口皮鞋","肉体":"步态正常，无明显外伤"},"心理":"学生那边不会也被盯上了吧……别抖，至少让大家把这段录音听完。","行动倾向":["调停冲突","组织环境检查"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"玩家":{"好感度":8}}}}};
   var EXPECTED_CARD_NAME = "读心术者的匿名国王游戏（louisHM制作·完全免费）";
   var EXPECTED_WORLD_BOOK_NAME = "读心术者的匿名国王游戏（louisHM制作·完全免费）";
   var LOCAL_PREVIEW = false;
@@ -2697,6 +2958,15 @@
       delete system['_protocol_strikes'];
       delete system.internal;
       delete system['_校验缓存'];
+      delete system['_法令履行会议'];
+      delete system['法令履行审计'];
+      if (safeSnapshot) {
+        system['_最近互动请求'] = clone(safeSnapshot['_最近互动请求']);
+        system['_法令会议状态'] = safeSnapshot['_法令会议状态'];
+        system['_法令未完成数量'] = safeSnapshot['_法令未完成数量'];
+        system['_可召开法令会议'] = safeSnapshot['_可召开法令会议'] === true;
+        system['_可过夜'] = safeSnapshot['_可过夜'] === true;
+      }
       if (safeSnapshot && safeSnapshot['_特殊档案已解锁'] === true) {
         system['_特殊档案已解锁'] = true;
       } else {
@@ -2994,7 +3264,8 @@
       var before = fillDefaults(record.state, INITIAL_STATE);
       before = api.initializeVariables(before, chatName());
       var after = clone(before);
-      after['系统'] = api[apiName].apply(api, [before['系统']].concat(args || []));
+      var actionArgs = typeof args === 'function' ? args(before) : args;
+      after['系统'] = api[apiName].apply(api, [before['系统']].concat(actionArgs || []));
       if (!await writeHostRecord(record, after)) throw new Error('聊天变量写入失败，操作没有发送');
       publish(after);
       try {
@@ -3196,7 +3467,7 @@
         var playerSubmission = system['_当前国王'] === '玩家'
           ? '玩家提交的新法令内容或撤销目标是：“' + submitted + '”。请据此完成正式颁布或撤销。'
           : '宿主已经确定当日国王为“' + system['_当前国王'] + '”。必须只由此人依据其人设和当前关系决定法令内容。';
-        return '【前端私密操作，不是公开发言】【每日流程·房间平板颁布法令】五人此刻分别被锁在各自房间。玩家平板私下显示、只读宿主变量中的当日国王是“' + system['_当前国王'] + '”，不得重新抽签、改选、猜测或让另一人代为颁布。只有当日国王自己的平板开放颁布或撤销界面，其余四台只显示等待。' + playerSubmission + '完成后先向全员广播法令正文但不公开国王身份，再让五间房门同时解锁；广播与解锁以前不得让任何人进入大厅、串门或当面互动。全段严格留在{{user}}所在房间，不得切去当日国王或其他女性的房间展示她们提交法令、等待或听见广播的私下镜头。门开后，本次前端操作仅额外授权{{user}}随四名女性来到中央圆桌旁这一项流程转场，不得替他发言、表态或作选择；随后必须在这一条AI回复内按世界书完成固定的广播后圆桌短会，让四名女性各有可辨反应，展开6—10个有效来回、约700—1100个汉字，再停在等待玩家下一步操作。把短会全部正文原地包在唯一一组<DecreeRoundtableImpl>与</DecreeRoundtableImpl>之间；闭标签必须是本轮最后一段剧情内容，下一行只输出<StatusPlaceHolderImpl/>。该短会不计入玩家互动数组或女性互动矩阵，不得使用<InteractionPairImpl>，不得趁机生成{{user}}与尚未点击女性的独立互动。';
+        return '【前端私密操作，不是公开发言】【每日流程·房间平板颁布法令】五人此刻分别被锁在各自房间。玩家平板私下显示、只读宿主变量中的当日国王是“' + system['_当前国王'] + '”，不得重新抽签、改选、猜测或让另一人代为颁布。只有当日国王自己的平板开放颁布或撤销界面，其余四台只显示等待。' + playerSubmission + '完成后先向全员广播法令正文但不公开国王身份，再让五间房门同时解锁；广播与解锁以前不得让任何人进入大厅、串门或当面互动。法令若未明写未来开始时间、完成期限或可观察延迟触发条件，就从广播完毕立即开始并持续生效；明确写出的未来时点尚未到达才可等待。圆桌短会、争辩和分析都不暂停已到期或持续义务；客观可执行的拖延只允许数秒警告，随后项圈必须迅速以强烈连续脉冲逼迫开始遵从。全段严格留在{{user}}所在房间，不得切去当日国王或其他女性的房间展示她们提交法令、等待或听见广播的私下镜头。门开后，本次前端操作仅额外授权{{user}}随四名女性来到中央圆桌旁这一项流程转场，不得替他发言、表态或作选择；随后必须在这一条AI回复内按世界书完成固定的广播后圆桌短会，让四名女性各有可辨反应，展开6—10个有效来回、约700—1100个汉字，再停在等待玩家下一步操作。把短会全部正文原地包在唯一一组<DecreeRoundtableImpl>与</DecreeRoundtableImpl>之间；闭标签必须是本轮最后一段剧情内容，下一行只输出<StatusPlaceHolderImpl/>。该短会不计入玩家互动数组或女性互动矩阵，不得使用<InteractionPairImpl>，不得趁机生成{{user}}与尚未点击女性的独立互动。';
       });
     },
     submitInteraction: function (roleName, method) {
@@ -3220,7 +3491,27 @@
         var archiveGuard = archiveAuthorization
           ? '【私密流程约束】本次只有专门世界书EJS明确授权的那一个一次性个人记录事件可以发生；不得另行发明、合并或提前展示其他尚未公开的长期记录或纪念物。具体内容只服从该EJS，不得从本提示猜测。'
           : '【私密流程约束】本次互动开始前没有一次性个人记录事件授权。无论本轮让目标多么高兴、真实好感在回复中上涨多少，任何角色都不得主动掏出、交付、展示或新提及任何尚未公开的长期私人记录或纪念物；跨过门槛只能等下一次点击互动重新判定。';
-        return '【每日流程·互动请求】' + archiveGuard + intent + followup;
+        return '【每日流程·互动请求】本互动进行时，全部仍生效法令继续同步执行；未明写未来开始时间、期限或延迟条件的限制默认早已从广播后立即且持续生效。说话、推理、争执或拖延不会暂停已到期/持续义务，客观可执行的违令在数秒警告后立即升级为强烈连续电击，直至开始可观察地遵从。' + archiveGuard + intent + followup;
+      });
+    },
+    complianceMeeting: function () {
+      return commitAction('beginComplianceMeeting', function (before) {
+        return [before];
+      }, function (next) {
+        var api = window.KingGameState;
+        var system = next['系统'] || {};
+        var meeting = system['_法令履行会议'] || {};
+        var activeRules = api && typeof api.getActiveDecrees === 'function'
+          ? api.getActiveDecrees(next)
+          : [];
+        var ruleText = activeRules.length
+          ? JSON.stringify(activeRules)
+          : '[]（当前没有仍处于生效状态的法令，但会议本身仍须召开并完成空清单审计）';
+        return '【前端私密操作，不是公开发言】【每日流程·法令履行会议】宿主已开启第'
+          + meeting['日期'] + '日第' + meeting['轮次'] + '轮履行会议，规则签名为“'
+          + meeting['规则签名'] + '”。五名参与者必须留在{{user}}能够观察的同一现场，逐条核对并尽可能履行以下当前生效法令：'
+          + ruleText
+          + '。已撤销法令不进入会议；后颁布法令只在实际冲突范围内覆盖旧法令，未冲突部分仍须履行。没有明写未来开始时间、完成期限或可观察延迟条件的限制，从广播结束就已经到期并持续生效；例如禁止穿衣者必须在讨论前脱下并一直保持，不能到会议才首次处理。只有明确的未来时点/条件尚未到达才可判尚未到期。已到期义务与持续义务在会议、讨论、争执和审计期间始终继续生效，不得因为正在开会而暂停、宽限或自动视为完成。对客观可判定且身体能够执行的拖延或拒绝，设施只给数秒明确警告，随后迅速升级为正式强烈连续脉冲、剧痛与严重失禁，直至当事人开始可观察地遵从；不得用长篇争论无限拖延，也不得让项圈判断真假、诚意、记忆、感情或思想。剧情可以让四名女性自行完成她们能够主动完成的义务，但绝不能替{{user}}说话、选择、接过物品或执行任何需要玩家主动完成的动作；若某条到期义务仍需{{user}}行动，必须把它明确留作未完成事项并停下来等待玩家后续互动，不能伪造完成。会议正文必须全部原地包在唯一一组<DecreeComplianceMeetingImpl>与</DecreeComplianceMeetingImpl>之间；该块是本轮最后一段剧情内容，闭标签后不得继续任何动作、台词或环境收束，下一行只输出<StatusPlaceHolderImpl/>。不得使用<DecreeRoundtableImpl>或<InteractionPairImpl>，本会议不计入玩家互动数组或女性互动矩阵。';
       });
     },
     overnight: function () {
@@ -3228,7 +3519,7 @@
         var system = next['系统'] || {};
         return system['_每日阶段'] === '终局'
           ? '【每日流程·过夜】第15日已经结束。请描写最后一夜与国王游戏终局。'
-          : '【每日流程·过夜】今日互动已经完成，我选择结束本日并过夜。请只从{{user}}单一有限视角描写夜间结算；第' + system['_当前天数'] + '日清晨{{user}}在自己的房间醒来，房门锁闭，床边平板显示等待当日法令。不得切去描写其他女性各自醒来或等待的镜头；法令尚未广播，不得让任何人提前进入大厅或串门。';
+          : '【每日流程·过夜】今日四次互动与法令履行会议审计均已完成且通过，我选择结束本日并过夜。请只从{{user}}单一有限视角描写夜间结算；第' + system['_当前天数'] + '日清晨{{user}}在自己的房间醒来，房门锁闭，床边平板显示等待当日法令。不得切去描写其他女性各自醒来或等待的镜头；法令尚未广播，不得让任何人提前进入大厅或串门。';
       });
     }
   };
@@ -3542,7 +3833,8 @@
         "_当前天数": 1, "_当前国王": "",
         "_国王次数": { "玩家": 0, "林安": 0, "穆裳希": 0, "张曲溪": 0, "王可可": 0 },
         "_每日阶段": "待颁布法令", "_今日法令已广播": false,
-        "_玩家已互动角色": [], "_最近互动请求": null, "_可过夜": false,
+        "_玩家已互动角色": [], "_最近互动请求": null,
+        "_法令会议状态": "未开放", "_法令未完成数量": 0, "_可召开法令会议": false, "_可过夜": false,
         "当前时间": "第1日 08:10", "当前地点": "个人房间", "当前阶段": "等待法令",
         "公开线索": []
       },
@@ -4446,6 +4738,8 @@
     function renderDailyFlow(system) {
       const stage = system._每日阶段 || "待颁布法令";
       const completed = NAMES.filter(name => asArray(system._玩家已互动角色).includes(name));
+      const meetingState = String(system._法令会议状态 || "未开放");
+      const incompleteDecrees = Math.round(num(system._法令未完成数量, 0, 999, 0));
       const button = $("#primaryDailyAction");
       const status = $("#flowStatus");
       button.hidden = true;
@@ -4460,11 +4754,38 @@
         button.dataset.action = "decree";
         button.hidden = false;
       } else if (stage === "自由互动") {
-        status.textContent = `今日互动 ${completed.length} / ${NAMES.length}：${completed.length ? completed.join("、") : "尚未与任何角色互动"}`;
-        if (system._可过夜 === true) {
-          button.textContent = actionBusy ? "正在提交……" : "过夜";
-          button.dataset.action = "overnight";
-          button.hidden = false;
+        const interactionCopy = `今日互动 ${completed.length} / ${NAMES.length}：${completed.length ? completed.join("、") : "尚未与任何角色互动"}`;
+        status.textContent = interactionCopy;
+        if (completed.length === NAMES.length) {
+          if (meetingState === "待召开") {
+            status.textContent = `${interactionCopy} · 需完成法令履行会议后才能过夜`;
+            if (system._可召开法令会议 === true) {
+              button.textContent = actionBusy ? "正在召集……" : "召开法令履行会议";
+              button.dataset.action = "complianceMeeting";
+              button.hidden = false;
+            }
+          } else if (meetingState === "待审计") {
+            status.textContent = `${interactionCopy} · 设施正在审计本日法令履行情况`;
+            button.textContent = "履行会议审计中……";
+            button.hidden = false;
+            button.disabled = true;
+          } else if (meetingState === "需补履行") {
+            status.textContent = `${interactionCopy} · 仍有 ${incompleteDecrees} 项生效法令未完成`;
+            if (system._可召开法令会议 === true) {
+              button.textContent = actionBusy ? "正在召集……" : "再次召开履行会议";
+              button.dataset.action = "complianceMeeting";
+              button.hidden = false;
+            }
+          } else if (meetingState === "已通过") {
+            status.textContent = `${interactionCopy} · 法令履行会议已通过`;
+            if (system._可过夜 === true) {
+              button.textContent = actionBusy ? "正在提交……" : "过夜";
+              button.dataset.action = "overnight";
+              button.hidden = false;
+            }
+          } else {
+            status.textContent = `${interactionCopy} · 正在等待履行会议开放`;
+          }
         }
       } else if (stage === "夜间") {
         status.textContent = "夜间结算中 · 请等待新一日广播";
@@ -4585,7 +4906,13 @@
       const button = $("#primaryDailyAction");
       const action = button.dataset.action;
       const bridge = window.KingGameBridge;
-      const method = action === "decree" ? "requestDecree" : action === "overnight" ? "overnight" : "";
+      const method = action === "decree"
+        ? "requestDecree"
+        : action === "complianceMeeting"
+          ? "complianceMeeting"
+          : action === "overnight"
+            ? "overnight"
+            : "";
       if (!method || !bridge || typeof bridge[method] !== "function") {
         showActionError("宿主桥接尚未就绪，请刷新页面后重试。");
         return;
