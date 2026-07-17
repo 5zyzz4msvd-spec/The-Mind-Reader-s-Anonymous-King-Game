@@ -2335,9 +2335,9 @@
     if (insightFlags.n1) {
       snapshot['_侦探状态洞察'] = {
         '林安': privateRoleView('n1', { m: true, a: true, r: true }),
-        '穆裳希': privateRoleView('n2', { m: true, a: true, r: true }),
-        '张曲溪': privateRoleView('n3', { m: true, a: true, r: true }),
-        '王可可': publicRoleView('王可可', { m: true, a: true, r: true })
+        '穆裳希': privateRoleView('n2', { m: true }),
+        '张曲溪': privateRoleView('n3', { m: true }),
+        '王可可': publicRoleView('王可可', { m: true })
       };
     }
     if (insightFlags.n2) {
@@ -3591,7 +3591,7 @@
     let diaryPageIndex = 0;
     let careerPageIndex = 0;
     let albumPageIndex = 0;
-    let insightMode = "";
+    const activeInsightModes = new Set();
 
     function insightSnapshotAvailable(system, config) {
       return Boolean(config && hasOwn(system, config.key) && asObject(system[config.key]) === system[config.key]);
@@ -3599,22 +3599,23 @@
 
     function allowedInsightFields(mode, name) {
       if (mode === "trust") return name === "王可可" ? ["心理", "行动倾向", "关系"] : [];
-      if (name === "王可可") return [];
-      if (mode === "detective" && ["林安", "穆裳希", "张曲溪"].includes(name)) return ["心理", "行动倾向", "关系"];
+      if (mode === "detective") {
+        if (name === "林安") return ["心理", "行动倾向", "关系"];
+        if (["穆裳希", "张曲溪", "王可可"].includes(name)) return ["心理"];
+      }
       if (mode === "merchant") {
         if (name === "穆裳希") return ["心理", "行动倾向", "关系"];
-        if (["林安", "张曲溪"].includes(name)) return ["行动倾向"];
+        if (["林安", "张曲溪", "王可可"].includes(name)) return ["行动倾向"];
       }
       if (mode === "prince") {
         if (name === "张曲溪") return ["心理", "行动倾向", "关系"];
-        if (["林安", "穆裳希"].includes(name)) return ["关系"];
+        if (["林安", "穆裳希", "王可可"].includes(name)) return ["关系"];
       }
       return [];
     }
 
     function insightPresentation(name, data, system) {
       const base = asObject(data);
-      const config = INSIGHT_MODES[insightMode];
       const result = {
         心理: base.心理 || "暂无记录",
         行动倾向: asArray(base.行动倾向),
@@ -3623,29 +3624,41 @@
         倾向标签: "读心术",
         好感标签: "读心术"
       };
-      if (!config || !insightSnapshotAvailable(system, config)) return result;
-
-      const permitted = allowedInsightFields(insightMode, name);
-      const snapshot = asObject(system[config.key]);
-      const safeRole = config.direct ? snapshot : asObject(snapshot[name]);
-      if (permitted.includes("心理") && typeof safeRole.心理 === "string" && safeRole.心理.trim()) {
-        result.心理 = safeRole.心理;
-        result.心理标签 = config.label;
-      }
-      if (permitted.includes("行动倾向") && Array.isArray(safeRole.行动倾向)) {
-        result.行动倾向 = safeRole.行动倾向;
-        result.倾向标签 = config.label;
-      }
-      if (permitted.includes("关系") && hasOwn(safeRole, "关系") && Object.keys(asObject(safeRole.关系)).length) {
-        result.关系 = asObject(safeRole.关系);
-        result.好感标签 = config.label;
-      }
+      const ownerMode = Object.entries(INSIGHT_MODES).find(([, config]) => config.owner === name)?.[0] || "";
+      const orderedModes = [
+        ...(activeInsightModes.has(ownerMode) ? [ownerMode] : []),
+        ...Object.keys(INSIGHT_MODES).filter(mode => mode !== ownerMode && activeInsightModes.has(mode))
+      ];
+      const applied = new Set();
+      orderedModes.forEach(mode => {
+        const config = INSIGHT_MODES[mode];
+        if (!insightSnapshotAvailable(system, config)) return;
+        const permitted = allowedInsightFields(mode, name);
+        const snapshot = asObject(system[config.key]);
+        const safeRole = config.direct ? snapshot : asObject(snapshot[name]);
+        if (!applied.has("心理") && permitted.includes("心理") && typeof safeRole.心理 === "string" && safeRole.心理.trim()) {
+          result.心理 = safeRole.心理;
+          result.心理标签 = config.label;
+          applied.add("心理");
+        }
+        if (!applied.has("行动倾向") && permitted.includes("行动倾向") && Array.isArray(safeRole.行动倾向)) {
+          result.行动倾向 = safeRole.行动倾向;
+          result.倾向标签 = config.label;
+          applied.add("行动倾向");
+        }
+        if (!applied.has("关系") && permitted.includes("关系") && hasOwn(safeRole, "关系") && Object.keys(asObject(safeRole.关系)).length) {
+          result.关系 = asObject(safeRole.关系);
+          result.好感标签 = config.label;
+          applied.add("关系");
+        }
+      });
       return result;
     }
 
-    function normalizeInsightMode(system) {
-      const config = INSIGHT_MODES[insightMode];
-      if (insightMode && !insightSnapshotAvailable(system, config)) insightMode = "";
+    function normalizeActiveInsightModes(system) {
+      [...activeInsightModes].forEach(mode => {
+        if (!insightSnapshotAvailable(system, INSIGHT_MODES[mode])) activeInsightModes.delete(mode);
+      });
     }
 
     function appendField(root, title, paragraphs, className = "") {
@@ -3692,7 +3705,7 @@
       const ownedInsightEntry = Object.entries(INSIGHT_MODES).find(([, config]) => config.owner === name && insightSnapshotAvailable(system, config));
       if (ownedInsightEntry) {
         const [mode, config] = ownedInsightEntry;
-        const active = insightMode === mode;
+        const active = activeInsightModes.has(mode);
         const insightButton = el("button", `insight-mode-btn${active ? " is-active" : ""}`, config.label);
         insightButton.type = "button";
         insightButton.dataset.insightMode = mode;
@@ -4333,7 +4346,7 @@
     function render(nextState = state) {
       state = asObject(nextState);
       const system = asObject(state.系统);
-      normalizeInsightMode(system);
+      normalizeActiveInsightModes(system);
       ensureTestamentModal(system);
       const roles = asObject(state.角色);
       const player = asObject(state.玩家);
@@ -4350,6 +4363,12 @@
       $("#sceneInfo").textContent = `${system.当前时间 || "时间未知"} · ${system.当前地点 || "地点未知"} · ${system.当前阶段 || "阶段未知"}`;
       $("#userSeat").textContent = userName;
       const prism = $("#prism");
+      const dossierScrollOffsets = new Map(
+        [...prism.querySelectorAll(".face[data-name]")].map(face => [
+          face.dataset.name,
+          face.querySelector(".dossier-scroll")?.scrollTop || 0
+        ])
+      );
       prism.dataset.sides = String(sideCount);
       prism.dataset.view = pitch >= 45 ? "top" : pitch <= -45 ? "bottom" : "side";
       const sideFaces = activeSideNames.map((name, index) => positionSideFace(
@@ -4369,6 +4388,10 @@
       renderEnding(system);
       updateNavigation();
       requestAnimationFrame(() => {
+        prism.querySelectorAll(".face[data-name]").forEach(face => {
+          const dossier = face.querySelector(".dossier-scroll");
+          if (dossier) dossier.scrollTop = dossierScrollOffsets.get(face.dataset.name) || 0;
+        });
         syncInteractionHitTarget();
         syncPortraitHitTarget();
         syncSpecialArchiveHitTarget();
@@ -4781,11 +4804,9 @@
         const mode = String(event.currentTarget.dataset.insightMode || "");
         const config = INSIGHT_MODES[mode];
         const system = asObject(state.系统);
-        if (!insightSnapshotAvailable(system, config)) {
-          insightMode = "";
-        } else {
-          insightMode = insightMode === mode ? "" : mode;
-        }
+        if (!insightSnapshotAvailable(system, config)) activeInsightModes.delete(mode);
+        else if (activeInsightModes.has(mode)) activeInsightModes.delete(mode);
+        else activeInsightModes.add(mode);
         render(state);
       });
       const observer = new MutationObserver(() => requestAnimationFrame(syncInsightModeHitTarget));
