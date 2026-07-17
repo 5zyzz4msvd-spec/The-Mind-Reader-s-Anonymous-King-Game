@@ -1375,6 +1375,8 @@
   var RELATIONSHIP_DECREE_TEXT = '每个人必须说出自己和韩璇的关系';
   var ENDING_NAMES = { n1: '林安', n2: '穆裳希', n3: '张曲溪' };
   var INNER_NAMES = { n1: '林安', n2: '穆裳希', n3: '张曲溪', n4: '王可可', u: '玩家' };
+  var ARCHIVE_ALIAS_BY_NAME = { '林安': 'n1', '穆裳希': 'n2', '张曲溪': 'n3', '王可可': 'n4' };
+  var ARCHIVE_ALIASES = ['n1', 'n2', 'n3', 'n4'];
   var ENDING_TITLES = {
     A: '唯一幸存者',
     B: '迟来的残片',
@@ -1475,18 +1477,54 @@
     return result;
   }
 
-  function cloneInteractionRequest(value) {
+  function normalizeArchiveGate(value) {
+    var source = value && typeof value === 'object' ? value : {};
+    var baselineSource = source['基线'] && typeof source['基线'] === 'object' ? source['基线'] : {};
+    var authorization = ARCHIVE_ALIASES.indexOf(source['授权']) >= 0 ? source['授权'] : '';
+    return {
+      '版本': Number(source['版本']) === 1 ? 1 : 0,
+      '基线': {
+        n1: baselineSource.n1 === true,
+        n2: baselineSource.n2 === true,
+        n3: baselineSource.n3 === true,
+        n4: baselineSource.n4 === true
+      },
+      '授权': authorization
+    };
+  }
+
+  function cloneInteractionRequest(value, includePrivateGate) {
     if (!value || typeof value !== 'object' || !WOMAN_SET[value['角色']]) {
       return null;
     }
 
-    return {
+    var request = {
       '角色': value['角色'],
       '方式': typeof value['方式'] === 'string' ? value['方式'] : '',
       '补全对象': Array.isArray(value['补全对象'])
         ? value['补全对象'].filter(function (name) { return WOMAN_SET[name] && name !== value['角色']; })
         : [],
       '状态': typeof value['状态'] === 'string' ? value['状态'] : '待生成'
+    };
+    if (includePrivateGate !== false && value['档案门控'] && typeof value['档案门控'] === 'object') {
+      request['档案门控'] = normalizeArchiveGate(value['档案门控']);
+    }
+    return request;
+  }
+
+  function buildArchiveGate(system, roleName) {
+    var hidden = system && system.internal && typeof system.internal === 'object' ? system.internal : {};
+    var flags = normalizeAffectionEventState(hidden.f);
+    var alias = ARCHIVE_ALIAS_BY_NAME[roleName] || '';
+    var character = alias && hidden[alias] && typeof hidden[alias] === 'object' ? hidden[alias] : {};
+    var relations = character.r && typeof character.r === 'object' ? character.r : {};
+    var threshold = alias === 'n4' ? 50 : 30;
+    var dayEligible = alias !== 'n4' || normalizeDay(system['_当前天数']) < 10;
+    var authorization = alias && flags[alias] !== true && dayEligible && Number(relations.u) >= threshold ? alias : '';
+    return {
+      '版本': 1,
+      '基线': { n1: flags.n1, n2: flags.n2, n3: flags.n3, n4: flags.n4 },
+      '授权': authorization
     };
   }
 
@@ -2178,7 +2216,8 @@
       '角色': roleName,
       '方式': normalizedMethod,
       '补全对象': completionTargets,
-      '状态': '待生成'
+      '状态': '待生成',
+      '档案门控': buildArchiveGate(current, roleName)
     };
     next['_可过夜'] = playerInteractions.length === WOMEN.length;
     return next;
@@ -2266,7 +2305,7 @@
       '_今日法令已广播': system['_今日法令已广播'] === true,
       '_女性互动矩阵': normalizeInteractionMatrix(system['_女性互动矩阵']),
       '_玩家已互动角色': normalizePlayerInteractions(system['_玩家已互动角色']),
-      '_最近互动请求': cloneInteractionRequest(system['_最近互动请求']),
+      '_最近互动请求': cloneInteractionRequest(system['_最近互动请求'], false),
       '_可过夜': system['_可过夜'] === true
     };
     var endingDisplay = getEndingDisplay(system);
@@ -3166,6 +3205,8 @@
       var protectedDisclosure = attemptsPrivateKnowledgeDisclosure(trimmed);
       return commitAction('submitInteraction', [roleName, trimmed], function (next) {
         var request = (next['系统'] || {})['_最近互动请求'] || {};
+        var archiveGate = request['档案门控'] || {};
+        var archiveAuthorization = Number(archiveGate['版本']) === 1 ? String(archiveGate['授权'] || '') : '';
         var supplements = Array.isArray(request['补全对象']) ? request['补全对象'] : [];
         var pairBlocks = supplements.map(function (otherName) {
           return '<InteractionPairImpl pair="' + roleName + '-' + otherName + '">\\n在这里直接写完' + roleName + '与' + otherName + '的实际互动正文\\n</InteractionPairImpl>';
@@ -3176,7 +3217,10 @@
         var intent = protectedDisclosure
           ? '我原本想向' + roleName + '泄露自己的所谓读心术或私人国王情报，但这两项秘密不可公开。请让{{user}}在任何人听见、看见或收到具体内容前临时收住话、停止展示或换成不含秘密的说法；不要复述原输入中的秘密内容，也不要让任何角色因此获知或准确推断。'
           : '我想以“' + trimmed + '”的方式与' + roleName + '互动。请把它作为行动意图来展开，不要擅自替我补写具体台词。';
-        return '【每日流程·互动请求】' + intent + followup;
+        var archiveGuard = archiveAuthorization
+          ? '【私密流程约束】本次只有专门世界书EJS明确授权的那一个一次性个人记录事件可以发生；不得另行发明、合并或提前展示其他尚未公开的长期记录或纪念物。具体内容只服从该EJS，不得从本提示猜测。'
+          : '【私密流程约束】本次互动开始前没有一次性个人记录事件授权。无论本轮让目标多么高兴、真实好感在回复中上涨多少，任何角色都不得主动掏出、交付、展示或新提及任何尚未公开的长期私人记录或纪念物；跨过门槛只能等下一次点击互动重新判定。';
+        return '【每日流程·互动请求】' + archiveGuard + intent + followup;
       });
     },
     overnight: function () {
