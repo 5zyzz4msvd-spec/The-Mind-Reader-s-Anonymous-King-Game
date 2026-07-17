@@ -14,6 +14,12 @@
       --line: rgba(198, 163, 91, .27);
       --prism-w: min(90vw, 1180px);
       --prism-d: var(--prism-w);
+      --surface-w: var(--prism-w);
+      --surface-d: var(--prism-w);
+      --pentagon-shape: polygon(50% 0%, 100% 38.1966%, 80.9017% 100%, 19.0983% 100%, 0% 38.1966%);
+      --pentagon-bottom-shape: polygon(50% 100%, 100% 61.8034%, 80.9017% 0%, 19.0983% 0%, 0% 61.8034%);
+      --pentagon-center-shift: calc(var(--prism-w) * .081229924);
+      --side-offset: calc(var(--prism-w) / -2);
       --prism-h: min(64dvh, 720px);
       --portrait-share: 30%;
       --side-camera-ratio: .45;
@@ -29,6 +35,8 @@
     * { box-sizing: border-box; }
 
     html { background: #080909; }
+    html:not([data-card-authorized="true"]) body { visibility: hidden; }
+    html[data-card-mismatch="true"] body { display: none !important; }
 
     body {
       margin: 0;
@@ -165,6 +173,11 @@
     .map-room[data-face="1"] { top: 33%; right: 2%; }
     .map-room[data-face="2"] { bottom: 3%; right: 16%; }
     .map-room[data-face="3"] { bottom: 3%; left: 16%; }
+    .map-card.has-special .map-room[data-face="0"] { top: 3%; left: 8%; }
+    .map-card.has-special .map-room[data-face="1"] { top: 3%; left: 37.5%; }
+    .map-card.has-special .map-room[data-face="2"] { top: 3%; right: 8%; left: auto; }
+    .map-card.has-special .map-room[data-face="3"] { bottom: 3%; right: 16%; left: auto; top: auto; }
+    .map-card.has-special .map-room[data-face="4"] { bottom: 3%; left: 16%; top: auto; }
     .map-room[aria-current="true"] { color: #f2d28d; border-color: var(--gold); background: #242119; }
 
     .user-seat {
@@ -245,16 +258,6 @@
 
     .face[data-name].is-active { pointer-events: auto; }
 
-    /* 四面墙的正面全部朝向围合空间内部；相机位于围合空间内。 */
-    .face:nth-child(1) { transform: translateZ(calc(var(--prism-d) / -2)); }
-    .face:nth-child(2) {
-      transform: rotateY(-90deg) translateZ(calc(var(--prism-w) / -2));
-    }
-    .face:nth-child(3) { transform: rotateY(180deg) translateZ(calc(var(--prism-w) / -2)); }
-    .face:nth-child(4) {
-      transform: rotateY(90deg) translateZ(calc(var(--prism-w) / -2));
-    }
-
     .face-frame { height: 100%; display: grid; grid-template-rows: auto 1fr; }
 
     .face-heading {
@@ -271,6 +274,27 @@
     .identity { min-width: 0; }
     .identity h2 { margin: 0; color: #f1e8d4; font-size: clamp(20px, 2.4vw, 30px); letter-spacing: .08em; }
     .identity p { margin: 3px 0 0; color: var(--muted); font: 11px/1.2 ui-sans-serif, system-ui, sans-serif; }
+
+    .face-actions { flex: 0 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
+
+    .insight-mode-btn {
+      min-height: 34px;
+      padding: 6px 11px;
+      border: 1px solid rgba(121,151,165,.64);
+      color: #d6e5e8;
+      background: linear-gradient(145deg, #25343a, #111719);
+      pointer-events: none;
+      font: 700 11px/1.2 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .08em;
+      box-shadow: 0 7px 22px rgba(0,0,0,.24), inset 0 0 18px rgba(145,197,203,.06);
+      transition: border-color .18s ease, color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+    .insight-mode-btn.is-active {
+      border-color: #e0be72;
+      color: #fff1c4;
+      background: linear-gradient(145deg, #4a3a1e, #1b1914);
+      box-shadow: 0 0 0 1px rgba(224,190,114,.18), 0 7px 22px rgba(0,0,0,.3), inset 0 0 20px rgba(224,190,114,.12);
+    }
 
     .face-body {
       min-height: 0;
@@ -366,6 +390,72 @@
     .face-interact-btn.is-complete { border-color: #557b62; color: #b7d3bc; }
     .face-interact-btn[hidden] { display: none; }
 
+    .diary-open-btn {
+      min-height: 34px;
+      padding: 6px 11px;
+      border: 1px solid rgba(198,163,91,.58);
+      color: #f0dca9;
+      background: linear-gradient(145deg, #322918, #171716);
+      cursor: pointer;
+      pointer-events: auto;
+      font: 700 11px/1.2 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .08em;
+      box-shadow: 0 7px 22px rgba(0,0,0,.24), inset 0 0 18px rgba(198,163,91,.06);
+    }
+    .diary-open-btn:hover { border-color: #dfbd73; color: #fff0c6; }
+    .career-open-btn {
+      min-height: 34px;
+      padding: 6px 11px;
+      border: 1px solid rgba(147,162,177,.6);
+      color: #dce5ec;
+      background: linear-gradient(145deg, #273039, #121518);
+      cursor: pointer;
+      pointer-events: auto;
+      font: 700 11px/1.2 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .08em;
+      box-shadow: 0 7px 22px rgba(0,0,0,.24), inset 0 0 18px rgba(170,191,207,.06);
+    }
+    .career-open-btn:hover { border-color: #b5cad8; color: #f2f8fc; }
+    .album-open-btn {
+      min-height: 34px;
+      padding: 6px 11px;
+      border: 1px solid rgba(176,109,126,.68);
+      color: #f2d9df;
+      background: linear-gradient(145deg, #482431, #1b1216);
+      cursor: pointer;
+      pointer-events: auto;
+      font: 700 11px/1.2 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .08em;
+      box-shadow: 0 7px 22px rgba(0,0,0,.24), inset 0 0 18px rgba(211,131,151,.08);
+    }
+    .album-open-btn:hover { border-color: #d595a6; color: #fff1f4; }
+    .sister-open-btn {
+      min-height: 34px;
+      padding: 6px 11px;
+      border: 1px solid rgba(126,157,181,.68);
+      color: #dcebf4;
+      background: linear-gradient(145deg, #243746, #11191f);
+      cursor: pointer;
+      pointer-events: auto;
+      font: 700 11px/1.2 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .08em;
+      box-shadow: 0 7px 22px rgba(0,0,0,.24), inset 0 0 18px rgba(131,178,207,.08);
+    }
+    .sister-open-btn:hover { border-color: #a7c9dc; color: #f2faff; }
+    .testament-open-btn {
+      min-height: 34px;
+      padding: 6px 11px;
+      border: 1px solid rgba(166,127,105,.72);
+      color: #eadbd0;
+      background: linear-gradient(145deg, #392b26, #181311);
+      cursor: pointer;
+      pointer-events: auto;
+      font: 700 11px/1.2 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .08em;
+      box-shadow: 0 7px 22px rgba(0,0,0,.24), inset 0 0 18px rgba(177,125,96,.08);
+    }
+    .testament-open-btn:hover { border-color: #d2a58e; color: #fff1e8; }
+
     .interaction-hit-target {
       position: absolute;
       z-index: 8;
@@ -377,6 +467,17 @@
     }
     .interaction-hit-target[hidden] { display: none; }
     .interaction-hit-target:focus-visible { opacity: .14; outline: 2px solid #e6c77e; }
+    .insight-hit-target {
+      position: absolute;
+      z-index: 10;
+      padding: 0;
+      border: 0;
+      opacity: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+    .insight-hit-target[hidden] { display: none; }
+    .insight-hit-target:focus-visible { opacity: .16; outline: 2px solid #e6c77e; outline-offset: 1px; }
     .portrait-hit-target {
       position: absolute;
       z-index: 9;
@@ -391,11 +492,41 @@
 
     .utility-face {
       top: 50%;
-      width: var(--prism-w);
-      height: var(--prism-d);
-      margin-top: calc(var(--prism-d) / -2);
+      width: var(--surface-w);
+      height: var(--surface-d);
+      margin-left: calc(var(--surface-w) / -2);
+      margin-top: calc(var(--surface-d) / -2);
       overflow: hidden;
       padding: 24px;
+    }
+    .prism[data-sides="5"] .utility-face {
+      padding: 0;
+      border: 0;
+      background: rgba(198,163,91,.5);
+    }
+    .prism[data-sides="5"] .top-face {
+      margin-top: calc((var(--surface-d) / -2) - var(--pentagon-center-shift));
+      clip-path: var(--pentagon-shape);
+      transition: margin-top .72s cubic-bezier(.22,.78,.2,1), clip-path .72s cubic-bezier(.22,.78,.2,1);
+    }
+    .prism[data-sides="5"] .bottom-face {
+      margin-top: calc(var(--surface-d) / -2);
+      clip-path: var(--pentagon-bottom-shape);
+      transform: rotateX(90deg) translateY(var(--pentagon-center-shift)) translateZ(calc(var(--prism-h) / -2));
+      transition: margin-top .72s cubic-bezier(.22,.78,.2,1), clip-path .72s cubic-bezier(.22,.78,.2,1);
+    }
+    .prism[data-sides="5"][data-view="top"] .top-face {
+      margin-top: calc(var(--surface-d) / -2);
+    }
+    .prism[data-sides="5"] .utility-face::before {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      clip-path: inherit;
+      background:
+        linear-gradient(90deg, rgba(198,163,91,.045), transparent 23%, transparent 77%, rgba(198,163,91,.035)),
+        var(--panel);
+      box-shadow: inset 0 0 90px rgba(0,0,0,.34);
     }
     .utility-face h2 { margin: 0 0 8px; color: #f0dfb7; font-size: clamp(24px, 4vw, 42px); }
     .surface-content {
@@ -488,6 +619,18 @@
       background: radial-gradient(ellipse at center, rgba(198,163,91,.1), rgba(9,10,10,.92) 66%);
     }
     .surface-table { position: absolute; inset: 31% 30%; display: grid; place-items: center; border: 1px solid var(--gold-dim); border-radius: 50%; color: #dbc58f; }
+    .surface-scarecrow {
+      position: absolute;
+      left: 9%;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 4px 7px;
+      border: 1px dashed rgba(198,163,91,.55);
+      color: #dfca9d;
+      background: rgba(20,18,14,.92);
+      font: 700 9px/1.25 ui-sans-serif, system-ui, sans-serif;
+      white-space: pre-line;
+    }
     .surface-room {
       position: absolute;
       width: clamp(82px, 15%, 112px);
@@ -685,6 +828,331 @@
     .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
     .modal-btn { min-width: 90px; padding: 0 14px; }
 
+    .diary-backdrop { z-index: 46; background: rgba(3,4,4,.9); }
+    .diary-viewer {
+      width: min(760px, 96vw);
+      max-height: min(88dvh, 820px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      overflow: hidden;
+      border: 1px solid rgba(198,163,91,.64);
+      background: #17140f;
+      box-shadow: 0 30px 100px rgba(0,0,0,.86), inset 0 0 80px rgba(198,163,91,.04);
+    }
+    .diary-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 13px 16px;
+      border-bottom: 1px solid rgba(126,98,51,.52);
+      background: linear-gradient(90deg, rgba(198,163,91,.12), rgba(18,16,12,.9));
+    }
+    .diary-head h2 { margin: 0; color: #f0dfb9; font-size: 21px; letter-spacing: .08em; }
+    .diary-paper {
+      position: relative;
+      min-height: 360px;
+      margin: 18px;
+      padding: clamp(28px, 5vw, 54px);
+      overflow-y: auto;
+      color: #2f291f;
+      background:
+        linear-gradient(90deg, transparent 48px, rgba(147,77,64,.24) 49px, rgba(147,77,64,.24) 50px, transparent 51px),
+        repeating-linear-gradient(#eee3c7 0 31px, #c8b991 32px, #eee3c7 33px);
+      box-shadow: inset 0 0 42px rgba(98,72,33,.18), 0 12px 28px rgba(0,0,0,.35);
+      transform-origin: left center;
+    }
+    .diary-paper.is-turning { animation: diary-page-turn .28s ease; }
+    .diary-page-title {
+      margin: 0 0 20px;
+      color: #5b4125;
+      font: 700 23px/1.35 "STKaiti", "Kaiti SC", "KaiTi", "FZKai-Z03", cursive;
+      letter-spacing: .05em;
+    }
+    .diary-page-body {
+      margin: 0;
+      white-space: pre-wrap;
+      font: 19px/1.78 "STKaiti", "Kaiti SC", "KaiTi", "FZKai-Z03", "Segoe Print", cursive;
+      text-align: justify;
+    }
+    .diary-ink-circle,
+    .diary-ink-underline,
+    .diary-ink-note {
+      position: relative;
+      display: inline-block;
+    }
+    .diary-ink-circle { z-index: 0; padding: 0 .12em; }
+    .diary-ink-circle::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      inset: -.14em -.25em -.08em;
+      border: 2px solid rgba(157,46,42,.78);
+      border-radius: 48% 55% 50% 46%;
+      transform: rotate(-2.8deg);
+      pointer-events: none;
+    }
+    .diary-ink-underline {
+      background:
+        linear-gradient(176deg, transparent 78%, rgba(157,46,42,.78) 79% 84%, transparent 85%),
+        linear-gradient(181deg, transparent 86%, rgba(157,46,42,.48) 87% 90%, transparent 91%);
+    }
+    .diary-ink-strike {
+      color: rgba(63,50,37,.72);
+      text-decoration-line: line-through;
+      text-decoration-color: rgba(157,46,42,.9);
+      text-decoration-thickness: 2px;
+      text-decoration-style: double;
+    }
+    .diary-ink-note {
+      margin: 0 .16em;
+      color: #9d2e2a;
+      font-size: .88em;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-decoration: none;
+      transform: rotate(-3deg);
+    }
+    .diary-ink-note::before { content: "↗ "; }
+    .diary-controls {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 0 18px 18px;
+    }
+    .diary-controls .modal-btn:first-child { justify-self: start; }
+    .diary-controls .modal-btn:last-child { justify-self: end; }
+    .diary-page-count { color: #bba77c; font: 700 11px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .16em; }
+    @keyframes diary-page-turn {
+      0% { opacity: .4; transform: perspective(900px) rotateY(-8deg) translateX(-7px); }
+      100% { opacity: 1; transform: perspective(900px) rotateY(0) translateX(0); }
+    }
+
+    .career-backdrop { z-index: 46; background: rgba(2,5,8,.92); }
+    .career-viewer {
+      width: min(820px, 96vw);
+      max-height: min(88dvh, 840px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      overflow: hidden;
+      border: 1px solid rgba(151,170,187,.58);
+      background: #0d1216;
+      box-shadow: 0 30px 100px rgba(0,0,0,.88), inset 0 0 90px rgba(106,143,168,.05);
+    }
+    .career-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 17px;
+      border-bottom: 1px solid rgba(151,170,187,.3);
+      background: linear-gradient(90deg, rgba(89,118,139,.24), rgba(10,14,18,.92));
+    }
+    .career-head h2 { margin: 0; color: #e4edf3; font: 650 20px/1.25 ui-sans-serif, system-ui, sans-serif; letter-spacing: .08em; }
+    .career-sheet {
+      position: relative;
+      min-height: 370px;
+      margin: 20px;
+      padding: clamp(30px, 5vw, 58px);
+      overflow-y: auto;
+      color: #d9e2e8;
+      border: 1px solid rgba(151,170,187,.24);
+      background:
+        linear-gradient(135deg, rgba(105,135,157,.12), transparent 38%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.015) 0 1px, transparent 1px 25px),
+        #11171c;
+      box-shadow: inset 0 0 54px rgba(0,0,0,.3), 0 16px 34px rgba(0,0,0,.42);
+    }
+    .career-sheet::before {
+      content: "ARCHIVE / CORPORATE MILESTONE";
+      display: block;
+      margin-bottom: 14px;
+      color: #7795aa;
+      font: 800 10px/1 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .22em;
+    }
+    .career-sheet.is-turning { animation: career-slide .28s ease; }
+    .career-year { margin: 0 0 9px; color: #8ba9bc; font: 800 13px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .18em; }
+    .career-page-title { margin: 0 0 22px; color: #f1f5f7; font: 650 27px/1.25 ui-sans-serif, system-ui, sans-serif; }
+    .career-page-body { margin: 0; white-space: pre-wrap; color: #cad5dc; font: 15px/1.95 ui-sans-serif, system-ui, sans-serif; text-align: justify; }
+    .career-controls {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 0 20px 20px;
+    }
+    .career-controls .modal-btn:first-child { justify-self: start; }
+    .career-controls .modal-btn:last-child { justify-self: end; }
+    .career-page-count { color: #8298a7; font: 800 11px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .16em; }
+    @keyframes career-slide {
+      0% { opacity: .35; transform: translateX(14px); filter: blur(2px); }
+      100% { opacity: 1; transform: translateX(0); filter: blur(0); }
+    }
+
+    .album-backdrop { z-index: 46; background: rgba(6,2,4,.93); }
+    .album-viewer {
+      width: min(860px, 96vw);
+      max-height: min(92dvh, 880px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      overflow: hidden;
+      border: 1px solid rgba(178,105,124,.62);
+      border-radius: 4px;
+      background: #2c1119;
+      box-shadow: 0 32px 110px rgba(0,0,0,.9), inset 0 0 90px rgba(116,39,59,.32);
+    }
+    .album-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 17px;
+      border-bottom: 1px solid rgba(209,137,155,.28);
+      background: linear-gradient(90deg, rgba(125,51,72,.55), rgba(30,12,17,.94));
+    }
+    .album-head h2 { margin: 0; color: #f6dfe5; font: 650 21px/1.25 ui-serif, "Songti SC", serif; letter-spacing: .08em; }
+    .album-page {
+      position: relative;
+      min-height: 440px;
+      margin: 18px;
+      padding: clamp(22px, 4vw, 38px);
+      overflow-y: auto;
+      color: #42302e;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(183,118,103,.09), transparent 15rem),
+        #eadfce;
+      box-shadow: inset 0 0 50px rgba(84,46,38,.2), 0 16px 38px rgba(0,0,0,.42);
+    }
+    .album-page.is-turning { animation: album-flip .32s ease; }
+    .album-photo-frame {
+      position: relative;
+      width: min(620px, 94%);
+      margin: 0 auto 22px;
+      padding: 11px 11px 38px;
+      background: #faf7ef;
+      box-shadow: 0 10px 24px rgba(67,40,34,.25);
+      transform: rotate(-.7deg);
+    }
+    .album-photo-frame::before, .album-photo-frame::after {
+      content: "";
+      position: absolute;
+      width: 72px;
+      height: 20px;
+      top: -7px;
+      background: rgba(192,160,117,.48);
+      box-shadow: 0 1px 2px rgba(0,0,0,.12);
+    }
+    .album-photo-frame::before { left: 12%; transform: rotate(-5deg); }
+    .album-photo-frame::after { right: 12%; transform: rotate(4deg); }
+    .album-photo {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      display: block;
+      object-fit: cover;
+      object-position: center;
+      background: #b9afa1;
+    }
+    .album-page.is-last { display: grid; place-items: center; text-align: center; }
+    .album-page.is-last .album-photo-frame { display: none; }
+    .album-page-title { margin: 0 0 8px; color: #6b3341; font: 700 24px/1.35 "STKaiti", "Kaiti SC", "KaiTi", cursive; text-align: center; }
+    .album-page-duration { margin: 0 0 13px; color: #9a6972; font: 700 11px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .14em; text-align: center; }
+    .album-page-body { max-width: 640px; margin: 0 auto; white-space: pre-wrap; font: 17px/1.75 "STKaiti", "Kaiti SC", "KaiTi", cursive; text-align: center; }
+    .album-controls {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 0 18px 18px;
+    }
+    .album-controls .modal-btn:first-child { justify-self: start; }
+    .album-controls .modal-btn:last-child { justify-self: end; }
+    .album-page-count { color: #d1a4b0; font: 800 11px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .16em; }
+    @keyframes album-flip {
+      0% { opacity: .25; transform: perspective(1000px) rotateY(7deg) scale(.99); }
+      100% { opacity: 1; transform: perspective(1000px) rotateY(0) scale(1); }
+    }
+
+    .sister-backdrop { z-index: 46; background: rgba(2,6,9,.94); }
+    .sister-viewer {
+      width: min(900px, 96vw);
+      max-height: min(92dvh, 860px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+      border: 1px solid rgba(137,174,198,.58);
+      background: #0c1318;
+      box-shadow: 0 32px 110px rgba(0,0,0,.9), inset 0 0 88px rgba(81,135,170,.12);
+    }
+    .sister-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 17px;
+      border-bottom: 1px solid rgba(137,174,198,.3);
+      background: linear-gradient(90deg, rgba(66,106,132,.34), rgba(10,15,19,.95));
+    }
+    .sister-head h2 { margin: 0; color: #e8f2f7; font: 650 21px/1.25 ui-serif, "Songti SC", serif; letter-spacing: .08em; }
+    .sister-photo-stage {
+      min-height: 0;
+      margin: 18px;
+      padding: 14px 14px 42px;
+      overflow: hidden;
+      background: #e6e0d5;
+      box-shadow: 0 18px 45px rgba(0,0,0,.5), inset 0 0 30px rgba(77,64,48,.14);
+      transform: rotate(-.35deg);
+    }
+    .sister-photo-stage img { width: 100%; height: 100%; max-height: 64dvh; display: block; object-fit: contain; object-position: center; background: #a9a49b; }
+
+    .testament-backdrop { z-index: 47; background: rgba(7,4,3,.95); }
+    .testament-viewer {
+      width: min(820px, 96vw);
+      max-height: min(92dvh, 900px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+      border: 1px solid rgba(171,133,107,.62);
+      background: #17110e;
+      box-shadow: 0 34px 118px rgba(0,0,0,.92), inset 0 0 90px rgba(134,78,54,.11);
+    }
+    .testament-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 17px;
+      border-bottom: 1px solid rgba(171,133,107,.32);
+      background: linear-gradient(90deg, rgba(104,68,50,.42), rgba(20,14,12,.96));
+    }
+    .testament-head h2 { margin: 0; color: #f0e2d5; font: 650 21px/1.25 ui-serif, "Songti SC", serif; letter-spacing: .08em; }
+    .testament-paper {
+      position: relative;
+      min-height: 360px;
+      margin: 18px;
+      padding: clamp(28px, 5vw, 56px);
+      overflow-y: auto;
+      color: #473b32;
+      background:
+        linear-gradient(90deg, transparent 0 44px, rgba(145,76,67,.16) 45px 46px, transparent 47px),
+        repeating-linear-gradient(0deg, transparent 0 31px, rgba(89,75,61,.11) 32px 33px),
+        #e7decb;
+      box-shadow: inset 0 0 62px rgba(83,57,38,.18), 0 18px 45px rgba(0,0,0,.46);
+      font: 18px/1.95 "STKaiti", "Kaiti SC", "KaiTi", ui-serif, serif;
+      letter-spacing: .035em;
+    }
+    .testament-paper::before {
+      content: "PRIVATE LETTER / 未寄出的最后一页";
+      display: block;
+      margin-bottom: 22px;
+      color: rgba(91,65,49,.62);
+      font: 800 10px/1 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .2em;
+    }
+    .testament-paper p { margin: 0 0 1.15em; white-space: pre-wrap; }
+    .testament-signature { margin-top: 1.8em !important; text-align: right; color: #6d5143; font-weight: 700; }
+
     .portrait-backdrop { z-index: 40; background: rgba(3,4,4,.92); }
     .portrait-viewer {
       width: min(1120px, 96vw);
@@ -824,6 +1292,15 @@
       .viewport { min-height: calc(var(--prism-h) + 6px); perspective: var(--room-perspective); }
       .face-heading { min-height: 52px; padding: 8px 11px; }
       .face-interact-btn { max-width: 116px; min-height: 30px; padding: 5px 8px; font-size: 9px; }
+      .face-actions { gap: 4px; }
+      .diary-open-btn, .career-open-btn, .album-open-btn, .sister-open-btn, .testament-open-btn, .insight-mode-btn { min-height: 30px; padding: 5px 8px; font-size: 9px; }
+      .career-open-btn { min-height: 30px; padding: 5px 8px; font-size: 9px; }
+      .album-open-btn { min-height: 30px; padding: 5px 8px; font-size: 9px; }
+      .diary-paper { min-height: 300px; margin: 10px; padding: 26px 24px 26px 58px; }
+      .diary-page-body { font-size: 17px; }
+      .career-sheet { min-height: 310px; margin: 10px; padding: 28px 24px; }
+      .album-page { min-height: 360px; margin: 10px; padding: 18px 12px; }
+      .testament-paper { min-height: 320px; margin: 10px; padding: 25px 20px 28px 44px; font-size: 16px; }
       .face-body { grid-template-columns: 112px minmax(0, 1fr); padding: 9px; gap: 8px; }
       .profile-rail { grid-template-rows: minmax(168px, 70%) auto; gap: 7px; }
       .quick-state { gap: 4px; }
@@ -886,9 +1363,10 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var VERSION = 6;
-  var SCHEDULE_ALGORITHM_VERSION = 5;
+  var VERSION = 9;
+  var SCHEDULE_ALGORITHM_VERSION = 6;
   var DAYS = 15;
+  var FIXED_KEKE_DAY = 10;
   var PARTICIPANTS = ['玩家', '林安', '穆裳希', '张曲溪', '王可可'];
   var SCHEDULE_CODES = ['bravo', 'delta', 'echo', 'alpha', 'charlie'];
   var CODE_TO_NAME = { alpha: '张曲溪', bravo: '玩家', charlie: '王可可', delta: '林安', echo: '穆裳希' };
@@ -896,6 +1374,7 @@
   var WOMEN = ['林安', '穆裳希', '张曲溪', '王可可'];
   var RELATIONSHIP_DECREE_TEXT = '每个人必须说出自己和韩璇的关系';
   var ENDING_NAMES = { n1: '林安', n2: '穆裳希', n3: '张曲溪' };
+  var INNER_NAMES = { n1: '林安', n2: '穆裳希', n3: '张曲溪', n4: '王可可', u: '玩家' };
   var ENDING_TITLES = {
     A: '唯一幸存者',
     B: '迟来的残片',
@@ -1023,9 +1502,53 @@
         n2: confessionSource.n2 === true,
         n3: confessionSource.n3 === true
       },
+      v: source.v === true,
+      p: source.p === true,
       r: route,
       d: source.d === true && route !== ''
     };
+  }
+
+  function normalizeN3ConquestLedger(value) {
+    var source = value && typeof value === 'object' ? value : {};
+    var valid = { '': true, n3: true, u: true };
+    return {
+      n1: valid[source.n1] ? source.n1 : '',
+      n2: valid[source.n2] ? source.n2 : '',
+      n4: valid[source.n4] ? source.n4 : ''
+    };
+  }
+
+  function normalizeAffectionEventState(value) {
+    var source = value && typeof value === 'object' ? value : {};
+    return {
+      n1: source.n1 === true,
+      n2: source.n2 === true,
+      n3: source.n3 === true,
+      n4: source.n4 === true
+    };
+  }
+
+  function normalizeInsightEventState(value) {
+    var source = value && typeof value === 'object' ? value : {};
+    return {
+      n1: source.n1 === true,
+      n2: source.n2 === true,
+      n3: source.n3 === true
+    };
+  }
+
+  function normalizeInsightProjection(value) {
+    var source = value && typeof value === 'object' ? value : {};
+    var result = {};
+    ['n1', 'n2', 'n3', 'n4'].forEach(function (alias) {
+      var item = source[alias] && typeof source[alias] === 'object' ? source[alias] : {};
+      result[alias] = {
+        m: typeof item.m === 'string' ? item.m : '',
+        a: Array.isArray(item.a) ? item.a.filter(function (entry) { return typeof entry === 'string'; }).slice(0, 3) : []
+      };
+    });
+    return result;
   }
 
   function repairEndingCache(system, relationshipDecreeFound) {
@@ -1037,7 +1560,17 @@
     Object.keys(sourceCache).forEach(function (key) {
       cache[key] = sourceCache[key];
     });
+    var n3Source = cache.n3 && typeof cache.n3 === 'object' ? cache.n3 : {};
+    var n3 = {};
+    Object.keys(n3Source).forEach(function (key) {
+      n3[key] = n3Source[key];
+    });
+    n3.x = normalizeN3ConquestLedger(n3Source.x);
+    cache.n3 = n3;
     cache.e = normalizeEndingState(sourceCache.e, relationshipDecreeFound);
+    cache.f = normalizeAffectionEventState(sourceCache.f);
+    cache.g = normalizeInsightEventState(sourceCache.g);
+    cache.p = normalizeInsightProjection(sourceCache.p);
     system.internal = cache;
     delete system['_校验缓存'];
     return system;
@@ -1272,6 +1805,10 @@
   }
 
   function orderedCandidates(seed, position, previous, remaining) {
+    if (position === FIXED_KEKE_DAY - 1) {
+      return previous !== '王可可' && remaining['王可可'] > 0 ? ['王可可'] : [];
+    }
+
     var candidates = PARTICIPANTS.filter(function (name) {
       return name !== previous && remaining[name] > 0;
     });
@@ -1389,6 +1926,10 @@
       if (index > 0 && schedule[index] === schedule[index - 1]) {
         warnings.push('日程存在同一人连续担任国王');
       }
+    }
+
+    if (schedule.length >= FIXED_KEKE_DAY && schedule[FIXED_KEKE_DAY - 1] !== NAME_TO_CODE['王可可']) {
+      errors.push('第10日必须由王可可担任国王');
     }
 
     var counts = countKings(schedule, schedule.length);
@@ -1708,6 +2249,7 @@
 
   function getSnapshot(source) {
     var system = getSystem(source);
+    var roles = source && source['角色'] && typeof source['角色'] === 'object' ? source['角色'] : {};
     var schedule = normalizeSchedule(system['_国王日程']);
     var validation = validateSchedule(schedule);
     var derived = validation.valid
@@ -1731,6 +2273,92 @@
     if (endingDisplay) {
       snapshot['结局展示'] = endingDisplay;
     }
+    if (system.internal && system.internal.e && system.internal.e.h === true) {
+      snapshot['_特殊档案已解锁'] = true;
+    }
+    if (system.internal && system.internal.f && system.internal.f.n1 === true) {
+      snapshot['_侦探日记已解锁'] = true;
+    }
+    if (system.internal && system.internal.f && system.internal.f.n2 === true) {
+      snapshot['_创业事迹已解锁'] = true;
+    }
+    if (system.internal && system.internal.f && system.internal.f.n3 === true) {
+      snapshot['_风流相册已解锁'] = true;
+    }
+    if (system.internal && system.internal.f && system.internal.f.n4 === true) {
+      snapshot['_姐妹合照已解锁'] = true;
+    }
+    if (system.internal && system.internal.e && system.internal.e.p === true) {
+      snapshot['_妹妹遗书已解锁'] = true;
+    }
+
+    var hidden = system.internal && typeof system.internal === 'object' ? system.internal : {};
+    var insightFlags = normalizeInsightEventState(hidden.g);
+    var insightProjection = normalizeInsightProjection(hidden.p);
+
+    function publicRoleView(name, fields) {
+      var role = roles[name] && typeof roles[name] === 'object' ? roles[name] : {};
+      var view = {};
+      if (fields.m) view['心理'] = typeof role['心理'] === 'string' ? role['心理'] : '';
+      if (fields.a) view['行动倾向'] = Array.isArray(role['行动倾向']) ? role['行动倾向'].slice(0, 3) : [];
+      if (fields.r) {
+        view['关系'] = {};
+        var relations = role['关系'] && typeof role['关系'] === 'object' ? role['关系'] : {};
+        Object.keys(relations).forEach(function (target) {
+          var item = relations[target] && typeof relations[target] === 'object' ? relations[target] : {};
+          var score = Number(item['好感度']);
+          view['关系'][target] = { '好感度': isFinite(score) ? Math.max(-100, Math.min(100, Math.round(score))) : 0 };
+        });
+      }
+      return view;
+    }
+
+    function privateRoleView(alias, fields) {
+      var truth = hidden[alias] && typeof hidden[alias] === 'object' ? hidden[alias] : {};
+      var projection = insightProjection[alias] || { m: '', a: [] };
+      var view = {};
+      if (fields.m) view['心理'] = projection.m;
+      if (fields.a) view['行动倾向'] = projection.a.slice(0, 3);
+      if (fields.r) {
+        view['关系'] = {};
+        var relations = truth.r && typeof truth.r === 'object' ? truth.r : {};
+        Object.keys(relations).forEach(function (targetAlias) {
+          var targetName = INNER_NAMES[targetAlias];
+          if (!targetName) return;
+          var score = Number(relations[targetAlias]);
+          view['关系'][targetName] = { '好感度': isFinite(score) ? Math.max(-100, Math.min(100, Math.round(score))) : 0 };
+        });
+      }
+      return view;
+    }
+
+    if (insightFlags.n1) {
+      snapshot['_侦探状态洞察'] = {
+        '林安': privateRoleView('n1', { m: true, a: true, r: true }),
+        '穆裳希': privateRoleView('n2', { m: true, a: true, r: true }),
+        '张曲溪': privateRoleView('n3', { m: true, a: true, r: true }),
+        '王可可': publicRoleView('王可可', { m: true, a: true, r: true })
+      };
+    }
+    if (insightFlags.n2) {
+      snapshot['_商人远见洞察'] = {
+        '林安': privateRoleView('n1', { a: true }),
+        '穆裳希': privateRoleView('n2', { m: true, a: true, r: true }),
+        '张曲溪': privateRoleView('n3', { a: true }),
+        '王可可': publicRoleView('王可可', { a: true })
+      };
+    }
+    if (insightFlags.n3) {
+      snapshot['_情场王子洞察'] = {
+        '林安': privateRoleView('n1', { r: true }),
+        '穆裳希': privateRoleView('n2', { r: true }),
+        '张曲溪': privateRoleView('n3', { m: true, a: true, r: true }),
+        '王可可': publicRoleView('王可可', { r: true })
+      };
+    }
+    if (hidden.e && hidden.e.p === true) {
+      snapshot['_可可信任洞察'] = privateRoleView('n4', { m: true, a: true, r: true });
+    }
 
     return snapshot;
   }
@@ -1738,6 +2366,7 @@
   return {
     VERSION: VERSION,
     DAYS: DAYS,
+    FIXED_KEKE_DAY: FIXED_KEKE_DAY,
     PARTICIPANTS: PARTICIPANTS.slice(),
     WOMEN: WOMEN.slice(),
     RELATIONSHIP_DECREE_TEXT: RELATIONSHIP_DECREE_TEXT,
@@ -1767,8 +2396,10 @@
 <script>(function () {
   'use strict';
 
-  var INITIAL_STATE = {"系统":{"_版本":6,"_日程已锁定":false,"_当前天数":1,"_当前国王":"","_国王次数":{"玩家":0,"林安":0,"穆裳希":0,"张曲溪":0,"王可可":0},"_每日阶段":"待颁布法令","_今日法令已广播":false,"_女性互动矩阵":{"林安":{"林安":true,"穆裳希":false,"张曲溪":false,"王可可":false},"穆裳希":{"林安":false,"穆裳希":true,"张曲溪":false,"王可可":false},"张曲溪":{"林安":false,"穆裳希":false,"张曲溪":true,"王可可":false},"王可可":{"林安":false,"穆裳希":false,"张曲溪":false,"王可可":true}},"_玩家已互动角色":[],"_最近互动请求":null,"_可过夜":false,"当前时间":"第1日 08:10","当前地点":"个人房间","当前阶段":"等待法令","公开线索":[]},"玩家":{"颁布规则":[]},"角色":{"林安":{"信息":{"年龄":25,"公开身份":"自诩女侦探的无业家里蹲"},"状态":{"身体":"正常，刚从熟睡中醒来","当前行动":"循着广播声检查墙面与扬声器"},"上衣":{"衣着":"棕色猎鹿帽、格纹短披肩与米白衬衫","肉体":"上半身无明显外伤，脸侧留有贴桌熟睡的浅印"},"下衣":{"衣着":"深棕灯芯绒马裤与系带短靴","肉体":"下半身活动正常，无明显外伤"},"心理":"完了，我刚才是不是把桌子舔干净了……旁边那个人应该没看见吧？等等，自由侦探怎么就成“自居”了？","行动倾向":["检查录音来源","勘查环境"],"颁布规则":[],"关系":{"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":3}}},"穆裳希":{"信息":{"年龄":27,"公开身份":"企业创办人与经营者"},"状态":{"身体":"正常，情绪高度紧绷","当前行动":"记录广播内容并观察房间设施"},"上衣":{"衣着":"炭黑修身西装与暗红丝质上衣","肉体":"呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红"},"下衣":{"衣着":"同色西装长裤与黑色尖头短靴","肉体":"站姿稳定，下半身无明显外伤"},"心理":"连公益项目都翻过。公司里有谁碰得到这么完整的资料？……该死，手怎么还在抖。","行动倾向":["稳定秩序","核对环境线索"],"颁布规则":[],"关系":{"林安":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-8}}},"张曲溪":{"信息":{"年龄":22,"公开身份":"长发高马尾的英气女大学生"},"状态":{"身体":"正常，肌肉线条饱满","当前行动":"守住安全距离并观察出口与广播设施"},"上衣":{"衣着":"暗绿短款大学棒球夹克与黑色圆领上衣","肉体":"肩背与前臂活动正常，无明显伤口、红肿或疼痛反应"},"下衣":{"衣着":"深色工装长裤与运动鞋","肉体":"双腿活动正常，无明显伤口或红肿"},"心理":"“王子”……连这种破外号都知道。到底是谁把我翻得这么干净？","行动倾向":["防备录音者","守住安全距离"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-2}}},"王可可":{"信息":{"年龄":32,"公开身份":"高中女教师"},"状态":{"身体":"正常，刚苏醒时呼吸略急","当前行动":"调停互疑并提议先核对广播与环境"},"上衣":{"衣着":"浅蓝针织开衫与象牙白衬衫","肉体":"双肩略紧，按在项圈边缘的指尖微凉"},"下衣":{"衣着":"烟灰色过膝百褶裙与浅口皮鞋","肉体":"步态正常，无明显外伤"},"心理":"学生那边不会也被盯上了吧……别抖，至少让大家把这段录音听完。","行动倾向":["调停冲突","组织环境检查"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"玩家":{"好感度":8}}}}};
-  var EXPECTED_CARD_NAME = "读心术者的匿名国王游戏（louisHM制作）";
+  var INITIAL_STATE = {"系统":{"_版本":9,"_日程已锁定":false,"_当前天数":1,"_当前国王":"","_国王次数":{"玩家":0,"林安":0,"穆裳希":0,"张曲溪":0,"王可可":0},"_每日阶段":"待颁布法令","_今日法令已广播":false,"_女性互动矩阵":{"林安":{"林安":true,"穆裳希":false,"张曲溪":false,"王可可":false},"穆裳希":{"林安":false,"穆裳希":true,"张曲溪":false,"王可可":false},"张曲溪":{"林安":false,"穆裳希":false,"张曲溪":true,"王可可":false},"王可可":{"林安":false,"穆裳希":false,"张曲溪":false,"王可可":true}},"_玩家已互动角色":[],"_最近互动请求":null,"_可过夜":false,"当前时间":"第1日 08:10","当前地点":"个人房间","当前阶段":"等待法令","公开线索":[]},"玩家":{"颁布规则":[]},"角色":{"林安":{"信息":{"年龄":25,"公开身份":"自诩女侦探的无业家里蹲"},"状态":{"身体":"正常，刚从熟睡中醒来","当前行动":"循着广播声检查墙面与扬声器"},"上衣":{"衣着":"棕色猎鹿帽、格纹短披肩与米白衬衫","肉体":"上半身无明显外伤，脸侧留有贴桌熟睡的浅印"},"下衣":{"衣着":"深棕灯芯绒马裤与系带短靴","肉体":"下半身活动正常，无明显外伤"},"心理":"完了，我刚才是不是把桌子舔干净了……旁边那个人应该没看见吧？等等，自由侦探怎么就成“自居”了？","行动倾向":["检查录音来源","勘查环境"],"颁布规则":[],"关系":{"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":3}}},"穆裳希":{"信息":{"年龄":27,"公开身份":"企业创办人与经营者"},"状态":{"身体":"正常，情绪高度紧绷","当前行动":"记录广播内容并观察房间设施"},"上衣":{"衣着":"炭黑修身西装与暗红丝质上衣","肉体":"呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红"},"下衣":{"衣着":"同色西装长裤与黑色尖头短靴","肉体":"站姿稳定，下半身无明显外伤"},"心理":"连公益项目都翻过。公司里有谁碰得到这么完整的资料？那个男人也不能排除……该死，手怎么还在抖。","行动倾向":["监视玩家动向","核对环境线索"],"颁布规则":[],"关系":{"林安":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-8}}},"张曲溪":{"信息":{"年龄":22,"公开身份":"长发高马尾的英气女大学生"},"状态":{"身体":"正常，肌肉线条饱满","当前行动":"守住安全距离并观察出口与广播设施"},"上衣":{"衣着":"暗绿短款大学棒球夹克与黑色圆领上衣","肉体":"肩背与前臂活动正常，无明显伤口、红肿或疼痛反应"},"下衣":{"衣着":"深色工装长裤与运动鞋","肉体":"双腿活动正常，无明显伤口或红肿"},"心理":"“王子”……连这种破外号都知道。到底是谁把我翻得这么干净？","行动倾向":["防备录音者","守住安全距离"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-2}}},"王可可":{"信息":{"年龄":32,"公开身份":"高中女教师"},"状态":{"身体":"正常，刚苏醒时呼吸略急","当前行动":"调停互疑并提议先核对广播与环境"},"上衣":{"衣着":"浅蓝针织开衫与象牙白衬衫","肉体":"双肩略紧，按在项圈边缘的指尖微凉"},"下衣":{"衣着":"烟灰色过膝百褶裙与浅口皮鞋","肉体":"步态正常，无明显外伤"},"心理":"学生那边不会也被盯上了吧……别抖，至少让大家把这段录音听完。","行动倾向":["调停冲突","组织环境检查"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"玩家":{"好感度":8}}}}};
+  var EXPECTED_CARD_NAME = "读心术者的匿名国王游戏（louisHM制作·完全免费）";
+  var EXPECTED_WORLD_BOOK_NAME = "读心术者的匿名国王游戏（louisHM制作·完全免费）";
+  var LOCAL_PREVIEW = false;
   var listeners = [];
   var cachedState = null;
   var actionPending = false;
@@ -1831,7 +2462,33 @@
     return ctx.name1 || ctx.userName || '你';
   }
 
-  function cardName() {
+  function decoded(values, key) {
+    return String.fromCodePoint.apply(String, values.map(function (value) { return value ^ key; }));
+  }
+
+  function protectionMarks() {
+    return [
+      decoded([79, 76, 86, 74, 80, 107, 110], 35),
+      decoded([27869, 26169, 26140, 47720], 14161)
+    ];
+  }
+
+  function hasProtectionMarks(value) {
+    var text = String(value == null ? '' : value);
+    if (typeof text.normalize === 'function') text = text.normalize('NFKC');
+    return protectionMarks().every(function (mark) { return text.includes(mark); });
+  }
+
+  function windowCandidates() {
+    var candidates = [window];
+    try { candidates.push(window.parent); } catch (error) {}
+    try { candidates.push(window.top); } catch (error) {}
+    return candidates.filter(function (candidate, index) {
+      return candidate && candidates.indexOf(candidate) === index;
+    });
+  }
+
+  function cardNames() {
     var seen = {};
     var names = [];
     function add(value) {
@@ -1840,9 +2497,7 @@
       seen[text] = true;
       names.push(text);
     }
-    var candidates = [window];
-    try { candidates.push(window.parent); } catch (error) {}
-    try { candidates.push(window.top); } catch (error) {}
+    var candidates = windowCandidates();
     for (var index = 0; index < candidates.length; index += 1) {
       var host = candidates[index];
       if (!host) continue;
@@ -1859,7 +2514,114 @@
         else if (characters && typeof characters === 'object') add(characters[characterId] && characters[characterId].name);
       } catch (error) {}
     }
-    return names.length ? names.join('\n') : (hostWindow() === window ? EXPECTED_CARD_NAME : '');
+    return names;
+  }
+
+  function cardName() {
+    return cardNames().join('\n');
+  }
+
+  function helperTargets() {
+    var targets = [];
+    windowCandidates().forEach(function (host) {
+      targets.push(host);
+      try {
+        if (host.TavernHelper) targets.push(host.TavernHelper);
+        if (host.TavernHelper && host.TavernHelper.api) targets.push(host.TavernHelper.api);
+      } catch (error) {}
+    });
+    return targets.filter(function (target, index) {
+      return target && targets.indexOf(target) === index;
+    });
+  }
+
+  function currentCharacter() {
+    var candidates = windowCandidates();
+    for (var index = 0; index < candidates.length; index += 1) {
+      var host = candidates[index];
+      try {
+        var ctx = host.SillyTavern && typeof host.SillyTavern.getContext === 'function'
+          ? host.SillyTavern.getContext()
+          : (typeof host.getContext === 'function' ? host.getContext() : {});
+        if (ctx && ctx.character && typeof ctx.character === 'object') return ctx.character;
+        var characterId = ctx && (ctx.characterId != null ? ctx.characterId : ctx.chid);
+        var characters = (ctx && ctx.characters) || host.characters;
+        if (Array.isArray(characters) && characters[Number(characterId)]) return characters[Number(characterId)];
+        if (characters && typeof characters === 'object' && characters[characterId]) return characters[characterId];
+      } catch (error) {}
+    }
+    return null;
+  }
+
+  function hasHostRuntime() {
+    return windowCandidates().some(function (host) {
+      try {
+        return !!(host && (
+          host.SillyTavern
+          || host.Mvu
+          || host.TavernHelper
+          || typeof host.getContext === 'function'
+        ));
+      } catch (error) {
+        return false;
+      }
+    });
+  }
+
+  async function inspectAuthorization() {
+    if (!hasProtectionMarks(EXPECTED_CARD_NAME) || !hasProtectionMarks(EXPECTED_WORLD_BOOK_NAME)) {
+      return { authorized: false, reason: 'signature' };
+    }
+    if (LOCAL_PREVIEW === true && !hasHostRuntime()) {
+      return { authorized: true, preview: true, card: EXPECTED_CARD_NAME, worldbook: EXPECTED_WORLD_BOOK_NAME };
+    }
+
+    var names = cardNames();
+    if (!names.length || !names.some(hasProtectionMarks)) {
+      return { authorized: false, reason: 'card' };
+    }
+
+    var targets = helperTargets();
+    for (var index = 0; index < targets.length; index += 1) {
+      var target = targets[index];
+      if (typeof target.getCharWorldbookNames !== 'function') continue;
+      try {
+        var books = await Promise.resolve(target.getCharWorldbookNames('current'));
+        var primary = books && typeof books === 'object' ? books.primary : '';
+        return {
+          authorized: hasProtectionMarks(primary),
+          reason: hasProtectionMarks(primary) ? '' : 'worldbook',
+          card: names.join('\n'),
+          worldbook: String(primary == null ? '' : primary)
+        };
+      } catch (error) {
+        return { authorized: false, reason: 'worldbook-unavailable' };
+      }
+    }
+
+    var character = currentCharacter();
+    var boundName = character && (
+      character.data && character.data.extensions && character.data.extensions.world
+      || character.extensions && character.extensions.world
+      || character.world
+    );
+    if (!boundName) {
+      for (var windowIndex = 0; windowIndex < windowCandidates().length; windowIndex += 1) {
+        try {
+          var field = windowCandidates()[windowIndex].document.querySelector('#character_world');
+          if (field && field.value) {
+            boundName = field.value;
+            break;
+          }
+        } catch (error) {}
+      }
+    }
+    return {
+      authorized: hasProtectionMarks(boundName),
+      reason: hasProtectionMarks(boundName) ? '' : 'worldbook',
+      card: names.join('\n'),
+      worldbook: String(boundName == null ? '' : boundName)
+    };
   }
 
   function currentMessageOption(host) {
@@ -1884,6 +2646,9 @@
     var system = output['系统'];
     if (system && typeof system === 'object') {
       var api = window.KingGameState;
+      var safeSnapshot = api && typeof api.getSnapshot === 'function'
+        ? api.getSnapshot(output)
+        : null;
       var endingDisplay = api && typeof api.getEndingDisplay === 'function'
         ? api.getEndingDisplay(system)
         : null;
@@ -1893,6 +2658,138 @@
       delete system['_protocol_strikes'];
       delete system.internal;
       delete system['_校验缓存'];
+      if (safeSnapshot && safeSnapshot['_特殊档案已解锁'] === true) {
+        system['_特殊档案已解锁'] = true;
+      } else {
+        delete system['_特殊档案已解锁'];
+      }
+      if (safeSnapshot && safeSnapshot['_侦探日记已解锁'] === true) {
+        system['_侦探日记已解锁'] = true;
+      } else {
+        delete system['_侦探日记已解锁'];
+      }
+      if (safeSnapshot && safeSnapshot['_创业事迹已解锁'] === true) {
+        system['_创业事迹已解锁'] = true;
+      } else {
+        delete system['_创业事迹已解锁'];
+      }
+      if (safeSnapshot && safeSnapshot['_风流相册已解锁'] === true) {
+        system['_风流相册已解锁'] = true;
+      } else {
+        delete system['_风流相册已解锁'];
+      }
+      if (safeSnapshot && safeSnapshot['_姐妹合照已解锁'] === true) {
+        system['_姐妹合照已解锁'] = true;
+      } else {
+        delete system['_姐妹合照已解锁'];
+      }
+      if (safeSnapshot && safeSnapshot['_妹妹遗书已解锁'] === true) {
+        system['_妹妹遗书已解锁'] = true;
+      } else {
+        delete system['_妹妹遗书已解锁'];
+      }
+      ['_侦探状态洞察', '_商人远见洞察', '_情场王子洞察'].forEach(function (key) {
+        if (safeSnapshot && safeSnapshot[key] && typeof safeSnapshot[key] === 'object') {
+          system[key] = clone(safeSnapshot[key]);
+        } else {
+          delete system[key];
+        }
+      });
+      if (safeSnapshot && safeSnapshot['_可可信任洞察'] && typeof safeSnapshot['_可可信任洞察'] === 'object') {
+        system['_可可信任洞察'] = clone(safeSnapshot['_可可信任洞察']);
+      } else {
+        delete system['_可可信任洞察'];
+      }
+      // 仅直接打开本地构建产物时允许用查询参数演示关系法令后的净化界面。
+      // 正式 CDN 运行包的 LOCAL_PREVIEW 为 false，因此不能通过网址参数越过剧情门。
+      if (
+        LOCAL_PREVIEW === true
+        && typeof URLSearchParams === 'function'
+        && new URLSearchParams(window.location.search).get('demo') === 'hanxuan'
+      ) {
+        system['_特殊档案已解锁'] = true;
+      }
+      if (
+        LOCAL_PREVIEW === true
+        && typeof URLSearchParams === 'function'
+        && new URLSearchParams(window.location.search).get('demo') === 'linan-diary'
+      ) {
+        system['_特殊档案已解锁'] = true;
+        system['_侦探日记已解锁'] = true;
+      }
+      if (
+        LOCAL_PREVIEW === true
+        && typeof URLSearchParams === 'function'
+        && new URLSearchParams(window.location.search).get('demo') === 'mu-chronicle'
+      ) {
+        system['_创业事迹已解锁'] = true;
+      }
+      if (
+        LOCAL_PREVIEW === true
+        && typeof URLSearchParams === 'function'
+        && new URLSearchParams(window.location.search).get('demo') === 'zhang-album'
+      ) {
+        system['_风流相册已解锁'] = true;
+      }
+      if (
+        LOCAL_PREVIEW === true
+        && typeof URLSearchParams === 'function'
+        && new URLSearchParams(window.location.search).get('demo') === 'wang-sister'
+      ) {
+        system['_姐妹合照已解锁'] = true;
+      }
+      if (
+        LOCAL_PREVIEW === true
+        && typeof URLSearchParams === 'function'
+        && (
+          new URLSearchParams(window.location.search).get('demo') === 'insight-events'
+          || new URLSearchParams(window.location.search).get('demo') === 'affection-events'
+        )
+      ) {
+        var demoRoles = output['角色'] && typeof output['角色'] === 'object' ? output['角色'] : {};
+        function demoView(name, thought, tendencies, affectionShift) {
+          var role = demoRoles[name] && typeof demoRoles[name] === 'object' ? demoRoles[name] : {};
+          var relations = clone(role['关系'] && typeof role['关系'] === 'object' ? role['关系'] : {});
+          Object.keys(relations).forEach(function (target) {
+            var item = relations[target] && typeof relations[target] === 'object' ? relations[target] : {};
+            item['好感度'] = Math.max(-100, Math.min(100, Number(item['好感度'] || 0) + affectionShift));
+            relations[target] = item;
+          });
+          return { '心理': thought, '行动倾向': tendencies, '关系': relations };
+        }
+        var linDemo = demoView('林安', '这次我不想再把任何人的求助当成游戏。我会把每一处矛盾都查清楚。', ['重建时间线', '核对法令受益链', '保护玩家'], 18);
+        var muDemo = demoView('穆裳希', '把真正掌握主动权的人找出来，再决定该扶谁、压谁。', ['争夺领导权', '评估联盟成本', '保留退路'], 12);
+        var zhangDemo = demoView('张曲溪', '喜欢和占有不是一回事，我得先看清自己究竟舍不得谁。', ['观察情感破绽', '守住目标', '排斥竞争者'], 15);
+        system['_侦探状态洞察'] = { '林安': linDemo, '穆裳希': muDemo, '张曲溪': zhangDemo, '王可可': clone(demoRoles['王可可'] || {}) };
+        system['_商人远见洞察'] = { '林安': { '行动倾向': linDemo['行动倾向'] }, '穆裳希': muDemo, '张曲溪': { '行动倾向': zhangDemo['行动倾向'] }, '王可可': { '行动倾向': clone((demoRoles['王可可'] || {})['行动倾向'] || []) } };
+        system['_情场王子洞察'] = { '林安': { '关系': linDemo['关系'] }, '穆裳希': { '关系': muDemo['关系'] }, '张曲溪': zhangDemo, '王可可': { '关系': clone((demoRoles['王可可'] || {})['关系'] || {}) } };
+      }
+      if (
+        LOCAL_PREVIEW === true
+        && typeof URLSearchParams === 'function'
+        && (
+          new URLSearchParams(window.location.search).get('demo') === 'keke-trust'
+          || new URLSearchParams(window.location.search).get('demo') === 'affection-events'
+        )
+      ) {
+        system['_姐妹合照已解锁'] = true;
+        system['_妹妹遗书已解锁'] = true;
+        system['_可可信任洞察'] = {
+          '心理': '我终于把她留下的最后一封信交给了你。你已经知道我做过什么，也知道我为什么不敢奢求原谅。',
+          '行动倾向': ['只向玩家坦白真相', '承担自己的责任', '等待其余三人真正忏悔'],
+          '关系': clone((((output['角色'] || {})['王可可'] || {})['关系']) || {})
+        };
+      }
+      if (
+        LOCAL_PREVIEW === true
+        && typeof URLSearchParams === 'function'
+        && new URLSearchParams(window.location.search).get('demo') === 'affection-events'
+      ) {
+        system['_侦探日记已解锁'] = true;
+        system['_创业事迹已解锁'] = true;
+        system['_风流相册已解锁'] = true;
+        system['_姐妹合照已解锁'] = true;
+      }
       if (endingDisplay) system['结局展示'] = endingDisplay;
       else delete system['结局展示'];
     }
@@ -2051,7 +2948,7 @@
     if (actionPending) throw new Error('上一项操作仍在提交，请稍候');
     actionPending = true;
     try {
-      await ready;
+      await requireReady();
       var api = window.KingGameState;
       if (!api || typeof api[apiName] !== 'function') throw new Error('状态引擎缺少日流程能力：' + apiName);
       var record = await readHostRecord();
@@ -2084,18 +2981,31 @@
     return initialized;
   }
 
-  var ready = initialize().catch(function (error) {
-    console.warn('[KingGame] 宿主初始化失败，使用本地初始状态', error);
-    var fallback = window.KingGameState.initializeVariables(clone(INITIAL_STATE), chatName());
-    publish(fallback);
-    return fallback;
+  var authorizationReady = inspectAuthorization().catch(function () {
+    return { authorized: false, reason: 'authorization-error' };
   });
+
+  var ready = authorizationReady.then(function (authorization) {
+    if (!authorization.authorized) return null;
+    return initialize();
+  }).catch(function (error) {
+    console.warn('[KingGame] 宿主初始化失败', error);
+    return null;
+  });
+
+  async function requireReady() {
+    var authorization = await authorizationReady;
+    if (!authorization.authorized) throw new Error('当前角色卡或主世界书校验失败');
+    var initialized = await ready;
+    if (!initialized) throw new Error('宿主状态尚未初始化');
+    return initialized;
+  }
 
   async function prepareDecree() {
     if (actionPending) throw new Error('上一项操作仍在提交，请稍候');
     actionPending = true;
     try {
-      await ready;
+      await requireReady();
       var api = window.KingGameState;
       if (!api || typeof api.prepareDecree !== 'function') throw new Error('状态引擎缺少法令准备能力');
       var record = await readHostRecord();
@@ -2122,11 +3032,48 @@
     return false;
   }
 
+  function hasMultipleIndependentRules(value) {
+    var text = String(value || '')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\r\n?/g, '\n')
+      .trim();
+    if (!text) return false;
+
+    var ordinalPatterns = [
+      /第(?:一|1)(?:条|项|点|则)?[\s\S]*第(?:二|2)(?:条|项|点|则)?/,
+      /(?:^|[\n；;。])\s*(?:一|1)[、.．)）:：][\s\S]*(?:^|[\n；;。])\s*(?:二|2)[、.．)）:：]/m,
+      /(?:^|[\n；;。])\s*一是[\s\S]*(?:^|[\n；;。])\s*二是/m,
+      /①[\s\S]*②/,
+    ];
+    if (ordinalPatterns.some(function (pattern) { return pattern.test(text); })) return true;
+
+    var bulletLines = text.split('\n').filter(function (line) {
+      return /^\s*(?:[-*•]|[一二三四五六七八九十\d]+[、.．)）])\s*\S/.test(line);
+    });
+    if (bulletLines.length >= 2) return true;
+
+    var duty = /(?:必须|不得|禁止|只能|只许|只允许|不允许|应当|须要|需要|有权|无权)/;
+    var qualifier = /^(?:其中|该|此|上述|若|如果|当|未|否则|除非|除|仅|非授权者|未经授权者|违规者|作为|为了|以便|物品|设施|授权使用者|被约束者|受益者|执行者|时间|地点|方式|期限|频率|持续时间)/;
+    var hardClauses = text.split(/[。；;\n]+/).map(function (part) { return part.trim(); }).filter(Boolean);
+    var independentHardClauses = hardClauses.filter(function (part, index) {
+      if (!duty.test(part)) return false;
+      return index === 0 || !qualifier.test(part);
+    });
+    if (independentHardClauses.length >= 2) return true;
+
+    var explicitSubjects = /(?:^|[，,；;。]\s*)(?:林安|穆裳希|张曲溪|王可可|玩家|\{\{user\}\}|所有人|每个人|其余人|其他人|全部女性|三名女性|四名女性|当日国王|受约束者|受益者)\s*(?:必须|不得|禁止|只能|只许|只允许|不允许|应当|须要|需要|有权|无权)/g;
+    var subjectClauses = text.match(explicitSubjects) || [];
+    if (subjectClauses.length >= 2) return true;
+
+    var addOn = /(?:必须|不得|禁止|只能|只许|只允许|不允许|应当|须要|需要|有权|无权)[^。；;\n]{0,80}(?:另外|此外|再者|还要|还必须|又必须|并另行)[^。；;\n]{0,80}(?:必须|不得|禁止|只能|只许|只允许|不允许|应当|须要|需要|有权|无权)/;
+    return addOn.test(text);
+  }
+
   function validatePlayerDecree(text) {
     var value = String(text || '').trim();
     if (!value) return '';
-    if (/(测谎|说真话|说实话|不得撒谎|不能撒谎|禁止撒谎|必须诚实|如实回答|回答必须真实)/.test(value)) {
-      throw new Error('该法令无效：项圈不能判断真假；可以要求作答，但不能保证回答真实');
+    if (hasMultipleIndependentRules(value)) {
+      throw new Error('该法令无效：一次只能颁布一个核心规则；可以用对象、时间、地点、方式、例外和物品授权把同一限制写完整，但不能并列多个可独立执行的要求');
     }
     if (containsUnprotected(value, /科学上不可能|违反物理|违反科学|超自然|超能力|魔法|飞行|飞起来|瞬移|传送|隐身|穿墙|透墙|穿越时空|时间倒流|时间停止|停止时间|复活|死而复生|永生|长生不老|不老不死|刀枪不入|读心|读取思想|心灵感应|预知未来|无视重力|超光速|凭空变出|凭空出现|永动机|分身|复制人|控制天气|召唤亡灵|飞到月球|登上月球|水下呼吸|不需要呼吸|长出翅膀|变身为|变成一只/g)) {
       return 'scientifically_impossible';
@@ -2165,7 +3112,8 @@
   window.KingGameBridge = {
     getUserName: function () { return userName(); },
     getCardName: function () { return cardName(); },
-    getState: function () { return ready.then(function () { return clone(cachedState); }); },
+    getAuthorizationState: function () { return authorizationReady.then(clone); },
+    getState: function () { return requireReady().then(function () { return clone(cachedState); }); },
     getVariables: function () { return this.getState(); },
     subscribe: function (listener) {
       if (typeof listener !== 'function') return function () {};
@@ -2174,6 +3122,7 @@
       return function () { listeners = listeners.filter(function (item) { return item !== listener; }); };
     },
     refresh: async function () {
+      await requireReady();
       var record = await readHostRecord();
       var state = fillDefaults(record.state, INITIAL_STATE);
       state = window.KingGameState.initializeVariables(state, chatName());
@@ -2208,7 +3157,7 @@
         var playerSubmission = system['_当前国王'] === '玩家'
           ? '玩家提交的新法令内容或撤销目标是：“' + submitted + '”。请据此完成正式颁布或撤销。'
           : '宿主已经确定当日国王为“' + system['_当前国王'] + '”。必须只由此人依据其人设和当前关系决定法令内容。';
-        return '【前端私密操作，不是公开发言】【每日流程·房间平板颁布法令】五人此刻分别被锁在各自房间。玩家平板私下显示、只读宿主变量中的当日国王是“' + system['_当前国王'] + '”，不得重新抽签、改选、猜测或让另一人代为颁布。只有当日国王自己的平板开放颁布或撤销界面，其余四台只显示等待。' + playerSubmission + '完成后先向全员广播法令正文但不公开国王身份，再让五间房门同时解锁；广播与解锁以前不得让任何人进入大厅、串门或当面互动。全段严格留在{{user}}所在房间，不得切去当日国王或其他女性的房间展示她们提交法令、等待或听见广播的私下镜头；门开后只能描写进入{{user}}视野或听觉范围的表现。';
+        return '【前端私密操作，不是公开发言】【每日流程·房间平板颁布法令】五人此刻分别被锁在各自房间。玩家平板私下显示、只读宿主变量中的当日国王是“' + system['_当前国王'] + '”，不得重新抽签、改选、猜测或让另一人代为颁布。只有当日国王自己的平板开放颁布或撤销界面，其余四台只显示等待。' + playerSubmission + '完成后先向全员广播法令正文但不公开国王身份，再让五间房门同时解锁；广播与解锁以前不得让任何人进入大厅、串门或当面互动。全段严格留在{{user}}所在房间，不得切去当日国王或其他女性的房间展示她们提交法令、等待或听见广播的私下镜头。门开后，本次前端操作仅额外授权{{user}}随四名女性来到中央圆桌旁这一项流程转场，不得替他发言、表态或作选择；随后必须在这一条AI回复内按世界书完成固定的广播后圆桌短会，让四名女性各有可辨反应，展开6—10个有效来回、约700—1100个汉字，再停在等待玩家下一步操作。把短会全部正文原地包在唯一一组<DecreeRoundtableImpl>与</DecreeRoundtableImpl>之间；闭标签必须是本轮最后一段剧情内容，下一行只输出<StatusPlaceHolderImpl/>。该短会不计入玩家互动数组或女性互动矩阵，不得使用<InteractionPairImpl>，不得趁机生成{{user}}与尚未点击女性的独立互动。';
       });
     },
     submitInteraction: function (roleName, method) {
@@ -2218,9 +3167,12 @@
       return commitAction('submitInteraction', [roleName, trimmed], function (next) {
         var request = (next['系统'] || {})['_最近互动请求'] || {};
         var supplements = Array.isArray(request['补全对象']) ? request['补全对象'] : [];
+        var pairBlocks = supplements.map(function (otherName) {
+          return '<InteractionPairImpl pair="' + roleName + '-' + otherName + '">\\n在这里直接写完' + roleName + '与' + otherName + '的实际互动正文\\n</InteractionPairImpl>';
+        });
         var followup = supplements.length
-          ? '在这次互动结束后，请另用明显区别于主互动的现场记录样式，依次描写' + roleName + '与' + supplements.join('、') + '之间今日尚未发生的互动。这些人必须在{{user}}能够看见或听见的当前公共空间内互动；不得切去别处、使用任何女性视角或描写{{user}}不在场的私下场景。'
-          : '这是追加互动，不需要把它误写成我已经说过某句具体台词。';
+          ? '在这次互动结束后，依次描写' + roleName + '与' + supplements.join('、') + '之间今日尚未发生的互动。这些人必须在{{user}}能够看见或听见的当前公共空间内互动；不得切去别处、使用任何女性视角或描写{{user}}不在场的私下场景。每一组互动必须原地完整包在对应标签内：开标签放在该组正文之前，闭标签紧跟在该组正文之后；不要先写完全部互动再把配对标签集中放到文末。下列各块中的说明文字必须替换为实际互动正文，不得照抄：\\n' + pairBlocks.join('\\n') + '\\n标签顺序、pair姓名和半角连字符均不得修改，也不得为玩家与' + roleName + '的主互动生成标签。最后一个闭标签后立即停止角色剧情，只允许一句不包含任何角色新动作、台词、接触、邀请、命令执行或互动开端的中性环境收束；严禁继续生成{{user}}与任何未点击女性的互动，也严禁让未点击女性主动接近、呼唤、触碰、质问或要求{{user}}执行法令。玩家与其余女性的互动必须保留给各自后续前端按钮。'
+          : '这是追加互动，不需要把它误写成我已经说过某句具体台词。本轮没有新的女性补叙配对，不得输出任何<InteractionPairImpl>标签。';
         var intent = protectedDisclosure
           ? '我原本想向' + roleName + '泄露自己的所谓读心术或私人国王情报，但这两项秘密不可公开。请让{{user}}在任何人听见、看见或收到具体内容前临时收住话、停止展示或换成不含秘密的说法；不要复述原输入中的秘密内容，也不要让任何角色因此获知或准确推断。'
           : '我想以“' + trimmed + '”的方式与' + roleName + '互动。请把它作为行动意图来展开，不要擅自替我补写具体台词。';
@@ -2246,13 +3198,7 @@
         <div class="scene-line"><span id="sceneInfo">第1日 08:10 · 个人房间 · 等待法令</span><br>玩家平板后门 · 仅你可见 · 请勿泄露</div>
       </section>
 
-      <nav class="map-card" aria-label="密室四面地图">
-        <button class="map-room" type="button" data-face="0">林安</button>
-        <button class="map-room" type="button" data-face="1">穆裳希</button>
-        <button class="map-room" type="button" data-face="2">张曲溪</button>
-        <button class="map-room" type="button" data-face="3">王可可</button>
-        <div class="user-seat" id="userSeat">你</div>
-      </nav>
+      <nav class="map-card" id="mapCard" aria-label="密室档案地图"></nav>
 
       <nav class="view-nav" aria-label="视角切换">
         <button class="nav-btn" id="lookUp" type="button" aria-label="W：向上转">W</button>
@@ -2267,6 +3213,8 @@
       <div class="surface-overlay" id="surfaceOverlay" data-view="side" aria-live="polite"></div>
       <button class="portrait-hit-target" id="portraitHitTarget" type="button" hidden aria-label="查看林安证件照全图"></button>
       <button class="interaction-hit-target" id="interactionHitTarget" type="button" hidden aria-label="与林安互动"></button>
+      <button class="interaction-hit-target special-archive-hit-target" id="specialArchiveHitTarget" type="button" hidden aria-label="查看角色特别档案"></button>
+      <button class="insight-hit-target" id="insightModeHitTarget" type="button" hidden aria-label="切换角色洞察模式" aria-pressed="false"></button>
     </main>
 
     <footer class="controls" aria-label="人物切换">
@@ -2321,6 +3269,75 @@
     </section>
   </div>
 
+  <div class="modal-backdrop diary-backdrop" id="diaryBackdrop" aria-hidden="true">
+    <section class="diary-viewer" role="dialog" aria-modal="true" aria-labelledby="diaryTitle">
+      
+        <h2 id="diaryTitle">林安的侦探日记</h2>
+        <button class="modal-btn portrait-close" id="closeDiary" type="button" aria-label="关闭侦探日记">×</button>
+      
+      <article class="diary-paper" id="diaryPaper">
+        <h3 class="diary-page-title" id="diaryPageTitle"></h3>
+        <p class="diary-page-body" id="diaryPageBody"></p>
+      </article>
+      <footer class="diary-controls">
+        <button class="modal-btn" id="previousDiaryPage" type="button">上一页</button>
+        <span class="diary-page-count" id="diaryPageCount">1 / 5</span>
+        <button class="modal-btn" id="nextDiaryPage" type="button">下一页</button>
+      </footer>
+    </section>
+  </div>
+
+  <div class="modal-backdrop career-backdrop" id="careerBackdrop" aria-hidden="true">
+    <section class="career-viewer" role="dialog" aria-modal="true" aria-labelledby="careerTitle">
+      
+        <h2 id="careerTitle">穆裳希的创业事迹</h2>
+        <button class="modal-btn portrait-close" id="closeCareer" type="button" aria-label="关闭创业事迹">×</button>
+      
+      <article class="career-sheet" id="careerSheet">
+        <p class="career-year" id="careerYear"></p>
+        <h3 class="career-page-title" id="careerPageTitle"></h3>
+        <p class="career-page-body" id="careerPageBody"></p>
+      </article>
+      <footer class="career-controls">
+        <button class="modal-btn" id="previousCareerPage" type="button">上一页</button>
+        <span class="career-page-count" id="careerPageCount">1 / 4</span>
+        <button class="modal-btn" id="nextCareerPage" type="button">下一页</button>
+      </footer>
+    </section>
+  </div>
+
+  <div class="modal-backdrop album-backdrop" id="albumBackdrop" aria-hidden="true">
+    <section class="album-viewer" role="dialog" aria-modal="true" aria-labelledby="albumTitle">
+      
+        <h2 id="albumTitle">张曲溪的风流相册</h2>
+        <button class="modal-btn portrait-close" id="closeAlbum" type="button" aria-label="关闭风流相册">×</button>
+      
+      <article class="album-page" id="albumPage">
+        <div class="album-photo-frame"><img class="album-photo" id="albumPhoto" alt=""></div>
+        <h3 class="album-page-title" id="albumPageTitle"></h3>
+        <p class="album-page-duration" id="albumPageDuration"></p>
+        <p class="album-page-body" id="albumPageBody"></p>
+      </article>
+      <footer class="album-controls">
+        <button class="modal-btn" id="previousAlbumPage" type="button">上一页</button>
+        <span class="album-page-count" id="albumPageCount">1 / 5</span>
+        <button class="modal-btn" id="nextAlbumPage" type="button">下一页</button>
+      </footer>
+    </section>
+  </div>
+
+  <div class="modal-backdrop sister-backdrop" id="sisterBackdrop" aria-hidden="true">
+    <section class="sister-viewer" role="dialog" aria-modal="true" aria-labelledby="sisterTitle">
+      
+        <h2 id="sisterTitle">王可可的姐妹童年合照</h2>
+        <button class="modal-btn portrait-close" id="closeSister" type="button" aria-label="关闭姐妹合照">×</button>
+      
+      <div class="sister-photo-stage">
+        <img id="sisterPhoto" alt="童年王可可与未透露姓名的妹妹合照">
+      </div>
+    </section>
+  </div>
+
   <div class="ending-backdrop" id="endingBackdrop" aria-hidden="true">
     <section class="ending-card" id="endingCard" data-theme="暗金" role="dialog" aria-modal="true" aria-labelledby="endingTitle" aria-describedby="endingSummary">
       <button class="modal-btn ending-close" id="closeEnding" type="button" aria-label="关闭终局档案">×</button>
@@ -2341,6 +3358,88 @@
     "use strict";
 
     const NAMES = ["林安", "穆裳希", "张曲溪", "王可可"];
+    const STRAW_NAME = "韩璇";
+    const DIARY_PAGES = [
+      {
+        title: "第一页 · 侦探生涯，从今天开始！",
+        body: [
+          "今天又把《福尔摩斯探案集》翻了一遍，晚上还追了三集《名侦探柯南》。福尔摩斯只看一眼泥点就知道来客走过什么路，柯南总能在所有人放弃时抓住",
+          { kind: "circle", text: "最后一根线头" },
+          "。\n\n决定了——林安也要成为那样的名侦探！不是坐在沙发上猜凶手的那种，是",
+          { kind: "underline", text: "真正能在别人需要时出现" },
+          "的名侦探。",
+          { kind: "note", text: "这句要记住！" }
+        ]
+      },
+      {
+        title: "第二页 · 项链失踪案",
+        body: [
+          "大学宿舍项链失踪案，",
+          { kind: "circle", text: "圆满告破" },
+          "！室友苏晚晴说项链可能落在教室，可我发现她昨天换过床单，洗衣篮旁边还有一小截勾断的细线。顺着床沿和墙缝往下找，果然在床脚后面找到了。\n\n室友们都说",
+          { kind: "strike", text: "这只是运气" },
+          "——哼，能知道该去哪里碰运气，本来就是侦探的实力！她还请我喝了奶茶。大学第一案，",
+          { kind: "underline", text: "完美结案" },
+          "！"
+        ]
+      },
+      {
+        title: "第三页 · 新委托",
+        body: [
+          { kind: "circle", text: "新委托！" },
+          "邻居\u97e9\u7487最近看起来很累，说话也总说到一半。她想让我调查她的女朋友和合伙人，可惜还没告诉我那两个人是谁，事情也没来得及讲清楚。\n\n不过真正的大案子本来就不会第一天把线索送齐。先郑重记下，",
+          { kind: "underline", text: "来日方长，本侦探总能查清楚" },
+          "。",
+          { kind: "note", text: "先列关系图" }
+        ]
+      },
+      {
+        title: "第四页 · 警探面试大失败",
+        body: [
+          "今天带着改了十七遍的简历去了警察局，郑重申请当警探。我还特地把“",
+          { kind: "circle", text: "擅长从细节发现真相" },
+          "”用红笔圈了出来，结果姓周的值班警察先愣了三秒，又问我有没有参加公务员考试、有没有警校经历，最后和同事陈警官一起把我请出了门。\n\n明明准备了那么久！福尔摩斯也没参加过公务员考试吧？",
+          { kind: "strike", text: "下次把案例册一起带去" },
+          { kind: "note", text: "先查报考条件" },
+          "，他们一定是没看见我的实力。"
+        ]
+      },
+      {
+        title: "第五页 · 最佳餐馆调查报告",
+        body: [
+          "特别调查：家附近究竟哪家饭店最好吃？历时七天，排除三家网红店、两家刷好评的店，还有一家把",
+          { kind: "strike", text: "隔夜汤冒充现熬" },
+          "的店，最后锁定许叔开的",
+          { kind: "circle", text: "巷口小店" },
+          "。\n\n证据：锅气够，分量足，牛肉面汤底真熬，服务员阿雅还会多送半碟小菜。结论——侦探术不只能破案，也能",
+          { kind: "underline", text: "拯救晚饭" },
+          "。正式列为本侦探长期据点！",
+          { kind: "note", text: "今晚复核" }
+        ]
+      }
+    ];
+    const CAREER_PAGES = [
+      {
+        year: "22岁 · 校园时期",
+        title: "拒绝被写好的道路",
+        body: "那一年，我已经和队友陈蕊、许卓拿下多项校园创业与商业策划比赛的第一名。数家企业向我递来实习与正式录用的橄榄枝，导师梁教授也劝我先进入成熟公司积累经验。\n\n我在公开材料里把拒绝写成“相信年轻人应当主动创造价值”。但我心里那头贪婪的狮子从不满足于替别人完成蓝图——我要的不是一张好职位，而是有一天由自己坐在决定方向的位置上。"
+      },
+      {
+        year: "24岁 · 合伙阶段",
+        title: "一次被称作双赢的加入",
+        body: "我注意到一位名叫\u97e9\u7487的学妹。她自主创业不久，已经凭技术和执行力做出不菲成绩，却缺少足够成熟的管理体系与商业资源。\n\n我以合伙人的名义加入团队。后来我把这段经历描述为“年轻技术理想与专业经营能力的互补”：一方负责产品与开拓，一方补齐法务、财务、组织和融资，让公司终于拥有继续扩张的骨架。"
+      },
+      {
+        year: "26岁 · 独立掌舵",
+        title: "成为公司的名字",
+        body: "二十六岁时，我已经全面接管公司，并把财务负责人程可与法务顾问杜明写进新管理班底。此后的增长速度和扩张幅度不如最早几年耀眼，却没有在激烈的市场竞争中倒下，而是转向更稳健的节奏，逐步建立制度、客户与现金流。\n\n媒体开始把我称作年轻有为的女企业家。我不再需要借任何前辈或合伙人的名字介绍自己；公司本身，逐渐成了我最有分量的履历。"
+      },
+      {
+        year: "27岁 · 名誉经营",
+        title: "论迹，不论心",
+        body: "我不断以个人和公司的名义投身慈善项目，公关负责人周倩替我安排捐助、合作与公开活动，公益项目协调人苏晚晴负责具体落地。项目为公司带来了声誉，也让我的名字与“责任感”牢牢绑在一起。\n\n我从不向核心员工假装动机纯粹。苏晚晴私下问我，这样的善意是否只是生意，我只答：“君子论迹不论心，论心无完人。钱和资源确实到了需要它们的人手里，公司也得到了名声——为什么一定要只留下一边？”"
+      }
+    ];
     const portraitAsset = file => {
       const base = String(window.__KING_GAME_ASSET_BASE__ || "").trim();
       return base ? `${base.replace(/\/?$/, "/")}${file}` : `assets/portraits/${file}`;
@@ -2349,7 +3448,47 @@
       "林安": portraitAsset("lin-an.webp"),
       "穆裳希": portraitAsset("mu-shangxi.webp"),
       "张曲溪": portraitAsset("zhang-quxi.webp"),
-      "王可可": portraitAsset("wang-keke.webp")
+      "王可可": portraitAsset("wang-keke.webp"),
+      "韩璇": portraitAsset("han-xuan-scarecrow.webp")
+    };
+    const ALBUM_PAGES = [
+      {
+        title: "苏晚晴",
+        duration: "恋爱记录 · 1个月",
+        body: "晚晴喜欢安静地坐在图书馆靠窗的位置。我最初说只是陪她找书，后来每天下午都准时出现。一个月后，她问我们到底算什么，我笑着岔开了话题。",
+        image: portraitAsset("zhang-album-su-wanqing.webp")
+      },
+      {
+        title: "\u97e9\u7487",
+        duration: "恋爱记录 · 4个月",
+        body: "我们在酒吧外认识。那晚\u97e9\u7487很失落，断断续续说了很多；我那时只想把她哄到手，根本不愿真心听她诉说，内容左耳进右耳出，只记得她喝了很多酒、很想抓住一个陪着她的人。我明知道她的状态不对，还是趁虚而入。四个月里，我们留下的合照比别页多，结束时却没有一张正式的告别。",
+        image: portraitAsset("zhang-album-han-xuan.webp")
+      },
+      {
+        title: "罗云枝",
+        duration: "恋爱记录 · 2个月",
+        body: "云枝成熟、从容，也看得出我从不肯给承诺。我们一起吃过几次很贵的晚餐，像约好只享受当下。两个月后，她先说到此为止，我没有挽留。",
+        image: portraitAsset("zhang-album-luo-yunzhi.webp")
+      },
+      {
+        title: "秦烈",
+        duration: "恋爱记录 · 1周",
+        body: "秦烈一米八多，是个健壮的男 coser，漫展上扮的是游戏里的重甲剑士。我被他的外形和爽朗吸引，和他约会了一周；我们只牵过手、拍过合照、散过几次步，没有发生性关系。热度过去后，我很快就没再联系他。",
+        image: portraitAsset("zhang-album-qin-lie.webp")
+      },
+      {
+        title: "到这里就够了",
+        duration: "其余页 · 未翻阅",
+        body: "后面还有二十多页，但我不想再翻了。",
+        image: ""
+      }
+    ];
+    const SISTER_PHOTO = portraitAsset("wang-sister-photo.webp");
+    const HAN_XUAN_REACTION_PORTRAITS = {
+      "林安": portraitAsset("lin-an-hanxuan.webp"),
+      "穆裳希": portraitAsset("mu-shangxi-hanxuan.webp"),
+      "张曲溪": portraitAsset("zhang-quxi-hanxuan.webp"),
+      "王可可": portraitAsset("wang-keke-hanxuan.webp")
     };
 
     // 仅供脱离 SillyTavern 宿主时预览版式；字段严格对应 VARIABLE_CONTRACT.md。
@@ -2415,11 +3554,24 @@
     };
     const asObject = value => value && typeof value === "object" && !Array.isArray(value) ? value : {};
     const asArray = value => Array.isArray(value) ? value : [];
+    const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(asObject(value), key);
     const num = (value, min, max, fallback = 0) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : fallback));
     const displayPerson = (name, userName) => name === "玩家" ? userName : (name || "—");
+    const portraitSource = name => (
+      asObject(state.系统)._特殊档案已解锁 === true && HAN_XUAN_REACTION_PORTRAITS[name]
+        ? HAN_XUAN_REACTION_PORTRAITS[name]
+        : PORTRAITS[name]
+    );
+    const INSIGHT_MODES = {
+      detective: { key: "_侦探状态洞察", owner: "林安", label: "侦探状态" },
+      merchant: { key: "_商人远见洞察", owner: "穆裳希", label: "商人远见" },
+      prince: { key: "_情场王子洞察", owner: "张曲溪", label: "情场王子" },
+      trust: { key: "_可可信任洞察", owner: "王可可", label: "可可信任", direct: true }
+    };
 
     let state = PREVIEW_STATE;
     let userName = "你";
+    let activeSideNames = NAMES.slice();
     let faceIndex = 0;
     let angle = 0;
     let pitch = 0;
@@ -2435,6 +3587,66 @@
     let endingLastFocused = null;
     let activeEnding = null;
     let endingPresentedKey = "";
+    let archiveLastFocused = null;
+    let diaryPageIndex = 0;
+    let careerPageIndex = 0;
+    let albumPageIndex = 0;
+    let insightMode = "";
+
+    function insightSnapshotAvailable(system, config) {
+      return Boolean(config && hasOwn(system, config.key) && asObject(system[config.key]) === system[config.key]);
+    }
+
+    function allowedInsightFields(mode, name) {
+      if (mode === "trust") return name === "王可可" ? ["心理", "行动倾向", "关系"] : [];
+      if (name === "王可可") return [];
+      if (mode === "detective" && ["林安", "穆裳希", "张曲溪"].includes(name)) return ["心理", "行动倾向", "关系"];
+      if (mode === "merchant") {
+        if (name === "穆裳希") return ["心理", "行动倾向", "关系"];
+        if (["林安", "张曲溪"].includes(name)) return ["行动倾向"];
+      }
+      if (mode === "prince") {
+        if (name === "张曲溪") return ["心理", "行动倾向", "关系"];
+        if (["林安", "穆裳希"].includes(name)) return ["关系"];
+      }
+      return [];
+    }
+
+    function insightPresentation(name, data, system) {
+      const base = asObject(data);
+      const config = INSIGHT_MODES[insightMode];
+      const result = {
+        心理: base.心理 || "暂无记录",
+        行动倾向: asArray(base.行动倾向),
+        关系: asObject(base.关系),
+        心理标签: "读心术",
+        倾向标签: "读心术",
+        好感标签: "读心术"
+      };
+      if (!config || !insightSnapshotAvailable(system, config)) return result;
+
+      const permitted = allowedInsightFields(insightMode, name);
+      const snapshot = asObject(system[config.key]);
+      const safeRole = config.direct ? snapshot : asObject(snapshot[name]);
+      if (permitted.includes("心理") && typeof safeRole.心理 === "string" && safeRole.心理.trim()) {
+        result.心理 = safeRole.心理;
+        result.心理标签 = config.label;
+      }
+      if (permitted.includes("行动倾向") && Array.isArray(safeRole.行动倾向)) {
+        result.行动倾向 = safeRole.行动倾向;
+        result.倾向标签 = config.label;
+      }
+      if (permitted.includes("关系") && hasOwn(safeRole, "关系") && Object.keys(asObject(safeRole.关系)).length) {
+        result.关系 = asObject(safeRole.关系);
+        result.好感标签 = config.label;
+      }
+      return result;
+    }
+
+    function normalizeInsightMode(system) {
+      const config = INSIGHT_MODES[insightMode];
+      if (insightMode && !insightSnapshotAvailable(system, config)) insightMode = "";
+    }
 
     function appendField(root, title, paragraphs, className = "") {
       const field = el("section", `field ${className}`.trim());
@@ -2466,7 +3678,6 @@
       const status = asObject(data.状态);
       const upper = asObject(data.上衣);
       const lower = asObject(data.下衣);
-      const relations = asObject(data.关系);
       const face = el("article", "face");
       face.dataset.name = name;
       const frame = el("div", "face-frame");
@@ -2474,14 +3685,70 @@
       const identity = el("div", "identity");
       identity.append(el("h2", "", name), el("p", "", `${info.年龄 || "—"} 岁 · ${info.公开身份 || "身份未公开"}`));
       const system = asObject(state.系统);
+      const insight = insightPresentation(name, data, system);
+      const relations = insight.关系;
       const completed = asArray(system._玩家已互动角色).includes(name);
+      const actions = el("div", "face-actions");
+      const ownedInsightEntry = Object.entries(INSIGHT_MODES).find(([, config]) => config.owner === name && insightSnapshotAvailable(system, config));
+      if (ownedInsightEntry) {
+        const [mode, config] = ownedInsightEntry;
+        const active = insightMode === mode;
+        const insightButton = el("button", `insight-mode-btn${active ? " is-active" : ""}`, config.label);
+        insightButton.type = "button";
+        insightButton.dataset.insightMode = mode;
+        insightButton.setAttribute("aria-pressed", active ? "true" : "false");
+        insightButton.tabIndex = -1;
+        insightButton.setAttribute("aria-hidden", "true");
+        actions.append(insightButton);
+      }
+      if (name === "林安" && system._侦探日记已解锁 === true) {
+        const diaryButton = el("button", "diary-open-btn special-open-btn", "侦探日记");
+        diaryButton.type = "button";
+        diaryButton.dataset.archiveType = "diary";
+        diaryButton.tabIndex = -1;
+        diaryButton.setAttribute("aria-hidden", "true");
+        actions.append(diaryButton);
+      }
+      if (name === "穆裳希" && system._创业事迹已解锁 === true) {
+        const careerButton = el("button", "career-open-btn special-open-btn", "创业事迹");
+        careerButton.type = "button";
+        careerButton.dataset.archiveType = "career";
+        careerButton.tabIndex = -1;
+        careerButton.setAttribute("aria-hidden", "true");
+        actions.append(careerButton);
+      }
+      if (name === "张曲溪" && system._风流相册已解锁 === true) {
+        const albumButton = el("button", "album-open-btn special-open-btn", "风流相册");
+        albumButton.type = "button";
+        albumButton.dataset.archiveType = "album";
+        albumButton.tabIndex = -1;
+        albumButton.setAttribute("aria-hidden", "true");
+        actions.append(albumButton);
+      }
+      if (name === "王可可" && system._姐妹合照已解锁 === true) {
+        const sisterButton = el("button", "sister-open-btn special-open-btn", "姐妹合照");
+        sisterButton.type = "button";
+        sisterButton.dataset.archiveType = "sister";
+        sisterButton.tabIndex = -1;
+        sisterButton.setAttribute("aria-hidden", "true");
+        actions.append(sisterButton);
+      }
+      if (name === "王可可" && system._妹妹遗书已解锁 === true) {
+        const testamentButton = el("button", "testament-open-btn special-open-btn", "妹妹遗书");
+        testamentButton.type = "button";
+        testamentButton.dataset.archiveType = "testament";
+        testamentButton.tabIndex = -1;
+        testamentButton.setAttribute("aria-hidden", "true");
+        actions.append(testamentButton);
+      }
       const faceInteract = el("button", `face-interact-btn${completed ? " is-complete" : ""}`, completed ? `✓ 继续与${name}互动` : `与${name}互动`);
       faceInteract.type = "button";
       faceInteract.dataset.interactionName = name;
       faceInteract.hidden = system._每日阶段 !== "自由互动";
       faceInteract.tabIndex = -1;
       faceInteract.setAttribute("aria-hidden", "true");
-      heading.append(identity, faceInteract);
+      actions.append(faceInteract);
+      heading.append(identity, actions);
 
       const body = el("div", "face-body");
       const rail = el("aside", "profile-rail");
@@ -2490,7 +3757,7 @@
       portrait.dataset.portraitName = name;
       portrait.setAttribute("aria-label", `查看${name}证件照全图`);
       const image = el("img");
-      image.src = PORTRAITS[name];
+      image.src = portraitSource(name);
       image.alt = `${name}的证件照`;
       image.loading = "eager";
       image.draggable = false;
@@ -2519,18 +3786,18 @@
         Object.assign(el("p", "subline"), { textContent: `肉体　${lower.肉体 || "暂无记录"}` })
       );
       dossier.append(clothes);
-      appendField(dossier, "心声 / 读心术", [{ text: data.心理 || "暂无记录" }], "thought");
+      appendField(dossier, `心声 / ${insight.心理标签}`, [{ text: insight.心理 }], "thought");
 
       const tendency = el("section", "field");
-      tendency.append(el("span", "field-title", "倾向 / 读心术"));
+      tendency.append(el("span", "field-title", `倾向 / ${insight.倾向标签}`));
       const chips = el("div", "chips");
-      const tendencyItems = asArray(data.行动倾向).slice(0, 3);
+      const tendencyItems = asArray(insight.行动倾向).slice(0, 3);
       (tendencyItems.length ? tendencyItems : ["暂无记录"]).forEach(item => chips.append(el("span", "chip", item)));
       tendency.append(chips);
       dossier.append(tendency);
 
       const relationField = el("section", "field");
-      relationField.append(el("span", "field-title", "好感 / 读心术"));
+      relationField.append(el("span", "field-title", `好感 / ${insight.好感标签}`));
       [...NAMES.filter(other => other !== name), "玩家"].forEach(other => {
         const score = Math.round(num(asObject(relations[other]).好感度, -100, 100));
         const row = el("div", "relation");
@@ -2559,6 +3826,110 @@
       return face;
     }
 
+    function buildStrawFace() {
+      const face = el("article", "face static-face");
+      face.dataset.name = STRAW_NAME;
+      const frame = el("div", "face-frame");
+      const heading = el("header", "face-heading");
+      const identity = el("div", "identity");
+      identity.append(el("h2", "", STRAW_NAME), el("p", "", "静态档案 · 圆桌旁的人形稻草偶"));
+      heading.append(identity);
+
+      const body = el("div", "face-body");
+      const rail = el("aside", "profile-rail");
+      const portrait = el("button", "portrait");
+      portrait.type = "button";
+      portrait.dataset.portraitName = STRAW_NAME;
+      portrait.setAttribute("aria-label", "查看韩璇稻草人档案全图");
+      const image = el("img");
+      image.src = PORTRAITS[STRAW_NAME];
+      image.alt = "脸上贴着“韩璇”纸条的人形稻草人档案照";
+      image.loading = "eager";
+      image.draggable = false;
+      const fallback = el("span", "portrait-fallback", "璇");
+      image.addEventListener("error", () => { image.hidden = true; fallback.style.display = "grid"; });
+      portrait.addEventListener("click", () => openPortrait(STRAW_NAME, portrait));
+      portrait.append(image, fallback);
+      const quick = el("div", "quick-state");
+      [["形态", "没有生命迹象的人形稻草偶"], ["位置", "圆桌旁，林安与穆裳希之间"]].forEach(([label, value]) => {
+        const row = el("div", "state-row");
+        row.append(el("b", "", label), el("span", "", value));
+        quick.append(row);
+      });
+      rail.append(portrait, quick);
+
+      const dossier = el("div", "dossier-scroll");
+      appendField(dossier, "档案说明", [
+        { text: "众人离开房间后才发现它坐在圆桌旁。稻草扎成的人形没有机关反应，脸上贴着一张只写有“韩璇”的纸。" }
+      ]);
+      appendField(dossier, "心声 / 读心术", [{ text: "无内容" }], "thought");
+      appendField(dossier, "倾向 / 读心术", [{ text: "无内容" }]);
+      appendField(dossier, "好感 / 读心术", [{ text: "无内容" }]);
+      appendField(dossier, "法令记录", [{ text: "无内容" }]);
+
+      body.append(rail, dossier);
+      frame.append(heading, body);
+      face.append(frame);
+      return face;
+    }
+
+    function sideNamesForState(nextState) {
+      return asObject(nextState.系统)._特殊档案已解锁 === true
+        ? ["林安", STRAW_NAME, "穆裳希", "张曲溪", "王可可"]
+        : NAMES.slice();
+    }
+
+    function activeSideName() {
+      const count = Math.max(1, activeSideNames.length);
+      return activeSideNames[((faceIndex % count) + count) % count];
+    }
+
+    function configurePrismGeometry(count) {
+      const root = document.documentElement;
+      if (count === 5) {
+        root.style.setProperty("--prism-d", "calc(var(--prism-w) * 1.538842)");
+        root.style.setProperty("--surface-w", "calc(var(--prism-w) * 1.618034)");
+        root.style.setProperty("--surface-d", "calc(var(--prism-w) * 1.538842)");
+        root.style.setProperty("--side-offset", "calc(var(--prism-w) / -1.453085056)");
+        root.style.setProperty("--surface-focus-scale", ".62");
+      } else {
+        root.style.setProperty("--prism-d", "var(--prism-w)");
+        root.style.setProperty("--surface-w", "var(--prism-w)");
+        root.style.setProperty("--surface-d", "var(--prism-w)");
+        root.style.setProperty("--side-offset", "calc(var(--prism-w) / -2)");
+        root.style.setProperty("--surface-focus-scale", ".78");
+      }
+    }
+
+    function positionSideFace(face, index, count) {
+      face.style.transform = `rotateY(${-index * (360 / count)}deg) translateZ(var(--side-offset))`;
+      return face;
+    }
+
+    function renderSideNavigation() {
+      const map = $("#mapCard");
+      map.classList.toggle("has-special", activeSideNames.includes(STRAW_NAME));
+      map.replaceChildren(...activeSideNames.map((name, index) => {
+        const room = el("button", "map-room", name);
+        room.type = "button";
+        room.dataset.face = index;
+        room.setAttribute("aria-label", `查看${name}档案面`);
+        return room;
+      }));
+      const seat = el("div", "user-seat", userName);
+      seat.id = "userSeat";
+      map.append(seat);
+
+      const dots = $("#faceDots");
+      dots.replaceChildren(...activeSideNames.map((name, index) => {
+        const dot = el("button", "face-dot");
+        dot.type = "button";
+        dot.dataset.face = index;
+        dot.setAttribute("aria-label", `查看${name}`);
+        return dot;
+      }));
+    }
+
     function buildTopFace() {
       const face = el("article", "face utility-face top-face");
       face.dataset.surface = "map";
@@ -2569,7 +3940,11 @@
       const sheet = el("section", "surface-sheet map-sheet");
       sheet.append(el("h2", "", "密室地图"), el("p", "surface-kicker", "Upper surface / 向上查看 · 横转时自动保持正向"));
       const map = el("div", "surface-map");
-      map.append(el("div", "surface-table", "圆桌大厅"));
+      const table = el("div", "surface-table", "圆桌大厅");
+      if (asObject(state.系统)._特殊档案已解锁 === true) {
+        table.append(el("span", "surface-scarecrow", "韩璇\n稻草人"));
+      }
+      map.append(table);
       [...NAMES, userName].forEach((name, index) => {
         const room = el("div", `surface-room r${index + 1}`);
         room.append(el("span", "room-name", `${name}房间`), el("i", "room-toilet", "小厕所"));
@@ -2616,7 +3991,7 @@
       $("#portraitViewerTitle").textContent = `${name} · 证件照全图`;
       const image = $("#portraitFullImage");
       const thumbnail = document.querySelector(`.portrait[data-portrait-name="${name}"] img`);
-      const resolvedSource = thumbnail?.currentSrc || thumbnail?.src || PORTRAITS[name] || "";
+      const resolvedSource = thumbnail?.currentSrc || thumbnail?.src || portraitSource(name) || "";
       $("#portraitFullStage").classList.remove("has-error");
       image.hidden = false;
       if (image.src !== resolvedSource) image.src = resolvedSource;
@@ -2639,6 +4014,243 @@
       portraitLastFocused = null;
       activePortraitName = "";
       requestAnimationFrame(syncPortraitHitTarget);
+    }
+
+    function animateArchivePage(node) {
+      node.classList.remove("is-turning");
+      void node.offsetWidth;
+      node.classList.add("is-turning");
+    }
+
+    function renderDiaryBody(container, segments) {
+      const fragment = document.createDocumentFragment();
+      for (const segment of segments) {
+        if (typeof segment === "string") {
+          fragment.append(document.createTextNode(segment));
+          continue;
+        }
+        const tagName = segment.kind === "strike" ? "del" : segment.kind === "note" ? "ins" : "span";
+        const node = document.createElement(tagName);
+        node.className = `diary-ink-${segment.kind}`;
+        node.textContent = segment.text;
+        fragment.append(node);
+      }
+      container.replaceChildren(fragment);
+    }
+
+    function renderDiaryPage(animate = true) {
+      diaryPageIndex = Math.max(0, Math.min(DIARY_PAGES.length - 1, diaryPageIndex));
+      const page = DIARY_PAGES[diaryPageIndex];
+      $("#diaryPageTitle").textContent = page.title;
+      renderDiaryBody($("#diaryPageBody"), page.body);
+      $("#diaryPageCount").textContent = `${diaryPageIndex + 1} / ${DIARY_PAGES.length}`;
+      $("#previousDiaryPage").disabled = diaryPageIndex === 0;
+      $("#nextDiaryPage").disabled = diaryPageIndex === DIARY_PAGES.length - 1;
+      if (animate) animateArchivePage($("#diaryPaper"));
+    }
+
+    function openDiary(trigger) {
+      if (asObject(state.系统)._侦探日记已解锁 !== true) return;
+      archiveLastFocused = trigger || document.activeElement;
+      diaryPageIndex = 0;
+      renderDiaryPage(false);
+      const backdrop = $("#diaryBackdrop");
+      backdrop.classList.add("is-open");
+      backdrop.setAttribute("aria-hidden", "false");
+      hideSpecialArchiveHitTargets();
+      requestAnimationFrame(() => $("#closeDiary").focus());
+    }
+
+    function closeDiary(restoreFocus = true) {
+      const backdrop = $("#diaryBackdrop");
+      backdrop.classList.remove("is-open");
+      backdrop.setAttribute("aria-hidden", "true");
+      if (restoreFocus && archiveLastFocused?.isConnected && typeof archiveLastFocused.focus === "function") archiveLastFocused.focus();
+      archiveLastFocused = null;
+      requestAnimationFrame(syncSpecialArchiveHitTarget);
+    }
+
+    function renderCareerPage(animate = true) {
+      careerPageIndex = Math.max(0, Math.min(CAREER_PAGES.length - 1, careerPageIndex));
+      const page = CAREER_PAGES[careerPageIndex];
+      $("#careerYear").textContent = page.year;
+      $("#careerPageTitle").textContent = page.title;
+      $("#careerPageBody").textContent = page.body;
+      $("#careerPageCount").textContent = `${careerPageIndex + 1} / ${CAREER_PAGES.length}`;
+      $("#previousCareerPage").disabled = careerPageIndex === 0;
+      $("#nextCareerPage").disabled = careerPageIndex === CAREER_PAGES.length - 1;
+      if (animate) animateArchivePage($("#careerSheet"));
+    }
+
+    function openCareer(trigger) {
+      if (asObject(state.系统)._创业事迹已解锁 !== true) return;
+      archiveLastFocused = trigger || document.activeElement;
+      careerPageIndex = 0;
+      renderCareerPage(false);
+      const backdrop = $("#careerBackdrop");
+      backdrop.classList.add("is-open");
+      backdrop.setAttribute("aria-hidden", "false");
+      hideSpecialArchiveHitTargets();
+      requestAnimationFrame(() => $("#closeCareer").focus());
+    }
+
+    function closeCareer(restoreFocus = true) {
+      const backdrop = $("#careerBackdrop");
+      backdrop.classList.remove("is-open");
+      backdrop.setAttribute("aria-hidden", "true");
+      if (restoreFocus && archiveLastFocused?.isConnected && typeof archiveLastFocused.focus === "function") archiveLastFocused.focus();
+      archiveLastFocused = null;
+      requestAnimationFrame(syncSpecialArchiveHitTarget);
+    }
+
+    function renderAlbumPage(animate = true) {
+      albumPageIndex = Math.max(0, Math.min(ALBUM_PAGES.length - 1, albumPageIndex));
+      const page = ALBUM_PAGES[albumPageIndex];
+      const last = !page.image;
+      $("#albumPage").classList.toggle("is-last", last);
+      $("#albumPageTitle").textContent = page.title;
+      $("#albumPageDuration").textContent = page.duration;
+      $("#albumPageBody").textContent = page.body;
+      $("#albumPageCount").textContent = `${albumPageIndex + 1} / ${ALBUM_PAGES.length}`;
+      $("#previousAlbumPage").disabled = albumPageIndex === 0;
+      $("#nextAlbumPage").disabled = albumPageIndex === ALBUM_PAGES.length - 1;
+      const image = $("#albumPhoto");
+      image.hidden = last;
+      if (!last) {
+        image.src = page.image;
+        image.alt = `${page.title}与张曲溪的合照`;
+      } else {
+        image.removeAttribute("src");
+        image.alt = "";
+      }
+      if (animate) animateArchivePage($("#albumPage"));
+    }
+
+    function openAlbum(trigger) {
+      if (asObject(state.系统)._风流相册已解锁 !== true) return;
+      archiveLastFocused = trigger || document.activeElement;
+      albumPageIndex = 0;
+      renderAlbumPage(false);
+      const backdrop = $("#albumBackdrop");
+      backdrop.classList.add("is-open");
+      backdrop.setAttribute("aria-hidden", "false");
+      hideSpecialArchiveHitTargets();
+      requestAnimationFrame(() => $("#closeAlbum").focus());
+    }
+
+    function closeAlbum(restoreFocus = true) {
+      const backdrop = $("#albumBackdrop");
+      backdrop.classList.remove("is-open");
+      backdrop.setAttribute("aria-hidden", "true");
+      if (restoreFocus && archiveLastFocused?.isConnected && typeof archiveLastFocused.focus === "function") archiveLastFocused.focus();
+      archiveLastFocused = null;
+      requestAnimationFrame(syncSpecialArchiveHitTarget);
+    }
+
+    function openSisterPhoto(trigger) {
+      if (asObject(state.系统)._姐妹合照已解锁 !== true) return;
+      archiveLastFocused = trigger || document.activeElement;
+      const image = $("#sisterPhoto");
+      image.src = SISTER_PHOTO;
+      const backdrop = $("#sisterBackdrop");
+      backdrop.classList.add("is-open");
+      backdrop.setAttribute("aria-hidden", "false");
+      hideSpecialArchiveHitTargets();
+      requestAnimationFrame(() => $("#closeSister").focus());
+    }
+
+    function closeSisterPhoto(restoreFocus = true) {
+      const backdrop = $("#sisterBackdrop");
+      backdrop.classList.remove("is-open");
+      backdrop.setAttribute("aria-hidden", "true");
+      if (restoreFocus && archiveLastFocused?.isConnected && typeof archiveLastFocused.focus === "function") archiveLastFocused.focus();
+      archiveLastFocused = null;
+      requestAnimationFrame(syncSpecialArchiveHitTarget);
+    }
+
+    function ensureTestamentModal(system = asObject(state.系统)) {
+      const unlocked = system._妹妹遗书已解锁 === true;
+      const existing = $("#testamentBackdrop");
+      if (!unlocked) {
+        if (existing) existing.remove();
+        return null;
+      }
+      if (existing) return existing;
+
+      const backdrop = el("div", "modal-backdrop testament-backdrop");
+      backdrop.id = "testamentBackdrop";
+      backdrop.setAttribute("aria-hidden", "true");
+      const viewer = el("section", "testament-viewer");
+      viewer.setAttribute("role", "dialog");
+      viewer.setAttribute("aria-modal", "true");
+      viewer.setAttribute("aria-labelledby", "testamentTitle");
+      const head = el("header", "testament-head");
+      const title = el("h2", "", "妹妹留下的信");
+      title.id = "testamentTitle";
+      const close = el("button", "modal-btn portrait-close", "×");
+      close.id = "closeTestament";
+      close.type = "button";
+      close.setAttribute("aria-label", "关闭妹妹遗书");
+      head.append(title, close);
+
+      const paper = el("article", "testament-paper");
+      [
+        "姐姐，对不起。一直以来，我什么都想自己扛，直到连向你开口都觉得难堪。",
+        "穆裳希学姐向我提出合作时，我以为终于遇到了愿意相信我的人。我把技术、资金和心力都投进公司，却没有看懂那些合同，也没有发现她安排的律师和财务人员正一点点夺走公司的控制权。等我明白过来，我已经失去了自己创办的一切。",
+        "后来我遇见张曲溪。她在我最脆弱的时候靠近我，说喜欢我、会陪着我。我把那当成救命的绳子，也一次次把钱交给她。其实我隐约知道她只是在利用我的感情，可我太害怕连这点温柔也失去。",
+        "邻居林安看出我不对劲，答应替我调查。那几天我真的重新有了希望，以为只要再等一等，事情就会有答案。可她很快把这件事忘了；对她也许只是一次兴起，对我却是最后一次期待。",
+        "我几次想把这些全告诉你，话到嘴边又缩了回去。我做了一个草率又懦弱的决定，还自欺欺人地以为这样就能结束痛苦。现在想来，我只是把一道永远不会愈合的伤留给了你。",
+        "姐姐，对不起。你从来不该替我的选择承担罪责。"
+      ].forEach(text => paper.append(el("p", "", text)));
+      paper.append(el("p", "testament-signature", "你没能拉住的妹妹"));
+      viewer.append(head, paper);
+      backdrop.append(viewer);
+      $("#sisterBackdrop").insertAdjacentElement("afterend", backdrop);
+
+      close.addEventListener("click", () => closeTestament());
+      backdrop.addEventListener("pointerdown", event => { if (event.target === backdrop) closeTestament(); });
+      backdrop.addEventListener("keydown", event => {
+        if (!backdrop.classList.contains("is-open")) return;
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          closeTestament();
+        } else if (event.key === "Tab") {
+          event.preventDefault();
+          close.focus();
+        }
+      });
+      return backdrop;
+    }
+
+    function openTestament(trigger) {
+      const system = asObject(state.系统);
+      if (system._妹妹遗书已解锁 !== true) return;
+      const backdrop = ensureTestamentModal(system);
+      if (!backdrop) return;
+      archiveLastFocused = trigger || document.activeElement;
+      backdrop.classList.add("is-open");
+      backdrop.setAttribute("aria-hidden", "false");
+      hideSpecialArchiveHitTargets();
+      $("#interactionHitTarget").hidden = true;
+      $("#portraitHitTarget").hidden = true;
+      $("#insightModeHitTarget").hidden = true;
+      requestAnimationFrame(() => $("#closeTestament")?.focus());
+    }
+
+    function closeTestament(restoreFocus = true) {
+      const backdrop = $("#testamentBackdrop");
+      if (!backdrop) return;
+      backdrop.classList.remove("is-open");
+      backdrop.setAttribute("aria-hidden", "true");
+      if (restoreFocus && archiveLastFocused?.isConnected && typeof archiveLastFocused.focus === "function") archiveLastFocused.focus();
+      archiveLastFocused = null;
+      requestAnimationFrame(() => {
+        syncInteractionHitTarget();
+        syncPortraitHitTarget();
+        syncSpecialArchiveHitTarget();
+        syncInsightModeHitTarget();
+      });
     }
 
     function normalizeEnding(system) {
@@ -2721,18 +4333,36 @@
     function render(nextState = state) {
       state = asObject(nextState);
       const system = asObject(state.系统);
+      normalizeInsightMode(system);
+      ensureTestamentModal(system);
       const roles = asObject(state.角色);
       const player = asObject(state.玩家);
+      const previousName = activeSideName();
+      activeSideNames = sideNamesForState(state);
+      const preservedIndex = activeSideNames.indexOf(previousName);
+      faceIndex = preservedIndex >= 0 ? preservedIndex : 0;
+      const sideCount = activeSideNames.length;
+      angle = faceIndex * (360 / sideCount);
+      configurePrismGeometry(sideCount);
+      renderSideNavigation();
       $("#currentKing").textContent = system._当前国王 ? displayPerson(system._当前国王, userName) : "尚未选出";
       $("#currentDay").textContent = `第 ${Math.round(num(system._当前天数, 1, 15, 1))} / 15 日`;
       $("#sceneInfo").textContent = `${system.当前时间 || "时间未知"} · ${system.当前地点 || "地点未知"} · ${system.当前阶段 || "阶段未知"}`;
       $("#userSeat").textContent = userName;
       const prism = $("#prism");
+      prism.dataset.sides = String(sideCount);
+      prism.dataset.view = pitch >= 45 ? "top" : pitch <= -45 ? "bottom" : "side";
+      const sideFaces = activeSideNames.map((name, index) => positionSideFace(
+        name === STRAW_NAME ? buildStrawFace() : buildFace(name, asObject(roles[name])),
+        index,
+        sideCount
+      ));
       prism.replaceChildren(
-        ...NAMES.map(name => buildFace(name, asObject(roles[name]))),
+        ...sideFaces,
         buildTopFace(),
         buildBottomFace()
       );
+      prism.style.transform = `translateZ(var(--camera-depth)) rotateX(${pitch}deg) rotateY(${angle}deg) scale3d(var(--focus-scale), var(--focus-scale), var(--focus-scale))`;
       renderSurfaceOverlay(state);
       renderRules($("#playerRules"), player.颁布规则);
       renderDailyFlow(system);
@@ -2741,6 +4371,8 @@
       requestAnimationFrame(() => {
         syncInteractionHitTarget();
         syncPortraitHitTarget();
+        syncSpecialArchiveHitTarget();
+        syncInsightModeHitTarget();
       });
     }
 
@@ -2810,7 +4442,7 @@
       interactionRole = "";
       interactionLastFocused = document.activeElement;
       $("#interactionTitle").textContent = "颁布你的法令";
-      $("#interactionNote").textContent = "填写一条能实际执行、能由行为或结果判断的新法令，或明确写出要撤销的法令编号/标题。不能测谎、强制真话、赋予超自然能力、破坏密室，或造成死亡、残疾及无法短期恢复的伤害。科学上不可能，或试图修改十五日时长、每日法令次数、国王抽取等基础游戏协议的提案，第一次会被警告并要求重提，第二次会直接执行终止处分。按 Ctrl/⌘ + Enter 可提交。";
+      $("#interactionNote").textContent = "填写一条只有一个核心规则的新法令，或明确写出要撤销的法令编号/标题。可以命令说真话或禁止撒谎，但项圈无法识别真假，角色说谎不会因此触发电击；拒绝回答等可观察行为仍可被判定。不能赋予超自然能力、破坏密室，或造成死亡、残疾及无法短期恢复的伤害。科学上不可能，或试图修改十五日时长、每日法令次数、国王抽取等基础游戏协议的提案，第一次会被警告并要求重提，第二次会直接执行终止处分。按 Ctrl/⌘ + Enter 可提交。";
       $("#interactionLabel").textContent = "新法令内容或撤销目标";
       $("#interactionMethod").placeholder = "例如：新法令：…… / 撤销：R03《……》";
       $("#submitInteraction").textContent = "提交法令";
@@ -2927,7 +4559,11 @@
         hit.hidden = true;
         return;
       }
-      const activeName = NAMES[((faceIndex % NAMES.length) + NAMES.length) % NAMES.length];
+      const activeName = activeSideName();
+      if (!NAMES.includes(activeName)) {
+        hit.hidden = true;
+        return;
+      }
       const visual = document.querySelector(`.face[data-name="${activeName}"] .face-interact-btn`);
       if (!visual || visual.hidden) {
         hit.hidden = true;
@@ -2948,13 +4584,103 @@
       hit.hidden = false;
     }
 
+    function hideSpecialArchiveHitTargets() {
+      document.querySelectorAll(".special-archive-hit-target").forEach(hit => { hit.hidden = true; });
+    }
+
+    function archiveOverlayOpen() {
+      return ["diaryBackdrop", "careerBackdrop", "albumBackdrop", "sisterBackdrop", "testamentBackdrop"]
+        .some(id => $(`#${id}`)?.classList.contains("is-open"));
+    }
+
+    function syncSpecialArchiveHitTarget() {
+      const viewport = $("#viewport");
+      let hits = [...viewport.querySelectorAll(".special-archive-hit-target")];
+      if (roomMoving || pitch !== 0 || archiveOverlayOpen()) {
+        hideSpecialArchiveHitTargets();
+        return;
+      }
+      const activeName = activeSideName();
+      const visuals = [...document.querySelectorAll(`.face[data-name="${activeName}"] .special-open-btn`)];
+      if (!visuals.length) {
+        hideSpecialArchiveHitTargets();
+        return;
+      }
+      while (hits.length < visuals.length) {
+        const hit = el("button", "interaction-hit-target special-archive-hit-target");
+        hit.type = "button";
+        hit.hidden = true;
+        hit.setAttribute("aria-label", "查看角色特别档案");
+        viewport.append(hit);
+        hits.push(hit);
+      }
+      const viewportRect = viewport.getBoundingClientRect();
+      visuals.forEach((visual, index) => {
+        const hit = hits[index];
+        const visualRect = visual.getBoundingClientRect();
+        if (visualRect.width < 2 || visualRect.height < 2) {
+          hit.hidden = true;
+          return;
+        }
+        hit.style.left = `${visualRect.left - viewportRect.left}px`;
+        hit.style.top = `${visualRect.top - viewportRect.top}px`;
+        hit.style.width = `${visualRect.width}px`;
+        hit.style.height = `${visualRect.height}px`;
+        hit.dataset.archiveType = visual.dataset.archiveType || "";
+        hit.setAttribute("aria-label", visual.textContent || "查看特别档案");
+        hit.hidden = false;
+      });
+      hits.slice(visuals.length).forEach(hit => {
+        hit.hidden = true;
+        hit.dataset.archiveType = "";
+      });
+    }
+
+    function interfaceOverlayOpen() {
+      return [
+        "playerRulesBackdrop", "interactionBackdrop", "portraitBackdrop", "diaryBackdrop",
+        "careerBackdrop", "albumBackdrop", "sisterBackdrop", "testamentBackdrop", "endingBackdrop"
+      ].some(id => $(`#${id}`)?.classList.contains("is-open"));
+    }
+
+    function syncInsightModeHitTarget() {
+      const hit = $("#insightModeHitTarget");
+      if (roomMoving || pitch !== 0 || interfaceOverlayOpen()) {
+        hit.hidden = true;
+        return;
+      }
+      const activeName = activeSideName();
+      const visual = document.querySelector(`.face[data-name="${activeName}"] .insight-mode-btn`);
+      if (!visual) {
+        hit.hidden = true;
+        hit.dataset.insightMode = "";
+        hit.setAttribute("aria-pressed", "false");
+        return;
+      }
+      const viewportRect = $("#viewport").getBoundingClientRect();
+      const visualRect = visual.getBoundingClientRect();
+      if (visualRect.width < 2 || visualRect.height < 2) {
+        hit.hidden = true;
+        return;
+      }
+      const active = visual.getAttribute("aria-pressed") === "true";
+      hit.style.left = `${visualRect.left - viewportRect.left}px`;
+      hit.style.top = `${visualRect.top - viewportRect.top}px`;
+      hit.style.width = `${visualRect.width}px`;
+      hit.style.height = `${visualRect.height}px`;
+      hit.dataset.insightMode = visual.dataset.insightMode || "";
+      hit.setAttribute("aria-label", `${active ? "关闭" : "开启"}${visual.textContent || "角色洞察"}`);
+      hit.setAttribute("aria-pressed", active ? "true" : "false");
+      hit.hidden = false;
+    }
+
     function syncPortraitHitTarget() {
       const hit = $("#portraitHitTarget");
       if (roomMoving || pitch !== 0 || $("#portraitBackdrop").classList.contains("is-open")) {
         hit.hidden = true;
         return;
       }
-      const activeName = NAMES[((faceIndex % NAMES.length) + NAMES.length) % NAMES.length];
+      const activeName = activeSideName();
       const visual = document.querySelector(`.face[data-name="${activeName}"] .portrait`);
       if (!visual) {
         hit.hidden = true;
@@ -2979,15 +4705,20 @@
       clearTimeout(hitSyncTimer);
       $("#interactionHitTarget").hidden = true;
       $("#portraitHitTarget").hidden = true;
+      $("#insightModeHitTarget").hidden = true;
+      hideSpecialArchiveHitTargets();
       hitSyncTimer = window.setTimeout(() => {
         if (settleRoom) roomMoving = false;
         syncInteractionHitTarget();
         syncPortraitHitTarget();
+        syncSpecialArchiveHitTarget();
+        syncInsightModeHitTarget();
       }, delay);
     }
 
     function updateNavigation() {
-      const normalized = ((faceIndex % 4) + 4) % 4;
+      const count = Math.max(1, activeSideNames.length);
+      const normalized = ((faceIndex % count) + count) % count;
       document.querySelectorAll(".face[data-name]").forEach((face, index) => {
         const active = pitch === 0 && index === normalized;
         face.classList.toggle("is-active", active);
@@ -3019,9 +4750,11 @@
     }
 
     function rotateTo(index) {
-      faceIndex = ((index % 4) + 4) % 4;
-      const turns = Math.round((angle / 90 - faceIndex) / 4);
-      angle = (faceIndex + turns * 4) * 90;
+      const count = Math.max(1, activeSideNames.length);
+      const step = 360 / count;
+      faceIndex = ((index % count) + count) % count;
+      const turns = Math.round((angle / step - faceIndex) / count);
+      angle = (faceIndex + turns * count) * step;
       applyRoomTransform();
       updateNavigation();
     }
@@ -3032,17 +4765,34 @@
       updateNavigation();
     }
 
-    function makeDots() {
-      const dots = $("#faceDots");
-      NAMES.forEach((name, index) => {
-        const dot = el("button", "face-dot");
-        dot.type = "button";
-        dot.dataset.face = index;
-        dot.setAttribute("aria-label", `查看${name}`);
-        dot.addEventListener("click", () => rotateTo(index));
-        dots.append(dot);
+    function bindSideNavigation() {
+      const activate = event => {
+        const target = event.target.closest("[data-face]");
+        if (!target) return;
+        rotateTo(Number(target.dataset.face));
+      };
+      $("#faceDots").addEventListener("click", activate);
+      $("#mapCard").addEventListener("click", activate);
+    }
+
+    function bindInsightModes() {
+      const hit = $("#insightModeHitTarget");
+      hit.addEventListener("click", event => {
+        const mode = String(event.currentTarget.dataset.insightMode || "");
+        const config = INSIGHT_MODES[mode];
+        const system = asObject(state.系统);
+        if (!insightSnapshotAvailable(system, config)) {
+          insightMode = "";
+        } else {
+          insightMode = insightMode === mode ? "" : mode;
+        }
+        render(state);
       });
-      document.querySelectorAll(".map-room").forEach(room => room.addEventListener("click", () => rotateTo(Number(room.dataset.face))));
+      const observer = new MutationObserver(() => requestAnimationFrame(syncInsightModeHitTarget));
+      [
+        "playerRulesBackdrop", "interactionBackdrop", "portraitBackdrop", "diaryBackdrop",
+        "careerBackdrop", "albumBackdrop", "sisterBackdrop", "endingBackdrop"
+      ].forEach(id => observer.observe($(`#${id}`), { attributes: true, attributeFilter: ["class", "aria-hidden"] }));
     }
 
     function bindRotation() {
@@ -3056,14 +4806,11 @@
         roomMoving = false;
         syncInteractionHitTarget();
         syncPortraitHitTarget();
+        syncSpecialArchiveHitTarget();
+        syncInsightModeHitTarget();
       });
       document.addEventListener("keydown", event => {
-        if (
-          $("#playerRulesBackdrop").classList.contains("is-open") ||
-          $("#interactionBackdrop").classList.contains("is-open") ||
-          $("#portraitBackdrop").classList.contains("is-open") ||
-          $("#endingBackdrop").classList.contains("is-open")
-        ) return;
+        if (interfaceOverlayOpen()) return;
         const key = event.key.toLowerCase();
         if (key === "a" || event.key === "ArrowLeft") rotateTo(faceIndex - 1);
         if (key === "d" || event.key === "ArrowRight") rotateTo(faceIndex + 1);
@@ -3102,11 +4849,15 @@
     function bindMediaModals() {
       const portraitBackdrop = $("#portraitBackdrop");
       const endingBackdrop = $("#endingBackdrop");
+      const diaryBackdrop = $("#diaryBackdrop");
+      const careerBackdrop = $("#careerBackdrop");
+      const albumBackdrop = $("#albumBackdrop");
+      const sisterBackdrop = $("#sisterBackdrop");
       const portraitFullImage = $("#portraitFullImage");
       portraitFullImage.addEventListener("load", () => $("#portraitFullStage").classList.remove("has-error"));
       portraitFullImage.addEventListener("error", () => $("#portraitFullStage").classList.add("has-error"));
       $("#portraitHitTarget").addEventListener("click", event => {
-        const name = event.currentTarget.dataset.portraitName || NAMES[((faceIndex % NAMES.length) + NAMES.length) % NAMES.length];
+        const name = event.currentTarget.dataset.portraitName || activeSideName();
         const visual = document.querySelector(`.face[data-name="${name}"] .portrait`);
         openPortrait(name, visual || event.currentTarget);
       });
@@ -3122,6 +4873,61 @@
           event.preventDefault();
           $("#closePortrait").focus();
         }
+      });
+
+      $("#viewport").addEventListener("click", event => {
+        const hit = event.composedPath().find(node => (
+          node instanceof Element &&
+          node.matches(".special-archive-hit-target") &&
+          $("#viewport").contains(node)
+        )) || event.target.closest?.(".special-archive-hit-target");
+        if (!hit || hit.hidden) return;
+        const type = hit.dataset.archiveType;
+        if (type === "diary") openDiary(hit);
+        else if (type === "career") openCareer(hit);
+        else if (type === "album") openAlbum(hit);
+        else if (type === "sister") openSisterPhoto(hit);
+        else if (type === "testament") openTestament(hit);
+      });
+      $("#closeDiary").addEventListener("click", () => closeDiary());
+      $("#previousDiaryPage").addEventListener("click", () => { diaryPageIndex -= 1; renderDiaryPage(); });
+      $("#nextDiaryPage").addEventListener("click", () => { diaryPageIndex += 1; renderDiaryPage(); });
+      diaryBackdrop.addEventListener("pointerdown", event => { if (event.target === diaryBackdrop) closeDiary(); });
+      diaryBackdrop.addEventListener("keydown", event => {
+        if (!diaryBackdrop.classList.contains("is-open")) return;
+        if (event.key === "Escape") { event.preventDefault(); closeDiary(); }
+        else if (event.key === "ArrowLeft") { event.preventDefault(); diaryPageIndex -= 1; renderDiaryPage(); }
+        else if (event.key === "ArrowRight") { event.preventDefault(); diaryPageIndex += 1; renderDiaryPage(); }
+      });
+
+      $("#closeCareer").addEventListener("click", () => closeCareer());
+      $("#previousCareerPage").addEventListener("click", () => { careerPageIndex -= 1; renderCareerPage(); });
+      $("#nextCareerPage").addEventListener("click", () => { careerPageIndex += 1; renderCareerPage(); });
+      careerBackdrop.addEventListener("pointerdown", event => { if (event.target === careerBackdrop) closeCareer(); });
+      careerBackdrop.addEventListener("keydown", event => {
+        if (!careerBackdrop.classList.contains("is-open")) return;
+        if (event.key === "Escape") { event.preventDefault(); closeCareer(); }
+        else if (event.key === "ArrowLeft") { event.preventDefault(); careerPageIndex -= 1; renderCareerPage(); }
+        else if (event.key === "ArrowRight") { event.preventDefault(); careerPageIndex += 1; renderCareerPage(); }
+      });
+
+      $("#closeAlbum").addEventListener("click", () => closeAlbum());
+      $("#previousAlbumPage").addEventListener("click", () => { albumPageIndex -= 1; renderAlbumPage(); });
+      $("#nextAlbumPage").addEventListener("click", () => { albumPageIndex += 1; renderAlbumPage(); });
+      albumBackdrop.addEventListener("pointerdown", event => { if (event.target === albumBackdrop) closeAlbum(); });
+      albumBackdrop.addEventListener("keydown", event => {
+        if (!albumBackdrop.classList.contains("is-open")) return;
+        if (event.key === "Escape") { event.preventDefault(); closeAlbum(); }
+        else if (event.key === "ArrowLeft") { event.preventDefault(); albumPageIndex -= 1; renderAlbumPage(); }
+        else if (event.key === "ArrowRight") { event.preventDefault(); albumPageIndex += 1; renderAlbumPage(); }
+      });
+
+      $("#closeSister").addEventListener("click", () => closeSisterPhoto());
+      sisterBackdrop.addEventListener("pointerdown", event => { if (event.target === sisterBackdrop) closeSisterPhoto(); });
+      sisterBackdrop.addEventListener("keydown", event => {
+        if (!sisterBackdrop.classList.contains("is-open")) return;
+        if (event.key === "Escape") { event.preventDefault(); closeSisterPhoto(); }
+        else if (event.key === "Tab") { event.preventDefault(); $("#closeSister").focus(); }
       });
 
       $("#reopenEnding").addEventListener("click", () => openEnding());
@@ -3143,7 +4949,7 @@
     function bindDailyFlow() {
       const backdrop = $("#interactionBackdrop");
       $("#primaryDailyAction").addEventListener("click", runDailyAction);
-      $("#interactionHitTarget").addEventListener("click", event => openInteraction(event.currentTarget.dataset.interactionName || NAMES[((faceIndex % NAMES.length) + NAMES.length) % NAMES.length]));
+      $("#interactionHitTarget").addEventListener("click", event => openInteraction(event.currentTarget.dataset.interactionName || activeSideName()));
       $("#cancelInteraction").addEventListener("click", closeInteraction);
       $("#submitInteraction").addEventListener("click", submitInteractionRequest);
       backdrop.addEventListener("pointerdown", event => { if (event.target === backdrop) closeInteraction(); });
@@ -3198,16 +5004,20 @@
 
     async function startDossier() {
       const bridge = window.KingGameBridge;
-      const makerMark = String.fromCharCode(108, 111, 117, 105, 115, 72, 77);
-      if (bridge && typeof bridge.getCardName === "function") {
-        const runtimeName = String(await bridge.getCardName() || "");
-        if (runtimeName && !runtimeName.includes(makerMark)) {
-          document.documentElement.setAttribute("data-card-mismatch", "true");
-          document.body.replaceChildren();
-          return;
-        }
+      let authorization = null;
+      try {
+        authorization = bridge && typeof bridge.getAuthorizationState === "function"
+          ? await bridge.getAuthorizationState()
+          : null;
+      } catch (error) {}
+      if (!authorization || authorization.authorized !== true) {
+        document.documentElement.setAttribute("data-card-mismatch", "true");
+        document.body.replaceChildren();
+        return;
       }
-      makeDots();
+      document.documentElement.setAttribute("data-card-authorized", "true");
+      bindSideNavigation();
+      bindInsightModes();
       bindRotation();
       bindDrawer();
       bindMediaModals();
