@@ -3572,6 +3572,37 @@
     return changed;
   }
 
+  function assertStageEntriesMatchState(data, state) {
+    var entries = worldInfoEntries(data);
+    var byComment = Object.create(null);
+    entries.forEach(function (entry) {
+      var comment = String(entry && entry.comment || '').trim();
+      if (comment) byComment[comment] = entry;
+    });
+    var missing = [];
+    var mismatched = [];
+    STAGE_ENTRY_RULES.forEach(function (rule) {
+      var name = String(rule.name || '').trim();
+      var entry = byComment[name];
+      if (!entry) {
+        missing.push(name);
+        return;
+      }
+      var expectedEnabled = stageRuleEnabled(rule, state);
+      var expectedDisabled = !expectedEnabled;
+      var extraMatches = !entry.extra || typeof entry.extra !== 'object' || entry.extra.enabled === expectedEnabled;
+      if (entry.enabled !== expectedEnabled
+        || entry.disable !== expectedDisabled
+        || entry.disabled !== expectedDisabled
+        || !extraMatches) {
+        mismatched.push(name);
+      }
+    });
+    if (missing.length) throw new Error('世界书后端缺少阶段条目：' + missing.join('、'));
+    if (mismatched.length) throw new Error('世界书后端灯态尚未生效：' + mismatched.join('、'));
+    return true;
+  }
+
   function stageRuleEnabled(rule, state) {
     var system = state && state['系统'] && typeof state['系统'] === 'object' ? state['系统'] : {};
     var hidden = system.internal && typeof system.internal === 'object' ? system.internal : {};
@@ -3644,6 +3675,42 @@
     return host.__KING_GAME_WORLD_INFO_MODULE_PROMISE__;
   }
 
+  async function importRequestHeadersModule(host) {
+    if (host.__KING_GAME_REQUEST_HEADERS_MODULE_PROMISE__) return host.__KING_GAME_REQUEST_HEADERS_MODULE_PROMISE__;
+    host.__KING_GAME_REQUEST_HEADERS_MODULE_PROMISE__ = (async function () {
+      var attempts = [
+        function () { return host.eval && host.eval("import('./script.js')"); },
+        function () { return host.eval && host.eval("import('/script.js')"); }
+      ];
+      for (var index = 0; index < attempts.length; index += 1) {
+        try {
+          var module = await attempts[index]();
+          if (module && typeof module.getRequestHeaders === 'function') return module;
+        } catch (error) {}
+      }
+      throw new Error('无法加载 SillyTavern 请求头模块');
+    })();
+    return host.__KING_GAME_REQUEST_HEADERS_MODULE_PROMISE__;
+  }
+
+  async function verifyPersistedStageEntries(host, state) {
+    if (!host || typeof host.fetch !== 'function') throw new Error('宿主不支持世界书后端核验');
+    var requestModule = await importRequestHeadersModule(host);
+    var response = await host.fetch('/api/worldinfo/get', {
+      method: 'POST',
+      headers: requestModule.getRequestHeaders(),
+      body: JSON.stringify({ name: EXPECTED_WORLD_BOOK_NAME }),
+      cache: 'no-store',
+      credentials: 'same-origin'
+    });
+    if (!response || response.ok !== true) {
+      throw new Error('世界书后端读取失败' + (response && response.status ? '（HTTP ' + response.status + '）' : ''));
+    }
+    var persisted = await response.json();
+    assertStageEntriesMatchState(persisted, state);
+    return true;
+  }
+
   async function applyStageEntryRules(state) {
     if (!Array.isArray(STAGE_ENTRY_RULES) || !STAGE_ENTRY_RULES.length) return;
     if (LOCAL_PREVIEW === true && !hasHostRuntime()) return;
@@ -3668,9 +3735,15 @@
     });
     if (missing.length) throw new Error('世界书缺少阶段条目：' + missing.join('、'));
     if (changed) {
-      await module.saveWorldInfo(EXPECTED_WORLD_BOOK_NAME, data, true);
+      var saveResult = module.saveWorldInfo(EXPECTED_WORLD_BOOK_NAME, data, true);
+      if (!saveResult || typeof saveResult.then !== 'function') throw new Error('世界书保存接口没有返回可等待的任务');
+      await saveResult;
       if (typeof module.updateWorldInfoList === 'function') await module.updateWorldInfoList();
     }
+    // SillyTavern 的 saveWorldInfo 当前不会因 HTTP 非 2xx 自动抛错，
+    // loadWorldInfo 又可能直接命中内存缓存。因此按钮事务必须从后端
+    // 重新读取一次并核对全部阶段灯态；没有通过这道屏障就绝不发送输入。
+    await verifyPersistedStageEntries(host, state);
   }
 
   function queueStageEntrySync(stateProvider, force) {
