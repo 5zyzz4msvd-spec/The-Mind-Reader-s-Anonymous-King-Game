@@ -1381,6 +1381,12 @@
   var INNER_NAMES = { n1: '林安', n2: '穆裳希', n3: '张曲溪', n4: '王可可', u: '玩家' };
   var ARCHIVE_ALIAS_BY_NAME = { '林安': 'n1', '穆裳希': 'n2', '张曲溪': 'n3', '王可可': 'n4' };
   var ARCHIVE_ALIASES = ['n1', 'n2', 'n3', 'n4'];
+  var CANONICAL_IDENTITIES = {
+    n1: 'A genuinely kind but unreliable amateur detective whose real talent is buried beneath playfulness, forgetfulness, and poor follow-through.',
+    n2: 'A ruthless and status-driven businesswoman who weaponizes competence and respectability, and who dispossessed Han Xuan through legal and financial manipulation.',
+    n3: "A bisexual serial seducer who treats desired women as conquests, exploited Han Xuan's vulnerability, and avoids responsibility while preserving her own virginity.",
+    n4: "Han Xuan's elder sister, the abduction mastermind, and a guilt-ridden avenger who protects the player while using him to humiliate all four women, including herself."
+  };
   var COMPLIANCE_STATES = {
     '未开放': true,
     '待召开': true,
@@ -1895,6 +1901,10 @@
       Object.keys(characterSource).forEach(function (key) {
         character[key] = characterSource[key];
       });
+      // English author-truth anchor: it is not a live psychological summary.
+      // Restore it unconditionally so old saves gain the field and subjective
+      // cognition or extra-model patches can never contaminate it.
+      character.identity = CANONICAL_IDENTITIES[alias];
       character.s = normalizeCharacterStage(alias, characterSource.s);
       cache[alias] = character;
     });
