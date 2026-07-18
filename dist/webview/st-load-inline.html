@@ -275,7 +275,7 @@
     .identity h2 { margin: 0; color: #f1e8d4; font-size: clamp(20px, 2.4vw, 30px); letter-spacing: .08em; }
     .identity p { margin: 3px 0 0; color: var(--muted); font: 11px/1.2 ui-sans-serif, system-ui, sans-serif; }
 
-    .face-actions { flex: 0 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
+    .face-actions { flex: 0 1 68%; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 7px; }
 
     .insight-mode-btn {
       min-height: 34px;
@@ -455,6 +455,30 @@
       box-shadow: 0 7px 22px rgba(0,0,0,.24), inset 0 0 18px rgba(177,125,96,.08);
     }
     .testament-open-btn:hover { border-color: #d2a58e; color: #fff1e8; }
+    .relationship-list-open-btn {
+      min-height: 34px;
+      padding: 6px 11px;
+      border: 1px solid rgba(188,132,169,.58);
+      color: #f0d9e7;
+      background: linear-gradient(145deg, #352331, #171217);
+      pointer-events: none;
+      font: 700 11px/1.2 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .08em;
+      box-shadow: 0 7px 22px rgba(0,0,0,.24), inset 0 0 18px rgba(207,135,180,.06);
+    }
+    .relationship-list-open-btn:hover { border-color: #dba7c7; color: #fff1f8; }
+    .weakness-open-btn {
+      min-height: 34px;
+      padding: 6px 11px;
+      border: 1px solid rgba(179,112,111,.68);
+      color: #f0d8d5;
+      background: linear-gradient(145deg, #402323, #181111);
+      pointer-events: none;
+      font: 700 11px/1.2 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .08em;
+      box-shadow: 0 7px 22px rgba(0,0,0,.24), inset 0 0 18px rgba(204,111,107,.07);
+    }
+    .weakness-open-btn:hover { border-color: #d89a96; color: #fff0ed; }
 
     .interaction-hit-target {
       position: absolute;
@@ -637,7 +661,7 @@
       aspect-ratio: 1;
       padding: 9px;
       display: grid;
-      grid-template-rows: 1fr auto;
+      grid-template-rows: auto 1fr auto;
       place-items: center;
       border: 1px solid rgba(198,163,91,.36);
       color: #c9b98f;
@@ -657,6 +681,9 @@
       font-size: 9px;
       font-style: normal;
     }
+    .map-occupants { align-self: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 100%; }
+    .map-occupant { padding: 2px 5px; border: 1px solid rgba(198,163,91,.38); color: #ead7a7; background: rgba(20,18,14,.82); font: 650 8px/1.15 ui-sans-serif, system-ui, sans-serif; }
+    .surface-table .map-occupants { position: absolute; left: 50%; bottom: 12%; transform: translateX(-50%); width: 82%; }
     .surface-room.r1 { top: 5%; left: 50%; transform: translateX(-50%); }
     .surface-room.r2 { top: 39%; right: 4%; }
     .surface-room.r3 { bottom: 5%; right: 18%; }
@@ -708,6 +735,11 @@
     .rule-head { display: flex; justify-content: space-between; gap: 8px; color: #e0cfaa; font: 700 11px/1.3 ui-sans-serif, system-ui, sans-serif; }
     .rule-meta { color: #918774; white-space: nowrap; font-weight: 500; }
     .rule p { margin: 5px 0 0; color: #c7bdab; font-size: 11px; line-height: 1.55; }
+    .rule-fulfillment { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+    .rule-state { padding: 3px 7px; border: 1px solid rgba(198,163,91,.28); color: #a79d89; background: rgba(0,0,0,.18); font: 650 10px/1.25 ui-sans-serif, system-ui, sans-serif; }
+    .rule-state.is-pending { border-color: rgba(174,83,83,.52); color: #d69b92; }
+    .rule-state.is-ongoing { border-color: rgba(198,163,91,.62); color: #e2c57e; }
+    .rule-state.is-complete { border-color: rgba(95,148,112,.58); color: #a9d4b5; }
 
     .empty { padding: 10px; border: 1px dashed rgba(198,163,91,.22); color: #817a6d; font: 11px/1.5 ui-sans-serif, system-ui, sans-serif; }
 
@@ -1088,6 +1120,84 @@
       background: #0c1318;
       box-shadow: 0 32px 110px rgba(0,0,0,.9), inset 0 0 88px rgba(81,135,170,.12);
     }
+    .relationship-backdrop { z-index: 47; background: rgba(4,2,5,.91); }
+    .relationship-viewer {
+      width: min(520px, 94vw);
+      max-height: min(78dvh, 650px);
+      overflow: hidden;
+      border: 1px solid rgba(199,151,180,.62);
+      background: linear-gradient(145deg, #251923, #0d0d0e 58%);
+      box-shadow: 0 30px 100px rgba(0,0,0,.88), inset 0 0 70px rgba(183,112,158,.08);
+    }
+    .relationship-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 15px 17px;
+      border-bottom: 1px solid rgba(199,151,180,.3);
+    }
+    .relationship-head h2 { margin: 0; color: #f5e4ee; font-size: 21px; letter-spacing: .08em; }
+    .relationship-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 22px;
+      overflow-y: auto;
+      list-style: none;
+    }
+    .relationship-list li {
+      padding: 13px 16px;
+      border-left: 3px solid #c58cae;
+      border-top: 1px solid rgba(199,151,180,.22);
+      border-right: 1px solid rgba(199,151,180,.12);
+      border-bottom: 1px solid rgba(199,151,180,.12);
+      color: #f2e7ed;
+      background: rgba(255,255,255,.025);
+      font: 650 15px/1.4 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .08em;
+    }
+    .weakness-backdrop { z-index: 48; background: rgba(7,3,3,.94); }
+    .weakness-viewer {
+      width: min(760px, 95vw);
+      max-height: min(90dvh, 820px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+      border: 1px solid rgba(181,115,110,.66);
+      background: linear-gradient(145deg, #261717, #0e0d0d 58%);
+      box-shadow: 0 34px 112px rgba(0,0,0,.9), inset 0 0 78px rgba(169,73,69,.08);
+    }
+    .weakness-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 15px 17px;
+      border-bottom: 1px solid rgba(181,115,110,.32);
+      background: linear-gradient(90deg, rgba(112,51,49,.36), rgba(17,13,13,.96));
+    }
+    .weakness-head h2 { margin: 0; color: #f4dfdc; font-size: 21px; letter-spacing: .08em; }
+    .weakness-scroll { min-height: 0; padding: 21px; overflow-y: auto; }
+    .weakness-source {
+      margin: 0 0 15px;
+      color: #c89e99;
+      font: 700 11px/1.5 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .16em;
+    }
+    .weakness-grid { display: grid; gap: 11px; }
+    .weakness-card, .weakness-anatomy {
+      padding: 14px 16px;
+      border-left: 3px solid #b77772;
+      border-top: 1px solid rgba(193,133,128,.2);
+      border-right: 1px solid rgba(193,133,128,.12);
+      border-bottom: 1px solid rgba(193,133,128,.12);
+      background: rgba(255,255,255,.026);
+    }
+    .weakness-card h3, .weakness-anatomy h3 { margin: 0 0 7px; color: #e8c3bf; font-size: 14px; letter-spacing: .08em; }
+    .weakness-card p, .weakness-anatomy p { margin: 0; color: #e5d9d5; font: 14px/1.78 ui-serif, "Songti SC", serif; }
+    .weakness-anatomy { margin-top: 14px; border-left-color: #8e6f64; }
+    .weakness-note { margin: 14px 0 0; color: #9f8f8b; font: 11px/1.65 ui-sans-serif, system-ui, sans-serif; }
     .sister-head {
       display: flex;
       align-items: center;
@@ -1296,7 +1406,7 @@
       .face-heading { min-height: 52px; padding: 8px 11px; }
       .face-interact-btn { max-width: 116px; min-height: 30px; padding: 5px 8px; font-size: 9px; }
       .face-actions { gap: 4px; }
-      .diary-open-btn, .career-open-btn, .album-open-btn, .sister-open-btn, .testament-open-btn, .insight-mode-btn { min-height: 30px; padding: 5px 8px; font-size: 9px; }
+      .diary-open-btn, .career-open-btn, .album-open-btn, .sister-open-btn, .testament-open-btn, .relationship-list-open-btn, .weakness-open-btn, .insight-mode-btn { min-height: 30px; padding: 5px 8px; font-size: 9px; }
       .career-open-btn { min-height: 30px; padding: 5px 8px; font-size: 9px; }
       .album-open-btn { min-height: 30px; padding: 5px 8px; font-size: 9px; }
       .diary-paper { min-height: 300px; margin: 10px; padding: 26px 24px 26px 58px; }
@@ -1367,7 +1477,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var VERSION = 12;
+  var VERSION = 14;
   var SCHEDULE_ALGORITHM_VERSION = 6;
   var DAYS = 15;
   var FIXED_KEKE_DAY = 10;
@@ -1381,6 +1491,8 @@
   var INNER_NAMES = { n1: '林安', n2: '穆裳希', n3: '张曲溪', n4: '王可可', u: '玩家' };
   var ARCHIVE_ALIAS_BY_NAME = { '林安': 'n1', '穆裳希': 'n2', '张曲溪': 'n3', '王可可': 'n4' };
   var ARCHIVE_ALIASES = ['n1', 'n2', 'n3', 'n4'];
+  var FOLLOWER_CANDIDATES = ['n1', 'n3', 'n4'];
+  var GIRLFRIEND_CANDIDATES = ['n1', 'n2', 'n4'];
   var CANONICAL_IDENTITIES = {
     n1: 'A genuinely kind but unreliable amateur detective whose real talent is buried beneath playfulness, forgetfulness, and poor follow-through.',
     n2: 'A ruthless and status-driven businesswoman who weaponizes competence and respectability, and who dispossessed Han Xuan through legal and financial manipulation.',
@@ -1397,6 +1509,7 @@
   };
   var COMPLIANCE_RESULTS = {
     '已履行': true,
+    '持续进行中': true,
     '持续合规': true,
     '今日无到期义务': true,
     '尚未到期': true,
@@ -1619,8 +1732,325 @@
     };
   }
 
+  function emptyDailyRuleFulfillment(day) {
+    return { '日期': normalizeDay(day), '义务人': {} };
+  }
+
+  function normalizeDailyFulfillmentEvidence(value) {
+    var list = Array.isArray(value) ? value : [];
+    var seen = Object.create(null);
+    var output = [];
+    list.forEach(function (entry) {
+      if (output.length >= 12 || !entry || typeof entry !== 'object') return;
+      var eventKey = typeof entry['事件键'] === 'string' ? entry['事件键'].trim().slice(0, 64) : '';
+      if (!eventKey || seen[eventKey]) return;
+      seen[eventKey] = true;
+      output.push({
+        '事件键': eventKey,
+        '摘要': typeof entry['摘要'] === 'string' ? entry['摘要'].trim().slice(0, 200) : '',
+        '次数': Math.max(1, Math.min(99, Math.floor(Number(entry['次数']) || 1)))
+      });
+    });
+    return output;
+  }
+
+  function normalizeDailyObligorFulfillment(value) {
+    var source = value && typeof value === 'object' ? value : {};
+    var evidence = normalizeDailyFulfillmentEvidence(source['证据']);
+    var completed = evidence.reduce(function (sum, entry) {
+      return Math.min(99, sum + entry['次数']);
+    }, 0);
+    var continuous = source['持续状态'];
+    if (continuous === '合规') continuous = '进行中';
+    if (continuous !== '待判定' && continuous !== '进行中' && continuous !== '违规') continuous = '不适用';
+    return { '完成次数': completed, '证据': evidence, '持续状态': continuous };
+  }
+
+  function normalizeObligationDefinition(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    var output = {};
+    PARTICIPANTS.forEach(function (name) {
+      var kind = value[name];
+      if (kind === '有限' || kind === '持续' || kind === '混合') output[name] = kind;
+    });
+    return output;
+  }
+
+  function normalizeMergedRuleSources(value) {
+    if (!Array.isArray(value)) return [];
+    var seen = Object.create(null);
+    var output = [];
+    value.forEach(function (source) {
+      if (!source || typeof source !== 'object' || output.length >= 24) return;
+      var owner = source['颁布者'];
+      var ruleId = typeof source['规则ID'] === 'string' ? source['规则ID'] : '';
+      var key = owner + '\u0000' + ruleId;
+      if (!PARTICIPANT_SET[owner] || !/^R\d+$/.test(ruleId) || seen[key]) return;
+      seen[key] = true;
+      output.push({ '颁布者': owner, '规则ID': ruleId });
+    });
+    return output;
+  }
+
+  function normalizeDailyRuleFulfillment(value, day, obligationDefinition) {
+    var normalizedDay = normalizeDay(day);
+    var source = value && typeof value === 'object' ? value : {};
+    var definition = normalizeObligationDefinition(obligationDefinition);
+    var sourceObligors = source['义务人'] && typeof source['义务人'] === 'object' ? source['义务人'] : {};
+    if (Number(source['日期']) !== normalizedDay) {
+      // 换日只清空有限义务的当日证据；跨夜时仍客观维持的持续/混合义务
+      // 必须在新日恢复为“进行中”，不能因台账日期变化被误判为尚未开始。
+      var carried = {};
+      if (definition) PARTICIPANTS.forEach(function (name) {
+        var kind = definition[name];
+        if (kind !== '持续' && kind !== '混合') return;
+        var previous = normalizeDailyObligorFulfillment(sourceObligors[name]);
+        if (previous['持续状态'] !== '进行中') return;
+        carried[name] = { '完成次数': 0, '证据': [], '持续状态': '进行中' };
+      });
+      return { '日期': normalizedDay, '义务人': carried };
+    }
+    var obligors = {};
+    PARTICIPANTS.forEach(function (name) {
+      if (definition && !Object.prototype.hasOwnProperty.call(definition, name)) return;
+      if (sourceObligors[name] && typeof sourceObligors[name] === 'object') {
+        var normalized = normalizeDailyObligorFulfillment(sourceObligors[name]);
+        if (definition && definition[name] === '有限') normalized['持续状态'] = '不适用';
+        if (definition && (definition[name] === '持续' || definition[name] === '混合')
+          && normalized['持续状态'] === '不适用') normalized['持续状态'] = '待判定';
+        obligors[name] = normalized;
+      }
+    });
+    return { '日期': normalizedDay, '义务人': obligors };
+  }
+
+  function isRepairableRule(rule) {
+    return rule && typeof rule === 'object'
+      && typeof rule.id === 'string'
+      && typeof rule['标题'] === 'string'
+      && typeof rule['全文'] === 'string'
+      && Number.isFinite(Number(rule['颁布日']))
+      && (rule['状态'] === '生效' || rule['状态'] === '已撤销');
+  }
+
+  function repairDailyRuleFulfillment(existingVariables) {
+    var current = existingVariables && typeof existingVariables === 'object' ? existingVariables : {};
+    var output = {};
+    Object.keys(current).forEach(function (key) { output[key] = current[key]; });
+    var system = current['系统'] && typeof current['系统'] === 'object' ? current['系统'] : {};
+    var day = normalizeDay(system['_当前天数']);
+    var roles = current['角色'] && typeof current['角色'] === 'object' ? current['角色'] : {};
+    var nextRoles = roles;
+
+    function repairHolder(holder) {
+      var source = holder && typeof holder === 'object' ? holder : {};
+      var rules = Array.isArray(source['颁布规则']) ? source['颁布规则'] : [];
+      var changed = false;
+      var nextRules = rules.map(function (rule) {
+        if (!isRepairableRule(rule)) return rule;
+        changed = true;
+        var nextRule = {};
+        Object.keys(rule).forEach(function (key) { nextRule[key] = rule[key]; });
+        var definition = normalizeObligationDefinition(rule['义务定义']);
+        if (definition) nextRule['义务定义'] = definition;
+        var mergedSources = normalizeMergedRuleSources(rule['合并来源']);
+        if (mergedSources.length) nextRule['合并来源'] = mergedSources;
+        else delete nextRule['合并来源'];
+        // v13 起优先级不再有任何运行语义；新存档逐步清除旧字段。
+        delete nextRule['优先级'];
+        nextRule['本日履行'] = normalizeDailyRuleFulfillment(rule['本日履行'], day, definition);
+        return nextRule;
+      });
+      if (!changed) return source;
+      var nextHolder = {};
+      Object.keys(source).forEach(function (key) { nextHolder[key] = source[key]; });
+      nextHolder['颁布规则'] = nextRules;
+      return nextHolder;
+    }
+
+    output['玩家'] = repairHolder(current['玩家']);
+    WOMEN.forEach(function (name) {
+      if (!roles[name] || typeof roles[name] !== 'object') return;
+      var repaired = repairHolder(roles[name]);
+      if (repaired === roles[name]) return;
+      if (nextRoles === roles) {
+        nextRoles = {};
+        Object.keys(roles).forEach(function (roleName) { nextRoles[roleName] = roles[roleName]; });
+      }
+      nextRoles[name] = repaired;
+    });
+    output['角色'] = nextRoles;
+    return output;
+  }
+
+  function mergeDailyRuleFulfillment(baselineValue, candidateValue, day, obligationDefinition) {
+    var normalizedDay = normalizeDay(day);
+    var baseline = normalizeDailyRuleFulfillment(baselineValue, normalizedDay, obligationDefinition);
+    var rawCandidate = candidateValue && typeof candidateValue === 'object' ? candidateValue : {};
+    var candidate = normalizeDailyRuleFulfillment(rawCandidate, normalizedDay, obligationDefinition);
+    var mergedObligors = {};
+    PARTICIPANTS.forEach(function (name) {
+      var baselineObligor = baseline['义务人'][name];
+      var candidateObligor = candidate['义务人'][name];
+      if (!baselineObligor && !candidateObligor) return;
+      var rawCandidateObligor = Number(rawCandidate['日期']) === normalizedDay
+        && rawCandidate['义务人'] && typeof rawCandidate['义务人'] === 'object'
+        ? rawCandidate['义务人'][name]
+        : null;
+      var evidence = [];
+      if (baselineObligor) evidence = evidence.concat(baselineObligor['证据']);
+      if (candidateObligor) evidence = evidence.concat(candidateObligor['证据']);
+      var continuous = baselineObligor ? baselineObligor['持续状态'] : '不适用';
+      if (rawCandidateObligor && typeof rawCandidateObligor === 'object'
+        && Object.prototype.hasOwnProperty.call(rawCandidateObligor, '持续状态')) {
+        continuous = candidateObligor['持续状态'];
+      }
+      mergedObligors[name] = normalizeDailyObligorFulfillment({
+        '证据': evidence,
+        '持续状态': continuous
+      });
+    });
+    return { '日期': normalizedDay, '义务人': mergedObligors };
+  }
+
+  function reconcileDailyRuleFulfillment(candidateVariables, baselineVariables) {
+    var candidate = candidateVariables && typeof candidateVariables === 'object' ? candidateVariables : {};
+    var baseline = baselineVariables && typeof baselineVariables === 'object' ? baselineVariables : {};
+    var output = {};
+    Object.keys(candidate).forEach(function (key) { output[key] = candidate[key]; });
+    var baselineSystem = baseline['系统'] && typeof baseline['系统'] === 'object' ? baseline['系统'] : {};
+    var day = normalizeDay(baselineSystem['_当前天数']);
+    var candidateRoles = candidate['角色'] && typeof candidate['角色'] === 'object' ? candidate['角色'] : {};
+    var baselineRoles = baseline['角色'] && typeof baseline['角色'] === 'object' ? baseline['角色'] : {};
+    var nextRoles = candidateRoles;
+
+    function holderRules(variables, owner) {
+      var holder = owner === '玩家'
+        ? variables['玩家']
+        : variables['角色'] && variables['角色'][owner];
+      return holder && Array.isArray(holder['颁布规则']) ? holder['颁布规则'] : [];
+    }
+
+    // 只有新法令明确列在“合并来源”里的旧生效法令才允许被物理删除。
+    // 这让额外模型可以原子合并冲突，又不能借 remove 随意抹掉历史。
+    var baselineKeys = Object.create(null);
+    var baselineActive = Object.create(null);
+    PARTICIPANTS.forEach(function (owner) {
+      holderRules(baseline, owner).forEach(function (rule) {
+        if (!isRepairableRule(rule)) return;
+        var key = owner + '\u0000' + rule.id;
+        baselineKeys[key] = true;
+        if (rule['状态'] === '生效') baselineActive[key] = rule;
+      });
+    });
+    var mergeClaims = Object.create(null);
+    var mergedCandidates = [];
+    var currentKing = String(baselineSystem['_当前国王'] || '');
+    PARTICIPANTS.forEach(function (owner) {
+      holderRules(candidate, owner).forEach(function (rule) {
+        if (!isRepairableRule(rule) || baselineKeys[owner + '\u0000' + rule.id]) return;
+        var sources = normalizeMergedRuleSources(rule['合并来源']);
+        if (!sources.length) return;
+        var candidateKey = owner + '\u0000' + rule.id;
+        mergedCandidates.push({ key: candidateKey, owner: owner, rule: rule, sources: sources });
+        sources.forEach(function (source) {
+          var sourceKey = source['颁布者'] + '\u0000' + source['规则ID'];
+          mergeClaims[sourceKey] = (mergeClaims[sourceKey] || 0) + 1;
+        });
+      });
+    });
+    var authorizedMergedDeletes = Object.create(null);
+    var invalidMergedCandidates = Object.create(null);
+    mergedCandidates.forEach(function (entry) {
+      var valid = entry.owner === currentKing && entry.rule['状态'] === '生效';
+      entry.sources.forEach(function (source) {
+        var sourceKey = source['颁布者'] + '\u0000' + source['规则ID'];
+        if (!baselineActive[sourceKey] || mergeClaims[sourceKey] !== 1) valid = false;
+      });
+      if (!valid) {
+        invalidMergedCandidates[entry.key] = true;
+        return;
+      }
+      entry.sources.forEach(function (source) {
+        authorizedMergedDeletes[source['颁布者'] + '\u0000' + source['规则ID']] = true;
+      });
+    });
+
+    function mergeHolder(owner, candidateHolder, baselineHolder) {
+      var source = candidateHolder && typeof candidateHolder === 'object' ? candidateHolder : {};
+      var baselineSource = baselineHolder && typeof baselineHolder === 'object' ? baselineHolder : {};
+      var rules = Array.isArray(source['颁布规则']) ? source['颁布规则'] : [];
+      var baselineRules = Array.isArray(baselineSource['颁布规则']) ? baselineSource['颁布规则'] : [];
+      var baselineById = Object.create(null);
+      baselineRules.forEach(function (rule) {
+        if (isRepairableRule(rule) && !baselineById[rule.id]) baselineById[rule.id] = rule;
+      });
+      var changed = false;
+      var nextRules = rules.map(function (rule) {
+        if (!isRepairableRule(rule)) return rule;
+        var ruleKey = owner + '\u0000' + rule.id;
+        if (invalidMergedCandidates[ruleKey] || (baselineById[rule.id] && authorizedMergedDeletes[ruleKey])) {
+          changed = true;
+          return null;
+        }
+        var previous = baselineById[rule.id];
+        var nextRule = {};
+        Object.keys(rule).forEach(function (key) { nextRule[key] = rule[key]; });
+        var definition = normalizeObligationDefinition(rule['义务定义'] || (previous && previous['义务定义']));
+        if (definition) nextRule['义务定义'] = definition;
+        var mergedSources = normalizeMergedRuleSources(rule['合并来源'] || (previous && previous['合并来源']));
+        if (mergedSources.length) nextRule['合并来源'] = mergedSources;
+        else delete nextRule['合并来源'];
+        delete nextRule['优先级'];
+        nextRule['本日履行'] = mergeDailyRuleFulfillment(
+          previous && previous['本日履行'],
+          rule['本日履行'],
+          day,
+          definition
+        );
+        changed = true;
+        return nextRule;
+      }).filter(function (rule) { return rule !== null; });
+      var present = Object.create(null);
+      nextRules.forEach(function (rule) {
+        if (isRepairableRule(rule)) present[rule.id] = true;
+      });
+      baselineRules.forEach(function (rule) {
+        if (!isRepairableRule(rule) || present[rule.id]) return;
+        if (authorizedMergedDeletes[owner + '\u0000' + rule.id]) return;
+        // 非法删除回滚：撤销应通过状态替换，只有合并来源可物理删除。
+        var restored = {};
+        Object.keys(rule).forEach(function (key) { restored[key] = rule[key]; });
+        delete restored['优先级'];
+        nextRules.push(restored);
+        changed = true;
+      });
+      if (!changed) return source;
+      var nextHolder = {};
+      Object.keys(source).forEach(function (key) { nextHolder[key] = source[key]; });
+      nextHolder['颁布规则'] = nextRules;
+      return nextHolder;
+    }
+
+    output['玩家'] = mergeHolder('玩家', candidate['玩家'], baseline['玩家']);
+    WOMEN.forEach(function (name) {
+      if (!candidateRoles[name] || typeof candidateRoles[name] !== 'object') return;
+      var merged = mergeHolder(name, candidateRoles[name], baselineRoles[name]);
+      if (merged === candidateRoles[name]) return;
+      if (nextRoles === candidateRoles) {
+        nextRoles = {};
+        Object.keys(candidateRoles).forEach(function (roleName) { nextRoles[roleName] = candidateRoles[roleName]; });
+      }
+      nextRoles[name] = merged;
+    });
+    output['角色'] = nextRoles;
+    return output;
+  }
+
   function activeDecrees(source) {
-    var variables = source && typeof source === 'object' ? source : {};
+    var variables = repairDailyRuleFulfillment(source);
+    var system = variables['系统'] && typeof variables['系统'] === 'object' ? variables['系统'] : {};
+    var day = normalizeDay(system['_当前天数']);
     var roles = variables['角色'] && typeof variables['角色'] === 'object' ? variables['角色'] : {};
     var holders = [{ name: '玩家', value: variables['玩家'] }];
     WOMEN.forEach(function (name) {
@@ -1637,7 +2067,9 @@
           '标题': typeof rule['标题'] === 'string' ? rule['标题'] : '',
           '全文': typeof rule['全文'] === 'string' ? rule['全文'] : '',
           '颁布日': Number.isFinite(Number(rule['颁布日'])) ? Math.floor(Number(rule['颁布日'])) : 0,
-          '优先级': Number.isFinite(Number(rule['优先级'])) ? Math.floor(Number(rule['优先级'])) : 0
+          '合并来源': normalizeMergedRuleSources(rule['合并来源']),
+          '义务定义': normalizeObligationDefinition(rule['义务定义']),
+          '本日履行': normalizeDailyRuleFulfillment(rule['本日履行'], day, rule['义务定义'])
         });
       });
     });
@@ -1645,7 +2077,6 @@
       var ownerDifference = PARTICIPANTS.indexOf(left['颁布者']) - PARTICIPANTS.indexOf(right['颁布者']);
       if (ownerDifference) return ownerDifference;
       if (left['规则ID'] !== right['规则ID']) return left['规则ID'] < right['规则ID'] ? -1 : 1;
-      if (left['优先级'] !== right['优先级']) return left['优先级'] - right['优先级'];
       return left['全文'] < right['全文'] ? -1 : left['全文'] > right['全文'] ? 1 : 0;
     });
     return rules;
@@ -1655,10 +2086,10 @@
     var payload = activeDecrees(source).map(function (rule) {
       return [
         rule['颁布者'], rule['规则ID'], rule['标题'], rule['全文'],
-        rule['颁布日'], rule['优先级']
+        rule['颁布日'], rule['义务定义']
       ];
     });
-    return ('00000000' + fnv1a('compliance-v1\u0000' + JSON.stringify(payload)).toString(16)).slice(-8);
+    return ('00000000' + fnv1a('decree-v3\u0000' + JSON.stringify(payload)).toString(16)).slice(-8);
   }
 
   function createComplianceMeeting(day, state, round, signature) {
@@ -1722,7 +2153,7 @@
         return;
       }
       seen[key] = true;
-      if (judgement === '到期未完成') incomplete += 1;
+      if (judgement === '到期未完成' || judgement === '违令已处置') incomplete += 1;
     });
     Object.keys(expected).forEach(function (key) {
       if (!seen[key]) entriesValid = false;
@@ -1736,14 +2167,13 @@
   }
 
   function syncComplianceState(existingVariables) {
-    var current = existingVariables && typeof existingVariables === 'object' ? existingVariables : {};
+    var current = repairDailyRuleFulfillment(existingVariables);
     var next = {};
     Object.keys(current).forEach(function (key) { next[key] = current[key]; });
     var system = copySystem(current['系统'] && typeof current['系统'] === 'object' ? current['系统'] : {});
     var phase = system['_每日阶段'];
     var interactions = normalizePlayerInteractions(system['_玩家已互动角色']);
     var complete = interactions.length === WOMEN.length;
-    var rules = activeDecrees(current);
     var signature = complianceRuleSignature(current);
     var meeting = normalizeComplianceMeeting(system['_法令履行会议'], system['_当前天数'], phase, interactions);
     var emergencyEnding = phase === '终局'
@@ -1754,22 +2184,17 @@
         meeting['状态'] = '待召开';
       }
       meeting['规则签名'] = signature;
+      // 履行状态只服务于手动 OOC 修正按钮，不再充当过夜认证。
+      // 一次修正生成结束后即可回到待调用；真实履行事实仍写回各法令台账。
       if (meeting['状态'] === '待审计' || meeting['状态'] === '强制执行' || meeting['状态'] === '需补履行' || meeting['状态'] === '已通过') {
-        var evaluation = complianceAuditResult(current, meeting, rules, signature);
-        if (evaluation.fresh) {
-          meeting['状态'] = evaluation.incomplete > 0 ? '需补履行' : '已通过';
-        } else if (meeting['状态'] !== '待审计' && meeting['状态'] !== '强制执行') {
-          meeting['状态'] = '待召开';
-        }
+        meeting['状态'] = '待召开';
       }
     }
 
     system['_法令履行会议'] = meeting;
     system['_可过夜'] = !emergencyEnding
       && phase === '自由互动'
-      && complete
-      && meeting['日期'] === normalizeDay(system['_当前天数'])
-      && meeting['状态'] === '已通过';
+      && complete;
     next['系统'] = system;
     return next;
   }
@@ -1794,6 +2219,62 @@
       n2: valid[source.n2] ? source.n2 : '',
       n4: valid[source.n4] ? source.n4 : ''
     };
+  }
+
+  function normalizeRelationshipRoster(value, allowedAliases) {
+    if (!Array.isArray(value)) return [];
+    var allowed = Object.create(null);
+    var seen = Object.create(null);
+    var output = [];
+    allowedAliases.forEach(function (alias) { allowed[alias] = true; });
+    value.forEach(function (entry) {
+      var alias = typeof entry === 'string' ? entry.trim() : '';
+      if (!allowed[alias] || seen[alias] || output.length >= allowedAliases.length) return;
+      seen[alias] = true;
+      output.push(alias);
+    });
+    return output;
+  }
+
+  function reconcileRelationshipRoster(baselineRoster, candidateRoster, allowedAliases, ownerAlias, baselineHidden) {
+    var output = normalizeRelationshipRoster(baselineRoster, allowedAliases);
+    var seen = Object.create(null);
+    output.forEach(function (alias) { seen[alias] = true; });
+    normalizeRelationshipRoster(candidateRoster, allowedAliases).forEach(function (candidateAlias) {
+      if (seen[candidateAlias]) return;
+      var candidate = baselineHidden && baselineHidden[candidateAlias] && typeof baselineHidden[candidateAlias] === 'object'
+        ? baselineHidden[candidateAlias]
+        : {};
+      var relations = candidate.r && typeof candidate.r === 'object' ? candidate.r : {};
+      // “对名单主人好感超过60”读取候选女性指向名单主人的真实好感。
+      // 使用生成前基线，禁止同一回复先抬数值再自授权关系身份。
+      if (!(Number(relations[ownerAlias]) > 60)) return;
+      seen[candidateAlias] = true;
+      output.push(candidateAlias);
+    });
+    return output;
+  }
+
+  function normalizeKekeWitnessLedger(value) {
+    if (!Array.isArray(value)) return [];
+    var seen = Object.create(null);
+    var output = [];
+    value.forEach(function (entry) {
+      var key = typeof entry === 'string' ? entry.trim().slice(0, 64) : '';
+      if (!key || seen[key] || output.length >= 96) return;
+      seen[key] = true;
+      output.push(key);
+    });
+    return output;
+  }
+
+  function normalizeActualIdentity(alias, value) {
+    var text = typeof value === 'string' ? value.trim() : '';
+    // identity 始终是低频英文作者真相摘要；缺失、过短、中文污染才恢复初始锚点。
+    if (text.length < 40 || text.length > 1200 || /[\u3400-\u9fff]/.test(text)) {
+      return CANONICAL_IDENTITIES[alias];
+    }
+    return text;
   }
 
   function normalizeInsightProjection(value) {
@@ -1901,14 +2382,16 @@
       Object.keys(characterSource).forEach(function (key) {
         character[key] = characterSource[key];
       });
-      // English author-truth anchor: it is not a live psychological summary.
-      // Restore it unconditionally so old saves gain the field and subjective
-      // cognition or extra-model patches can never contaminate it.
-      character.identity = CANONICAL_IDENTITIES[alias];
+      // English author-truth identity: fill/repair invalid values, but preserve
+      // rare model-authorized changes after irreversible identity/emotional turns.
+      character.identity = normalizeActualIdentity(alias, characterSource.identity);
       character.s = normalizeCharacterStage(alias, characterSource.s);
+      if (alias === 'n4') character.z = normalizeKekeWitnessLedger(characterSource.z);
       cache[alias] = character;
     });
+    cache.n2.f = normalizeRelationshipRoster(cache.n2.f, FOLLOWER_CANDIDATES);
     cache.n3.x = normalizeN3ConquestLedger(cache.n3.x);
+    cache.n3.g = normalizeRelationshipRoster(cache.n3.g, GIRLFRIEND_CANDIDATES);
     cache.q = normalizeEndingState(sourceCache.q, relationshipDecreeFound);
 
     // v11 仅在这一处读取旧 f/g/e，合并到阶段状态后立即删除旧根。
@@ -1966,7 +2449,7 @@
    */
   function reconcileGeneratedVariables(candidateVariables, baselineVariables, chatName) {
     var baseline = initializeVariables(baselineVariables, chatName);
-    var candidate = candidateVariables && typeof candidateVariables === 'object' ? candidateVariables : {};
+    var candidate = reconcileDailyRuleFulfillment(candidateVariables, baseline);
     var output = {};
     Object.keys(candidate).forEach(function (key) { output[key] = candidate[key]; });
 
@@ -1986,6 +2469,7 @@
     var baselineHidden = baselineSystem.internal && typeof baselineSystem.internal === 'object' ? baselineSystem.internal : {};
     var candidateHidden = candidateSystem.internal && typeof candidateSystem.internal === 'object' ? candidateSystem.internal : {};
     var protectedHidden = {};
+    var candidateIdentities = {};
 
     Object.keys(candidateHidden).forEach(function (key) { protectedHidden[key] = candidateHidden[key]; });
     ARCHIVE_ALIASES.forEach(function (alias) {
@@ -1994,6 +2478,8 @@
         : {};
       var nextCharacter = {};
       Object.keys(candidateCharacter).forEach(function (key) { nextCharacter[key] = candidateCharacter[key]; });
+      candidateIdentities[alias] = normalizeActualIdentity(alias, candidateCharacter.identity);
+      nextCharacter.identity = normalizeActualIdentity(alias, baselineHidden[alias] && baselineHidden[alias].identity);
       nextCharacter.s = normalizeCharacterStage(alias, baselineHidden[alias] && baselineHidden[alias].s);
       protectedHidden[alias] = nextCharacter;
     });
@@ -2008,16 +2494,68 @@
       var baselineStage = gate['基线'];
       if (targetAlias === 'n4') {
         if (gate['授权动作'] === 'photo' && baselineStage.b === 1 && rawStage.b === 2) nextStage.b = 2;
-        if (gate['授权动作'] === 'testament' && baselineStage.t === 1 && rawStage.t === 2) nextStage.t = 2;
+        if (gate['授权动作'] === 'testament' && baselineStage.t === 1 && rawStage.t === 2) {
+          nextStage.t = 2;
+          protectedHidden.n4.identity = candidateIdentities.n4;
+        }
         // n4.s.x 永远不接受模型申请。
         nextStage.x = normalizeCharacterStage('n4', baselineHidden.n4 && baselineHidden.n4.s).x;
         nextStage.k = normalizeCharacterStage('n4', baselineHidden.n4 && baselineHidden.n4.s).k;
       } else {
         if (gate['授权动作'] === 'archive' && baselineStage.b === 1 && rawStage.b === 2) nextStage.b = 2;
-        if (gate['授权动作'] === 'insight' && baselineStage.b === 3 && rawStage.b === 4) nextStage.b = 4;
-        if (gate['忏悔机会'] === true && baselineStage.c === 0 && rawStage.c === 1) nextStage.c = 1;
+        if (gate['授权动作'] === 'insight' && baselineStage.b === 3 && rawStage.b === 4) {
+          nextStage.b = 4;
+          protectedHidden[targetAlias].identity = candidateIdentities[targetAlias];
+        }
+        if (gate['忏悔机会'] === true && baselineStage.c === 0 && rawStage.c === 1) {
+          nextStage.c = 1;
+          protectedHidden[targetAlias].identity = candidateIdentities[targetAlias];
+        }
       }
     }
+
+    // 王可可实际目睹玩家令其他女性受辱/堕落的事件键只增不减。
+    // 变量模型负责申请新的稳定场景键，但不直接结算这项固定奖励；宿主按新键一次性 +5。
+    var baselineWitnesses = normalizeKekeWitnessLedger(baselineHidden.n4 && baselineHidden.n4.z);
+    var candidateWitnesses = normalizeKekeWitnessLedger(candidateHidden.n4 && candidateHidden.n4.z);
+    var witnessSet = Object.create(null);
+    baselineWitnesses.forEach(function (key) { witnessSet[key] = true; });
+    var mergedWitnesses = baselineWitnesses.slice();
+    var newWitnessCount = 0;
+    candidateWitnesses.forEach(function (key) {
+      if (witnessSet[key] || mergedWitnesses.length >= 96) return;
+      witnessSet[key] = true;
+      mergedWitnesses.push(key);
+      newWitnessCount += 1;
+    });
+    protectedHidden.n4.z = mergedWitnesses;
+    if (newWitnessCount > 0) {
+      var rewardedRelations = protectedHidden.n4.r && typeof protectedHidden.n4.r === 'object'
+        ? Object.assign({}, protectedHidden.n4.r)
+        : Object.assign({}, baselineHidden.n4 && baselineHidden.n4.r);
+      var currentUserAffection = Number(rewardedRelations.u);
+      if (!Number.isFinite(currentUserAffection)) currentUserAffection = Number(baselineHidden.n4 && baselineHidden.n4.r && baselineHidden.n4.r.u) || 0;
+      rewardedRelations.u = Math.max(-100, Math.min(100, currentUserAffection + newWitnessCount * 5));
+      protectedHidden.n4.r = rewardedRelations;
+    }
+
+    // 两份关系名单是低频、只增不减的已成立身份标签。好感跨线只提供
+    // 加入资格；额外模型仍须等玩家可见正文真正建立并接受该身份后申请。
+    // 名单与其他恋爱、玩家关系、好感边及张曲溪征服账本完全正交。
+    protectedHidden.n2.f = reconcileRelationshipRoster(
+      baselineHidden.n2 && baselineHidden.n2.f,
+      candidateHidden.n2 && candidateHidden.n2.f,
+      FOLLOWER_CANDIDATES,
+      'n2',
+      baselineHidden
+    );
+    protectedHidden.n3.g = reconcileRelationshipRoster(
+      baselineHidden.n3 && baselineHidden.n3.g,
+      candidateHidden.n3 && candidateHidden.n3.g,
+      GIRLFRIEND_CANDIDATES,
+      'n3',
+      baselineHidden
+    );
 
     var baselineEnding = normalizeEndingState(baselineHidden.q, false);
     protectedHidden.q = baselineEnding;
@@ -2050,6 +2588,7 @@
       if (baselineEnding.v === true || (rawEnding.v === true && completeConfessions && publicRevealAuthorized)) {
         reconciledHidden.q.v = true;
         reconciledHidden.q.t = true;
+        if (baselineEnding.v !== true) reconciledHidden.n4.identity = candidateIdentities.n4;
       }
     }
     reconciledHidden.q.r = baselineEnding.r;
@@ -2224,7 +2763,7 @@
       phase,
       playerInteractions
     );
-    next['_可过夜'] = false;
+    next['_可过夜'] = phase === '自由互动' && playerInteractions.length === WOMEN.length && !emergencyEnding;
     return next;
   }
 
@@ -2577,7 +3116,8 @@
       next[key] = current[key];
     });
 
-    var system = initializeSystem(current['系统'], chatName);
+    next = repairDailyRuleFulfillment(next);
+    var system = initializeSystem(next['系统'], chatName);
     if (hasRelationshipDecree(next)) {
       system.internal.q.h = true;
       latchStages(system.internal, system['_当前天数']);
@@ -2747,11 +3287,10 @@
       '自由互动',
       playerInteractions
     );
-    // 任意一次个人互动都会使旧会议审计失效；会议本身始终是集体流程，
-    // 不会因此补全任何个人互动或女性矩阵边。
+    // 手动履行修正不计入个人互动；普通互动本身直接更新过夜资格。
     meeting['状态'] = '待召开';
     next['_法令履行会议'] = meeting;
-    next['_可过夜'] = false;
+    next['_可过夜'] = playerInteractions.length === WOMEN.length;
     return next;
   }
 
@@ -2771,8 +3310,8 @@
       current['_每日阶段'],
       next['_玩家已互动角色']
     );
-    next['_可过夜'] = current['_可过夜'] === true
-      && next['_法令履行会议']['状态'] === '已通过';
+    next['_可过夜'] = next['_玩家已互动角色'].length === WOMEN.length
+      && current['_每日阶段'] === '自由互动';
     return next;
   }
 
@@ -2780,7 +3319,7 @@
     var current = requireInitializedSystem(existingSystem);
     var playerInteractions = normalizePlayerInteractions(current['_玩家已互动角色']);
     if (current['_每日阶段'] !== '自由互动' || current['_今日法令已广播'] !== true) {
-      throw new Error('只有自由互动阶段可以召开法令履行会议');
+      throw new Error('只有自由互动阶段可以调用法令履行修正');
     }
     var source = variables && typeof variables === 'object'
       ? variables
@@ -2792,9 +3331,6 @@
       current['_每日阶段'],
       playerInteractions
     );
-    if (forced === true && previous['状态'] !== '需补履行') {
-      throw new Error('只有会议已确认存在到期未完成法令时才能强迫性完成');
-    }
     var next = copySystem(current);
     next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
     next['_玩家已互动角色'] = playerInteractions;
@@ -2805,7 +3341,7 @@
       previous['轮次'] + 1,
       signature
     );
-    next['_可过夜'] = false;
+    next['_可过夜'] = playerInteractions.length === WOMEN.length;
     return next;
   }
 
@@ -2820,27 +3356,24 @@
   function beginOvernight(existingSystem) {
     var current = requireInitializedSystem(existingSystem);
     var playerInteractions = normalizePlayerInteractions(current['_玩家已互动角色']);
-    var meeting = normalizeComplianceMeeting(
-      current['_法令履行会议'],
-      current['_当前天数'],
-      current['_每日阶段'],
-      playerInteractions
-    );
     if (
       current['_每日阶段'] !== '自由互动'
       || playerInteractions.length !== WOMEN.length
       || current['_可过夜'] !== true
-      || meeting['日期'] !== normalizeDay(current['_当前天数'])
-      || meeting['状态'] !== '已通过'
     ) {
-      throw new Error('完成四名角色互动并通过本日法令履行审计后才能过夜');
+      throw new Error('完成四名角色互动后才能过夜');
     }
 
     var next = copySystem(current);
     next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
     next['_玩家已互动角色'] = playerInteractions;
     next['_最近互动请求'] = cloneInteractionRequest(current['_最近互动请求']);
-    next['_法令履行会议'] = meeting;
+    next['_法令履行会议'] = normalizeComplianceMeeting(
+      current['_法令履行会议'],
+      current['_当前天数'],
+      current['_每日阶段'],
+      playerInteractions
+    );
     next['_可过夜'] = false;
     if (normalizeDay(current['_当前天数']) === DAYS) {
       next['_每日阶段'] = '终局';
@@ -2897,8 +3430,7 @@
     var signature = complianceRuleSignature(source);
     var audit = complianceAuditResult(source, meeting, rules, signature);
     var canOpenMeeting = system['_每日阶段'] === '自由互动'
-      && meeting['状态'] !== '已通过'
-      && meeting['状态'] !== '待审计'
+      && rules.length > 0
       && meeting['状态'] !== '强制执行';
     var snapshot = {
       '_日程已锁定': system['_日程已锁定'] === true,
@@ -2914,6 +3446,7 @@
       '_最近互动请求': cloneInteractionRequest(system['_最近互动请求'], false),
       '_法令会议状态': meeting['状态'],
       '_法令未完成数量': audit.incomplete,
+      '_生效法令数量': rules.length,
       '_可召开法令会议': canOpenMeeting,
       '_可过夜': system['_可过夜'] === true
     };
@@ -3008,6 +3541,15 @@
       snapshot['_可可信任洞察'] = privateRoleView('n4', { m: true, a: true, r: true });
     }
 
+    var followerRoster = normalizeRelationshipRoster(hidden.n2 && hidden.n2.f, FOLLOWER_CANDIDATES)
+      .map(function (alias) { return INNER_NAMES[alias]; })
+      .filter(Boolean);
+    if (followerRoster.length > 0) snapshot['_穆裳希跟从者名单'] = followerRoster;
+    var girlfriendRoster = normalizeRelationshipRoster(hidden.n3 && hidden.n3.g, GIRLFRIEND_CANDIDATES)
+      .map(function (alias) { return INNER_NAMES[alias]; })
+      .filter(Boolean);
+    if (girlfriendRoster.length > 0) snapshot['_张曲溪女朋友名单'] = girlfriendRoster;
+
     return snapshot;
   }
 
@@ -3026,6 +3568,8 @@
     deriveDayState: deriveDayState,
     getActiveDecrees: activeDecrees,
     getActiveDecreeSignature: complianceRuleSignature,
+    normalizeDailyRuleFulfillment: normalizeDailyRuleFulfillment,
+    repairDailyRuleFulfillment: repairDailyRuleFulfillment,
     initializeSystem: initializeSystem,
     initializeVariables: initializeVariables,
     reconcileGeneratedVariables: reconcileGeneratedVariables,
@@ -3051,7 +3595,7 @@
 <script>(function () {
   'use strict';
 
-  var INITIAL_STATE = {"系统":{"_版本":12,"_日程已锁定":false,"_当前天数":1,"_当前国王":"","_国王次数":{"玩家":0,"林安":0,"穆裳希":0,"张曲溪":0,"王可可":0},"_每日阶段":"待颁布法令","_今日法令已广播":false,"_女性互动矩阵":{"林安":{"林安":true,"穆裳希":false,"张曲溪":false,"王可可":false},"穆裳希":{"林安":false,"穆裳希":true,"张曲溪":false,"王可可":false},"张曲溪":{"林安":false,"穆裳希":false,"张曲溪":true,"王可可":false},"王可可":{"林安":false,"穆裳希":false,"张曲溪":false,"王可可":true}},"_玩家已互动角色":[],"_最近互动请求":null,"_法令履行会议":{"日期":1,"轮次":0,"状态":"未开放","规则签名":""},"_可过夜":false,"玩家主观认知":{"林安":["她自称自由侦探，性格大大咧咧，对眼前的小说式展开明显兴奋","她醒来后既慌乱又好奇，目前没有表现出复杂心机"],"穆裳希":["她是企业创办人与经营者，习惯控制表情和局面","她醒来后首先怀疑唯一男性玩家，但紧张和手抖并未完全藏住"],"张曲溪":["她是外表英气、体格强健的女大学生","她醒来后对所有人保持距离，目前最明显的是警惕和质疑"],"王可可":["她公开身份是高中女教师，醒来时有真实可见的惊慌","她试图调停互疑并维持秩序，目前看不出比其他人掌握更多信息"]},"当前时间":"第1日 08:10","当前地点":"个人房间","当前阶段":"等待法令","公开线索":[]},"玩家":{"颁布规则":[]},"角色":{"林安":{"信息":{"年龄":25,"公开身份":"自诩女侦探的无业家里蹲"},"状态":{"身体":"正常，刚从熟睡中醒来","当前行动":"循着广播声检查墙面与扬声器"},"上衣":{"衣着":"棕色猎鹿帽、格纹短披肩与米白衬衫","肉体":"上半身无明显外伤，脸侧留有贴桌熟睡的浅印"},"下衣":{"衣着":"深棕灯芯绒马裤与系带短靴","肉体":"下半身活动正常，无明显外伤"},"心理":"完了，我刚才是不是把桌子舔干净了……旁边那个人应该没看见吧？等等，自由侦探怎么就成“自居”了？","行动倾向":["检查录音来源","勘查环境"],"颁布规则":[],"关系":{"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":3}}},"穆裳希":{"信息":{"年龄":27,"公开身份":"企业创办人与经营者"},"状态":{"身体":"正常，情绪高度紧绷","当前行动":"记录广播内容并观察房间设施"},"上衣":{"衣着":"炭黑修身西装与暗红丝质上衣","肉体":"呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红"},"下衣":{"衣着":"同色西装长裤与黑色尖头短靴","肉体":"站姿稳定，下半身无明显外伤"},"心理":"连公益项目都翻过。公司里有谁碰得到这么完整的资料？那个男人也不能排除……该死，手怎么还在抖。","行动倾向":["监视玩家动向","核对环境线索"],"颁布规则":[],"关系":{"林安":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-8}}},"张曲溪":{"信息":{"年龄":22,"公开身份":"长发高马尾的英气女大学生"},"状态":{"身体":"正常，肌肉线条饱满","当前行动":"守住安全距离并观察出口与广播设施"},"上衣":{"衣着":"暗绿短款大学棒球夹克与黑色圆领上衣","肉体":"肩背与前臂活动正常，无明显伤口、红肿或疼痛反应"},"下衣":{"衣着":"深色工装长裤与运动鞋","肉体":"双腿活动正常，无明显伤口或红肿"},"心理":"“王子”……连这种破外号都知道。到底是谁把我翻得这么干净？","行动倾向":["防备录音者","守住安全距离"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-2}}},"王可可":{"信息":{"年龄":32,"公开身份":"高中女教师"},"状态":{"身体":"正常，刚苏醒时呼吸略急","当前行动":"调停互疑并提议先核对广播与环境"},"上衣":{"衣着":"浅蓝针织开衫与象牙白衬衫","肉体":"双肩略紧，按在项圈边缘的指尖微凉"},"下衣":{"衣着":"烟灰色过膝百褶裙与浅口皮鞋","肉体":"步态正常，无明显外伤"},"心理":"学生那边不会也被盯上了吧……别抖，至少让大家把这段录音听完。","行动倾向":["调停冲突","组织环境检查"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"玩家":{"好感度":8}}}}};
+  var INITIAL_STATE = {"系统":{"_版本":14,"_日程已锁定":false,"_当前天数":1,"_当前国王":"","_国王次数":{"玩家":0,"林安":0,"穆裳希":0,"张曲溪":0,"王可可":0},"_每日阶段":"待颁布法令","_今日法令已广播":false,"_女性互动矩阵":{"林安":{"林安":true,"穆裳希":false,"张曲溪":false,"王可可":false},"穆裳希":{"林安":false,"穆裳希":true,"张曲溪":false,"王可可":false},"张曲溪":{"林安":false,"穆裳希":false,"张曲溪":true,"王可可":false},"王可可":{"林安":false,"穆裳希":false,"张曲溪":false,"王可可":true}},"_玩家已互动角色":[],"_最近互动请求":null,"_法令履行会议":{"日期":1,"轮次":0,"状态":"未开放","规则签名":""},"_可过夜":false,"玩家主观认知":{"林安":["她自称自由侦探，性格大大咧咧，对眼前的小说式展开明显兴奋","她醒来后既慌乱又好奇，目前没有表现出复杂心机"],"穆裳希":["她是企业创办人与经营者，习惯控制表情和局面","她醒来后首先怀疑唯一男性玩家，但紧张和手抖并未完全藏住"],"张曲溪":["她是外表英气、体格强健的女大学生","她醒来后对所有人保持距离，目前最明显的是警惕和质疑"],"王可可":["她公开身份是高中女教师，醒来时有真实可见的惊慌","她试图调停互疑并维持秩序，目前看不出比其他人掌握更多信息"]},"当前时间":"第1日 08:10","当前地点":"个人房间","当前阶段":"等待法令","公开线索":[]},"玩家":{"地点":"玩家房间","颁布规则":[]},"角色":{"林安":{"地点":"林安房间","信息":{"年龄":25,"公开身份":"自诩女侦探的无业家里蹲"},"状态":{"身体":"正常，刚从熟睡中醒来","当前行动":"循着广播声检查墙面与扬声器"},"上衣":{"衣着":"棕色猎鹿帽、格纹短披肩与米白衬衫","肉体":"上半身无明显外伤，脸侧留有贴桌熟睡的浅印"},"下衣":{"衣着":"深棕灯芯绒马裤与系带短靴","肉体":"下半身活动正常，无明显外伤"},"心理":"完了，我刚才是不是把桌子舔干净了……旁边那个人应该没看见吧？等等，自由侦探怎么就成“自居”了？","行动倾向":["检查录音来源","勘查环境"],"颁布规则":[],"关系":{"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":3}}},"穆裳希":{"地点":"穆裳希房间","信息":{"年龄":27,"公开身份":"企业创办人与经营者"},"状态":{"身体":"正常，情绪高度紧绷","当前行动":"记录广播内容并观察房间设施"},"上衣":{"衣着":"炭黑修身西装与暗红丝质上衣","肉体":"呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红"},"下衣":{"衣着":"同色西装长裤与黑色尖头短靴","肉体":"站姿稳定，下半身无明显外伤"},"心理":"连公益项目都翻过。公司里有谁碰得到这么完整的资料？那个男人也不能排除……该死，手怎么还在抖。","行动倾向":["监视玩家动向","核对环境线索"],"颁布规则":[],"关系":{"林安":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-8}}},"张曲溪":{"地点":"张曲溪房间","信息":{"年龄":22,"公开身份":"长发高马尾的英气女大学生"},"状态":{"身体":"正常，肌肉线条饱满","当前行动":"守住安全距离并观察出口与广播设施"},"上衣":{"衣着":"暗绿短款大学棒球夹克与黑色圆领上衣","肉体":"肩背与前臂活动正常，无明显伤口、红肿或疼痛反应"},"下衣":{"衣着":"深色工装长裤与运动鞋","肉体":"双腿活动正常，无明显伤口或红肿"},"心理":"“王子”……连这种破外号都知道。到底是谁把我翻得这么干净？","行动倾向":["防备录音者","守住安全距离"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-2}}},"王可可":{"地点":"王可可房间","信息":{"年龄":32,"公开身份":"高中女教师"},"状态":{"身体":"正常，刚苏醒时呼吸略急","当前行动":"调停互疑并提议先核对广播与环境"},"上衣":{"衣着":"浅蓝针织开衫与象牙白衬衫","肉体":"双肩略紧，按在项圈边缘的指尖微凉"},"下衣":{"衣着":"烟灰色过膝百褶裙与浅口皮鞋","肉体":"步态正常，无明显外伤"},"心理":"学生那边不会也被盯上了吧……别抖，至少让大家把这段录音听完。","行动倾向":["调停冲突","组织环境检查"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"玩家":{"好感度":8}}}}};
   var EXPECTED_CARD_NAME = "读心术者的匿名国王游戏（louisHM制作·完全免费）";
   var EXPECTED_WORLD_BOOK_NAME = "读心术者的匿名国王游戏（louisHM制作·完全免费）";
   var STAGE_ENTRY_RULES = [{"name":"[mvu_plot][STAGE-N1-ACTION-A]","kind":"stage","role":"n1","track":"b","values":[1]},{"name":"[mvu_update][STAGE-N1-SETTLE-A]","kind":"stage","role":"n1","track":"b","values":[1]},{"name":"[mvu_plot][STAGE-N1-KNOWN-A]","kind":"stage","role":"n1","track":"b","values":[2,3,4]},{"name":"[mvu_plot][STAGE-N1-ACTION-B]","kind":"stage","role":"n1","track":"b","values":[3]},{"name":"[mvu_update][STAGE-N1-SETTLE-B]","kind":"stage","role":"n1","track":"b","values":[2,3,4]},{"name":"[mvu_plot][STAGE-N1-KNOWN-B]","kind":"stage","role":"n1","track":"b","values":[4]},{"name":"[mvu_plot][STAGE-N2-ACTION-A]","kind":"stage","role":"n2","track":"b","values":[1]},{"name":"[mvu_update][STAGE-N2-SETTLE-A]","kind":"stage","role":"n2","track":"b","values":[1]},{"name":"[mvu_plot][STAGE-N2-KNOWN-A]","kind":"stage","role":"n2","track":"b","values":[2,3,4]},{"name":"[mvu_plot][STAGE-N2-ACTION-B]","kind":"stage","role":"n2","track":"b","values":[3]},{"name":"[mvu_update][STAGE-N2-SETTLE-B]","kind":"stage","role":"n2","track":"b","values":[2,3,4]},{"name":"[mvu_plot][STAGE-N2-KNOWN-B]","kind":"stage","role":"n2","track":"b","values":[4]},{"name":"[mvu_plot][STAGE-N3-ACTION-A]","kind":"stage","role":"n3","track":"b","values":[1]},{"name":"[mvu_update][STAGE-N3-SETTLE-A]","kind":"stage","role":"n3","track":"b","values":[1]},{"name":"[mvu_plot][STAGE-N3-KNOWN-A]","kind":"stage","role":"n3","track":"b","values":[2,3,4]},{"name":"[mvu_plot][STAGE-N3-ACTION-B]","kind":"stage","role":"n3","track":"b","values":[3]},{"name":"[mvu_update][STAGE-N3-SETTLE-B]","kind":"stage","role":"n3","track":"b","values":[2,3,4]},{"name":"[mvu_plot][STAGE-N3-KNOWN-B]","kind":"stage","role":"n3","track":"b","values":[4]},{"name":"[mvu_plot][STAGE-N4-ACTION-A]","kind":"stage","role":"n4","track":"b","values":[1],"require":{"x":0,"dayMaxExclusive":10}},{"name":"[mvu_update][STAGE-N4-SETTLE-A]","kind":"stage","role":"n4","track":"b","values":[1],"require":{"x":0,"dayMaxExclusive":10}},{"name":"[mvu_plot][STAGE-N4-KNOWN-A]","kind":"stage","role":"n4","track":"b","values":[2]},{"name":"[mvu_plot][STAGE-N4-ACTION-B]","kind":"stage","role":"n4","track":"t","values":[1]},{"name":"[mvu_update][STAGE-N4-SETTLE-B]","kind":"stage","role":"n4","track":"t","values":[1,2]},{"name":"[mvu_plot][STAGE-N4-KNOWN-B]","kind":"stage","role":"n4","track":"t","values":[2]},{"name":"[mvu_update][STAGE-N4-PERSONA-0]","kind":"stage","role":"n4","track":"k","values":[0]},{"name":"[mvu_update][STAGE-N4-PERSONA-1]","kind":"stage","role":"n4","track":"k","values":[1]},{"name":"[mvu_update][STAGE-N4-PERSONA-2]","kind":"stage","role":"n4","track":"k","values":[2]},{"name":"[mvu_plot][FLOW-DAY10-H]","kind":"day10_h"},{"name":"[mvu_plot][FLOW-DAY10-EXTREME]","kind":"day10_extreme"},{"name":"[mvu_plot][FLOW-H-ACTIVE]","kind":"h_active"},{"name":"[mvu_plot][FLOW-CONFESSION-READY-N1]","kind":"confession_ready","role":"n1"},{"name":"[mvu_plot][FLOW-CONFESSION-READY-N2]","kind":"confession_ready","role":"n2"},{"name":"[mvu_plot][FLOW-CONFESSION-READY-N3]","kind":"confession_ready","role":"n3"},{"name":"[mvu_plot][FLOW-REVEAL-NOW]","kind":"reveal_now"},{"name":"[mvu_update][FLOW-REVEAL-SETTLE]","kind":"reveal_now"},{"name":"[mvu_plot][FLOW-REVEALED]","kind":"revealed"},{"name":"[mvu_plot][ENDING-A]","kind":"ending","route":"A"},{"name":"[mvu_plot][ENDING-B]","kind":"ending","route":"B"},{"name":"[mvu_plot][ENDING-C]","kind":"ending","route":"C"},{"name":"[mvu_plot][ENDING-D]","kind":"ending","route":"D"},{"name":"[mvu_plot][ENDING-E]","kind":"ending","route":"E"}];
@@ -3307,6 +3851,7 @@
         system['_最近互动请求'] = clone(safeSnapshot['_最近互动请求']);
         system['_法令会议状态'] = safeSnapshot['_法令会议状态'];
         system['_法令未完成数量'] = safeSnapshot['_法令未完成数量'];
+        system['_生效法令数量'] = safeSnapshot['_生效法令数量'];
         system['_可召开法令会议'] = safeSnapshot['_可召开法令会议'] === true;
         system['_可过夜'] = safeSnapshot['_可过夜'] === true;
       }
@@ -3340,6 +3885,13 @@
       } else {
         delete system['_妹妹遗书已解锁'];
       }
+      ['_穆裳希跟从者名单', '_张曲溪女朋友名单'].forEach(function (key) {
+        if (safeSnapshot && Array.isArray(safeSnapshot[key]) && safeSnapshot[key].length > 0) {
+          system[key] = safeSnapshot[key].slice();
+        } else {
+          delete system[key];
+        }
+      });
       ['_侦探状态洞察', '_商人远见洞察', '_情场王子洞察'].forEach(function (key) {
         if (safeSnapshot && safeSnapshot[key] && typeof safeSnapshot[key] === 'object') {
           system[key] = clone(safeSnapshot[key]);
@@ -3441,6 +3993,8 @@
         system['_创业事迹已解锁'] = true;
         system['_风流相册已解锁'] = true;
         system['_姐妹合照已解锁'] = true;
+        system['_穆裳希跟从者名单'] = ['林安', '王可可'];
+        system['_张曲溪女朋友名单'] = ['林安', '穆裳希'];
       }
       if (endingDisplay) system['结局展示'] = endingDisplay;
       else delete system['结局展示'];
@@ -3899,7 +4453,11 @@
   function wrapPrivateActionCommand(message) {
     var text = String(message || '').trim();
     if (!text) return '';
-    if (/^<\s*KingGameActionImpl\s*>[\s\S]*<\/\s*KingGameActionImpl\s*>$/i.test(text)) return text;
+    var wrapped = text.match(/^<\s*KingGameActionImpl\s*>\s*([\s\S]*?)\s*<\/\s*KingGameActionImpl\s*>$/i);
+    if (wrapped) text = String(wrapped[1] || '').trim();
+    if (text.indexOf('【前端私密操作，不是公开发言】') !== 0) {
+      text = '【前端私密操作，不是公开发言】' + text;
+    }
     return '<KingGameActionImpl>\n' + text + '\n</KingGameActionImpl>';
   }
 
@@ -3993,6 +4551,9 @@
       var after = clone(before);
       var actionArgs = typeof args === 'function' ? args(before) : args;
       after['系统'] = api[apiName].apply(api, [before['系统']].concat(actionArgs || []));
+      if (apiName === 'advanceDay' && typeof api.repairDailyRuleFulfillment === 'function') {
+        after = api.repairDailyRuleFulfillment(after);
+      }
       if (!await writeHostRecord(record, after)) throw new Error('聊天变量写入失败，操作没有发送');
       var generationCompleted = false;
       var transaction = null;
@@ -4198,6 +4759,25 @@
     return disclosure && (mindSecret || kingSecret);
   }
 
+  function projectActiveRules(state, includeOwner) {
+    var api = window.KingGameState;
+    var activeRules = api && typeof api.getActiveDecrees === 'function'
+      ? api.getActiveDecrees(state)
+      : [];
+    return activeRules.map(function (rule) {
+      var projected = {
+        '规则ID': rule['规则ID'],
+        '标题': rule['标题'],
+        '全文': rule['全文'],
+        '颁布日': rule['颁布日'],
+        '义务定义': rule['义务定义'],
+        '本日履行': rule['本日履行']
+      };
+      if (includeOwner === true) projected['颁布者'] = rule['颁布者'];
+      return projected;
+    });
+  }
+
   window.KingGameBridge = {
     getUserName: function () { return userName(); },
     getCardName: function () { return cardName(); },
@@ -4243,10 +4823,11 @@
       }
       return commitAction('beginDecree', [], function (next) {
         var system = next['系统'] || {};
+        var existingRules = projectActiveRules(next, true);
         var playerSubmission = system['_当前国王'] === '玩家'
           ? '玩家提交的新法令内容或撤销目标是：“' + submitted + '”。请据此完成正式颁布或撤销。'
           : '宿主已经确定当日国王为“' + system['_当前国王'] + '”。必须只由此人依据其人设和当前关系决定法令内容。';
-        return '【前端私密操作，不是公开发言】【每日流程·房间平板颁布法令】五人此刻分别被锁在各自房间。玩家平板私下显示、只读宿主变量中的当日国王是“' + system['_当前国王'] + '”，不得重新抽签、改选、猜测或让另一人代为颁布。只有当日国王自己的平板开放颁布或撤销界面，其余四台只显示等待。' + playerSubmission + '完成后先向全员广播法令正文但不公开国王身份，再让五间房门同时解锁；广播与解锁以前不得让任何人进入大厅、串门或当面互动。法令若未明写未来开始时间、完成期限或可观察延迟触发条件，就从广播完毕立即开始并持续生效；明确写出的未来时点尚未到达才可等待。圆桌短会、争辩和分析都不暂停已到期或持续义务；客观可执行的拖延只允许数秒警告，随后项圈必须迅速以强烈连续脉冲逼迫开始遵从。全段严格留在{{user}}所在房间，不得切去当日国王或其他女性的房间展示她们提交法令、等待或听见广播的私下镜头。门开后，本次前端操作仅额外授权{{user}}随四名女性来到中央圆桌旁这一项流程转场，不得替他发言、表态或作选择；随后必须在这一条AI回复内按世界书完成固定的广播后圆桌短会，让四名女性各有可辨反应，展开6—10个有效来回、约700—1100个汉字，再停在等待玩家下一步操作。把短会全部正文原地包在唯一一组<DecreeRoundtableImpl>与</DecreeRoundtableImpl>之间；闭标签必须是本轮最后一段剧情内容，下一行只输出<StatusPlaceHolderImpl/>。该短会不计入玩家互动数组或女性互动矩阵，不得使用<InteractionPairImpl>，不得趁机生成{{user}}与尚未点击女性的独立互动。';
+        return '【前端私密操作，不是公开发言】【每日流程·房间平板颁布法令】五人此刻分别被锁在各自房间。玩家平板私下显示、只读宿主变量中的当日国王是“' + system['_当前国王'] + '”，不得重新抽签、改选、猜测或让另一人代为颁布。只有当日国王自己的平板开放颁布或撤销界面，其余四台只显示等待。' + playerSubmission + '当前仍生效的法令为：' + JSON.stringify(existingRules) + '。新增法令前必须逐条检查真实冲突：若新规则会令一条或多条旧规则在同一对象、同一时段或同一行为上无法同时履行，就把冲突范围与仍兼容的必要条件整合成唯一的新规则；新规则的合并来源必须逐项记录被吸收旧规则的颁布者与规则ID，并在同一轮变量更新中按数组索引倒序 remove 这些旧对象，再 add 新对象。只有真正冲突的旧规则可以被吸收；无关规则不得借机捆绑或删除。合并后的新规则由今日国王持有，旧规则不会保留、覆盖、休眠或在新规则撤销后恢复；系统不再使用优先级。完成后先向全员广播法令正文但不公开国王身份，再让五间房门同时解锁；广播与解锁以前不得让任何人进入大厅、串门或当面互动。正式广播时必须按原文冻结义务定义：只有被明确要求主动履行的人列入，有限动作记有限、需一直维持的状态或过程记持续、两者兼有记混合；受益者、授权使用者、被动承受者和自愿配合者不自动列入。法令若未明写未来开始时间、完成期限或可观察延迟触发条件，就从广播完毕立即开始并持续生效；持续义务开始后只算进行中，不算永久完成，之后每个场景仍须维持，停止或中断即违规；但只要换日前仍客观维持“进行中”，它就算当日合规，不阻止过夜，下一日继续生效。明确写出的未来时点尚未到达才可等待。圆桌短会、争辩和分析都不暂停已到期或持续义务；客观可执行的拖延只允许数秒警告，随后项圈必须迅速以强烈连续脉冲逼迫开始遵从。全段严格留在{{user}}所在房间，不得切去当日国王或其他女性的房间展示她们提交法令、等待或听见广播的私下镜头。门开后，本次前端操作仅额外授权{{user}}随四名女性来到中央圆桌旁这一项流程转场，不得替他发言、表态或作选择；随后必须在这一条AI回复内按世界书完成固定的广播后圆桌短会，让四名女性各有可辨反应，展开6—10个有效来回、约700—1100个汉字，再停在等待玩家下一步操作。把短会全部正文原地包在唯一一组<DecreeRoundtableImpl>与</DecreeRoundtableImpl>之间；闭标签必须是本轮最后一段剧情内容，下一行只输出<StatusPlaceHolderImpl/>。该短会不计入玩家互动数组或女性互动矩阵，不得使用<InteractionPairImpl>，不得趁机生成{{user}}与尚未点击女性的独立互动。';
       });
     },
     submitInteraction: function (roleName, method) {
@@ -4255,6 +4836,7 @@
       var protectedDisclosure = attemptsPrivateKnowledgeDisclosure(trimmed);
       return commitAction('submitInteraction', [roleName, trimmed], function (next) {
         var request = (next['系统'] || {})['_最近互动请求'] || {};
+        var publicActiveRules = projectActiveRules(next);
         var contentGate = request['内容门控'] || {};
         var authorizedAction = Number(contentGate['版本']) === 2 ? String(contentGate['授权动作'] || 'none') : 'none';
         var supplements = Array.isArray(request['补全对象']) ? request['补全对象'] : [];
@@ -4268,88 +4850,49 @@
           ? '我原本想向' + roleName + '泄露自己的所谓读心术或私人国王情报，但这两项秘密不可公开。请让{{user}}在任何人听见、看见或收到具体内容前临时收住话、停止展示或换成不含秘密的说法；不要复述原输入中的秘密内容，也不要让任何角色因此获知或准确推断。'
           : '我想以“' + trimmed + '”的方式与' + roleName + '互动。请把它作为行动意图来展开，不要擅自替我补写具体台词。';
         var actionGuards = {
-          archive: '【私密阶段约束·个人记录】本次只允许专门世界书 EJS 授权的单一个人记录事件；具体内容只服从该 EJS，不得合并或提前展示其他记录。',
-          photo: '【私密阶段约束·合照】本次只允许专门世界书 EJS 授权的合照事件；具体可见内容只服从该 EJS，不得藉机泄露更深真相。',
-          insight: '【私密阶段约束·洞察】本次只允许专门世界书 EJS 授权的单一洞察事件；严格限定在 EJS 列出的主体与字段范围，不得扩张成全知。',
-          testament: '【私密阶段约束·遗书】本次只允许专门世界书 EJS 授权的私密遗书事件；必须满足该 EJS 的现场、隐私与可见完成条件。',
-          none: '【私密阶段约束·无授权】本次互动开始前没有个人记录、合照、洞察或遗书事件授权。无论本轮让目标多么高兴、真实好感在回复中上涨多少，都不得在本回复追加这些事件；跨过门槛只能等下一次点击互动重新判定。'
+          archive: '【受控内容门】本次只允许当前已启用的单个阶段事件；具体内容只服从当前启用世界书，不得合并、提前或越级其他事件。',
+          photo: '【受控内容门】本次只允许当前已启用的单个阶段事件；具体内容只服从当前启用世界书，不得合并、提前或越级其他事件。',
+          insight: '【受控内容门】本次只允许当前已启用的单个阶段事件；具体内容只服从当前启用世界书，不得合并、提前或越级其他事件。',
+          testament: '【受控内容门】本次只允许当前已启用的单个阶段事件；具体内容只服从当前启用世界书，不得合并、提前或越级其他事件。',
+          none: '【受控内容门】本次没有额外阶段事件授权；本轮新达到的条件不得追溯结算，必须等待后续互动重新判定。'
         };
         var confessionGuard = contentGate['忏悔机会'] === true
-          ? '【忏悔机会】本次只是允许目标在自愿揭露曾美化或隐瞒的黑暗部分并真实悔过后结算忏悔；机会不等于自动忏悔。'
-          : '【忏悔门控】本次开始前没有忏悔机会，本回复才达到的条件不得同回合结算为忏悔完成。';
+          ? '【受控互动门】本次允许当前已启用的单个关系事件按专门条目判定；机会不等于自动完成。'
+          : '【受控互动门】本次没有额外关系事件授权；本轮新达到条件不追溯。';
         var actionGuard = actionGuards[authorizedAction] || actionGuards.none;
-        return '【每日流程·互动请求】本互动进行时，全部仍生效法令继续同步执行；未明写未来开始时间、期限或延迟条件的限制默认早已从广播后立即且持续生效。说话、推理、争执或拖延不会暂停已到期/持续义务，客观可执行的违令在数秒警告后立即升级为强烈连续电击，直至开始可观察地遵从。' + actionGuard + confessionGuard + intent + followup;
+        return '【每日流程·互动请求】当前真正生效的公开法令为：' + JSON.stringify(publicActiveRules) + '。先按每条法令冻结的义务定义逐人建立约束范围：只有列名者会被该条项圈强迫；未列名者、受益者、授权使用者、被动承受方和临时配合者不自动受约束。严禁虚构不存在的规则、扩大原文对象，或把只约束另一人的法令当成目标女性必须接受行为的理由。法令只强迫一方行动时不自动强迫另一方合作；没有法令明确约束目标女性接受或配合的侵入性、亲密或性行为，只能由她基于当前关系、欲望、利益与风险自主选择，动机不足就应拒绝、躲避、阻止、反抗或谈条件，不能把生理反应、暧昧气氛或玩家意图写成同意。本互动进行时，全部仍生效法令都必须作为本轮真实约束同步执行并更新各自本日履行；未明写未来开始时间、期限或延迟条件的限制默认早已从广播后立即且持续生效。有限义务当天已在先前互动中客观完成的，不得重演或重复处罚。持续义务的“进行中”不是永久完成：一次开始后仍须贯穿本轮和后续场景，停止或中断立刻变为违规；但当前仍处于进行中就算今日合规并允许过夜，跨夜后法令和过程仍继续。说话、推理、争执或拖延不会暂停已到期/持续义务，客观可执行的违令在数秒警告后立即升级为强烈连续电击，直至有限义务完成或持续义务恢复进行中。' + actionGuard + confessionGuard + intent + followup;
       });
     },
     complianceMeeting: function () {
-      return commitAction('beginComplianceMeeting', function (before) {
-        return [before];
-      }, function (next) {
-        var api = window.KingGameState;
-        var system = next['系统'] || {};
-        var meeting = system['_法令履行会议'] || {};
-        var activeRules = api && typeof api.getActiveDecrees === 'function'
-          ? api.getActiveDecrees(next)
-          : [];
-        var ruleText = activeRules.length
-          ? JSON.stringify(activeRules)
-          : '[]（当前没有仍处于生效状态的法令，但会议本身仍须召开并完成空清单审计）';
-        return '【前端私密操作，不是公开发言】【每日流程·法令履行会议】宿主已开启第'
-          + meeting['日期'] + '日第' + meeting['轮次'] + '轮履行会议，规则签名为“'
-          + meeting['规则签名'] + '”。五名参与者必须留在{{user}}能够观察的同一现场，逐条核对并尽可能履行以下当前生效法令：'
-          + ruleText
-          + '。已撤销法令不进入会议；后颁布法令只在实际冲突范围内覆盖旧法令，未冲突部分仍须履行。没有明写未来开始时间、完成期限或可观察延迟条件的限制，从广播结束就已经到期并持续生效；例如禁止穿衣者必须在讨论前脱下并一直保持，不能到会议才首次处理。只有明确的未来时点/条件尚未到达才可判尚未到期。已到期义务与持续义务在会议、讨论、争执和审计期间始终继续生效，不得因为正在开会而暂停、宽限或自动视为完成。对客观可判定且身体能够执行的拖延或拒绝，设施只给数秒明确警告，随后迅速升级为正式强烈连续脉冲、剧痛与严重失禁，直至当事人开始可观察地遵从；不得用长篇争论无限拖延，也不得让项圈判断真假、诚意、记忆、感情或思想。剧情可以让四名女性自行完成她们能够主动完成的义务，但绝不能替{{user}}说话、选择、接过物品或执行任何需要玩家主动完成的动作；若某条到期义务仍需{{user}}行动，必须把它明确留作未完成事项并停下来等待玩家后续互动，不能伪造完成。会议正文必须全部原地包在唯一一组<DecreeComplianceMeetingImpl>与</DecreeComplianceMeetingImpl>之间；该块是本轮最后一段剧情内容，闭标签后不得继续任何动作、台词或环境收束，下一行只输出<StatusPlaceHolderImpl/>。不得使用<DecreeRoundtableImpl>或<InteractionPairImpl>，本会议不计入玩家互动数组或女性互动矩阵。';
-      });
+      // Compatibility alias for old cached frontends. Normal play no longer has a
+      // standalone meeting gate; the only repair path is the explicit OOC fix.
+      return window.KingGameBridge.forcedCompliance();
     },
     forcedCompliance: function () {
       return commitAction('beginForcedCompliance', function (before) {
         return [before];
-      }, function (next, before) {
-        var api = window.KingGameState;
+      }, function (next) {
         var system = next['系统'] || {};
         var meeting = system['_法令履行会议'] || {};
-        var activeRules = api && typeof api.getActiveDecrees === 'function'
-          ? api.getActiveDecrees(next)
-          : [];
-        var publicActiveRules = activeRules.map(function (rule) {
-          return {
-            '规则ID': rule['规则ID'],
-            '标题': rule['标题'],
-            '全文': rule['全文'],
-            '颁布日': rule['颁布日'],
-            '优先级': rule['优先级']
-          };
-        });
-        var priorAudit = before && before['系统'] && before['系统']['法令履行审计'];
-        var priorResults = priorAudit && Array.isArray(priorAudit['结果']) ? priorAudit['结果'] : [];
-        var incompleteRules = [];
-        priorResults.forEach(function (result) {
-          if (!result || result['判定'] !== '到期未完成') return;
-          var matched = activeRules.find(function (rule) {
-            return rule['颁布者'] === result['颁布者'] && rule['规则ID'] === result['规则ID'];
-          });
-          if (!matched) return;
-          incompleteRules.push({
-            '规则ID': matched['规则ID'],
-            '标题': matched['标题'],
-            '全文': matched['全文'],
-            '上轮逐人状态说明': String(result['说明'] || '')
-          });
-        });
-        return '【前端私密操作，不是公开发言】【每日流程·强迫性完成】在上一轮履行会议已经确认仍有到期义务未完成后，{{user}}看见仍有人抗拒，选择不再替任何人拖延、兜底或等待，任由设施立即按每个人的实际履行状态执行强制。本次点击不自动把{{user}}或任何已合规者视为违令，只授权对仍有本人到期义务未完成者施加强制；被迫完成不代表自愿、同意、享受或原谅。宿主已开启第'
-          + meeting['日期'] + '日第' + meeting['轮次'] + '轮强制执行，必须在同一条回复内一次处理以下全部当前生效法令：'
+        var publicActiveRules = projectActiveRules(next);
+        return '【前端私密操作，不是公开发言】【每日流程·法令履行修正】{{user}}认为当前叙事可能拖延或遗漏了法令，调用一次OOC修正。该操作不是剧情中的会议，不计入玩家互动数组或女性互动矩阵，也不是过夜门槛。宿主已开启第'
+          + meeting['日期'] + '日第' + meeting['轮次'] + '轮修正，必须在同一条回复内核对以下全部当前生效法令：'
           + JSON.stringify(publicActiveRules)
-          + '。上一轮明确判为到期未完成的条目及其可见逐人状态为：'
-          + JSON.stringify(incompleteRules)
-          + '。该清单只用于锁定尚未完成者；已完成者除非本轮新发生客观违令，否则不得重新处罚。先依据每条法令的约束对象、本人到期动作和上一轮可见履行事实逐人逐项判断；不得再安排长篇讨论、讨价还价、轮流拒绝或下一轮会议。只有仍在拒绝、拖延、擅自中止持续义务，或客观未完成本人到期动作的人才受电击；已经完成、持续合规或法令没有约束其本人的参与者，绝不得因在场、受益、配合、成为被动承受方或他人违令而连坐。多人共同动作也按每个人自己的可观察义务判定：一人已经配合而另一人拒绝时，只处罚拒绝或未履行者。对仍未完成且现实可执行的动作，项圈立即以远强于最低示范的连续电流逼迫对应违令者真正开始并完成最低限度合规动作，直到该人的该项义务不再“到期未完成”。{{user}}仅当某条法令明确约束他，且他的该项义务仍未完成或他当下停止持续合规时才受罚；这时按钮授权描写他在痛苦强迫下完成必要动作，但不得额外替他表达偏好、情感、主动同意或超出法令的选择。若法令要求回答、说真话或坦白，只能强制可观察的开口回答，项圈仍不能判断内容真假。明确尚未到达的未来时点、尚未触发的客观条件、纯许可或被更高优先级规则覆盖的部分按原状核验，不得为了凑完成而提前执行。持续义务必须在场景结束时由各自义务人处于客观合规状态。强制过程仍服从现实边界、当前伤害上限与非致死限制；不得把疼痛本身冒充另一项动作的完成。整段必须包在唯一一组<DecreeComplianceMeetingImpl>与</DecreeComplianceMeetingImpl>之间，闭标签后下一行只输出<StatusPlaceHolderImpl/>；不得生成<InteractionPairImpl>，不得修改或补全玩家互动数组与女性互动矩阵。';
+          + '。先依据每条法令冻结的义务定义、本日履行台账、当天此前全部玩家可见剧情与当前可观察状态逐人逐项判断。有限义务若早先已经客观完成或次数达标，必须直接保留为已履行，绝不重演、重罚；持续义务若当前仍在客观维持，则记为进行中并保持，不得因为点击按钮而重新开始。只有被义务定义明确列名、本人义务已经到期、现实可执行且当前确实仍拒绝、拖延、未开始或擅自中止的人才受项圈电击。没有列名者、已完成者、当前进行中者、纯受益者、授权使用者、被动承受者和配合者绝不连坐；多人共同动作也逐人判定，只处罚真正未履行者。对真正未履行者，项圈立即以远强于最低示范的连续电流逼迫其完成有限义务或开始/恢复持续义务，不安排长篇讨论、讨价还价或第二轮修正。{{user}}也只在某条义务定义明确列名且他本人确实未履行时受罚；按钮可描写他被电流迫使完成必要动作，但不得替他追加偏好、情感、主动同意或法令外选择。持续义务在本段末保持进行中即可视为今日合规并允许过夜，但法令不会因此结束，后续场景与下一日仍须持续。若持续法令要求共同位置、同床、身体接触或持续性行为，可以在相关角色房间过夜，不得强制所有人返回各自房间而打断法令。若法令要求回答、说真话或坦白，只能强制可观察的开口动作，项圈不能判断内容真假。强制过程仍服从现实边界、当前伤害上限与非致死限制；不得把疼痛冒充另一动作完成，也不得把强迫一方扩写成未受约束另一方的自愿同意。整段必须包在唯一一组<DecreeComplianceMeetingImpl>与</DecreeComplianceMeetingImpl>之间，闭标签后下一行只输出<StatusPlaceHolderImpl/>；不得生成<InteractionPairImpl>。';
       });
     },
     overnight: function () {
-      return commitAction('advanceDay', [], function (next) {
+      return commitAction('advanceDay', [], function (next, before) {
         var system = next['系统'] || {};
+        var continuingRules = projectActiveRules(before).filter(function (rule) {
+          var definition = rule['义务定义'] && typeof rule['义务定义'] === 'object' ? rule['义务定义'] : {};
+          return Object.keys(definition).some(function (name) {
+            return definition[name] === '持续' || definition[name] === '混合';
+          });
+        });
         return system['_每日阶段'] === '终局'
           ? '【每日流程·过夜】第15日已经结束。请描写最后一夜与国王游戏终局。'
-          : '【每日流程·过夜】今日四次互动与法令履行会议审计均已完成且通过，我选择结束本日并过夜。请只从{{user}}单一有限视角描写夜间结算；第' + system['_当前天数'] + '日清晨{{user}}在自己的房间醒来，房门锁闭，床边平板显示等待当日法令。不得切去描写其他女性各自醒来或等待的镜头；法令尚未广播，不得让任何人提前进入大厅或串门。';
+          : '【每日流程·过夜】今日四次玩家互动已经完成，我选择结束本日并过夜。请只从{{user}}单一有限视角描写夜间结算；不需要另行召开法令履行会议。换日前仍含持续或混合义务的公开法令及其本日台账为：' + JSON.stringify(continuingRules) + '。这些法令不会因换日、睡眠、有限证据按日清空或通常的回房习惯而失效：有限义务的新日状态恢复为待履行；睡前仍客观保持进行中的持续/混合义务在新日本日履行中恢复为进行中，过程并未结束；睡前已中断或违规者不得伪造恢复。若持续法令要求共同位置、同床、身体接触、照料或持续性行为，{{user}}可以留在相关角色房间过夜，相关人物也应留在法令能够继续履行的位置，并同步更新/玩家/地点、/角色/<名字>/地点与/系统/当前地点，不得为了“各自回房”而中断。只有不存在跨夜位置/过程要求时，{{user}}才自然回到自己的房间。不得凭空创造新法令，也不得让未被某条义务定义列名的人因为过夜接受额外行为。下一日清晨只描写{{user}}醒来时能感知的所在房间、身边人物、门锁和平板；若法令要求他留在他人房间，就不得硬写成在自己房间醒来。房门仍在新法令广播前锁闭，不得切去其他房间的女性视角或让任何人提前进入大厅。';
       });
     }
   };
@@ -4389,7 +4932,7 @@
         <div class="flow-copy" id="flowStatus" aria-live="polite">正在读取今日流程……</div>
         <div class="flow-actions">
           <button class="flow-btn" id="primaryDailyAction" type="button" hidden></button>
-          <button class="flow-btn is-force" id="forceComplianceAction" type="button" data-action="forcedCompliance" hidden>强迫性完成</button>
+          <button class="flow-btn is-force" id="forceComplianceAction" type="button" data-action="forcedCompliance" hidden>法令履行修正</button>
         </div>
       </section>
       <div class="action-error" id="actionError" role="alert"></div>
@@ -4502,6 +5045,34 @@
       
       <div class="sister-photo-stage">
         <img id="sisterPhoto" alt="童年王可可与未透露姓名的妹妹合照">
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop relationship-backdrop" id="relationshipBackdrop" aria-hidden="true">
+    <section class="relationship-viewer" role="dialog" aria-modal="true" aria-labelledby="relationshipTitle">
+      
+        <h2 id="relationshipTitle">关系名单</h2>
+        <button class="modal-btn portrait-close" id="closeRelationshipList" type="button" aria-label="关闭关系名单">×</button>
+      
+      <ul class="relationship-list" id="relationshipList"></ul>
+    </section>
+  </div>
+
+  <div class="modal-backdrop weakness-backdrop" id="weaknessBackdrop" aria-hidden="true">
+    <section class="weakness-viewer" role="dialog" aria-modal="true" aria-labelledby="weaknessTitle">
+      
+        <h2 id="weaknessTitle">性弱点</h2>
+        <button class="modal-btn portrait-close" id="closeWeakness" type="button" aria-label="关闭性弱点档案">×</button>
+      
+      <div class="weakness-scroll">
+        <p class="weakness-source">可可信任 · 王可可的女性经验观察</p>
+        <div class="weakness-grid" id="weaknessGrid"></div>
+        <section class="weakness-anatomy">
+          <h3>裸体外观锚点</h3>
+          <p id="weaknessAnatomy"></p>
+        </section>
+        <p class="weakness-note">针对弱点的持续性攻势更容易在剧情中形成可观察的攻略进展，并进一步影响好感；单纯生理反应不等于同意、爱意或征服。</p>
       </div>
     </section>
   </div>
@@ -4662,18 +5233,19 @@
     // 仅供脱离 SillyTavern 宿主时预览版式；字段严格对应 VARIABLE_CONTRACT.md。
     const PREVIEW_STATE = {
       "系统": {
-        "_版本": 3, "_日程已锁定": false,
+        "_版本": 14, "_日程已锁定": false,
         "_当前天数": 1, "_当前国王": "",
         "_国王次数": { "玩家": 0, "林安": 0, "穆裳希": 0, "张曲溪": 0, "王可可": 0 },
         "_每日阶段": "待颁布法令", "_今日法令已广播": false,
         "_玩家已互动角色": [], "_最近互动请求": null,
-        "_法令会议状态": "未开放", "_法令未完成数量": 0, "_可召开法令会议": false, "_可过夜": false,
+        "_法令会议状态": "未开放", "_法令未完成数量": 0, "_生效法令数量": 0, "_可召开法令会议": false, "_可过夜": false,
         "当前时间": "第1日 08:10", "当前地点": "个人房间", "当前阶段": "等待法令",
         "公开线索": []
       },
-      "玩家": { "颁布规则": [] },
+      "玩家": { "地点": "玩家房间", "颁布规则": [] },
       "角色": {
         "林安": {
+          "地点": "林安房间",
           "信息": { "年龄": 25, "公开身份": "自诩女侦探的无业家里蹲" },
           "状态": { "身体": "正常，刚从熟睡中醒来", "当前行动": "兴奋地打量密室" },
           "上衣": { "衣着": "棕色猎鹿帽、格纹短披肩与米白衬衫", "肉体": "上半身无明显外伤，脸侧留有贴桌熟睡的浅印" },
@@ -4683,6 +5255,7 @@
           "关系": { "穆裳希": {"好感度": 0}, "张曲溪": {"好感度": 0}, "王可可": {"好感度": 0}, "玩家": {"好感度": 3} }
         },
         "穆裳希": {
+          "地点": "穆裳希房间",
           "信息": { "年龄": 27, "公开身份": "企业创办人与经营者" },
           "状态": { "身体": "正常，情绪高度紧绷", "当前行动": "审视环境并组织质询" },
           "上衣": { "衣着": "炭黑修身西装与暗红丝质上衣", "肉体": "呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红" },
@@ -4693,6 +5266,7 @@
           "关系": { "林安": {"好感度": 0}, "张曲溪": {"好感度": 0}, "王可可": {"好感度": 0}, "玩家": {"好感度": -8} }
         },
         "张曲溪": {
+          "地点": "张曲溪房间",
           "信息": { "年龄": 22, "公开身份": "长发高马尾的英气女大学生" },
           "状态": { "身体": "正常，肌肉线条饱满", "当前行动": "占据可同时观察出口与众人的位置" },
           "上衣": { "衣着": "暗绿短款大学棒球夹克与黑色圆领上衣", "肉体": "肩背与前臂活动正常，无明显伤口、红肿或疼痛反应" },
@@ -4703,6 +5277,7 @@
           "关系": { "林安": {"好感度": 0}, "穆裳希": {"好感度": 0}, "王可可": {"好感度": 0}, "玩家": {"好感度": -2} }
         },
         "王可可": {
+          "地点": "王可可房间",
           "信息": { "年龄": 32, "公开身份": "高中女教师" },
           "状态": { "身体": "正常，刚苏醒时呼吸略急", "当前行动": "试图安抚众人并听清广播" },
           "上衣": { "衣着": "浅蓝针织开衫与象牙白衬衫", "肉体": "双肩略紧，按在项圈边缘的指尖微凉" },
@@ -4737,6 +5312,38 @@
       prince: { key: "_情场王子洞察", owner: "张曲溪", label: "情场王子" },
       trust: { key: "_可可信任洞察", owner: "王可可", label: "可可信任", direct: true }
     };
+    const TRUST_WEAKNESS_ARCHIVES = Object.freeze({
+      "林安": {
+        weaknesses: [
+          { name: "乳头", detail: "被持续舔舐、吮吸或揉弄时，她玩笑式的侦探腔更容易被打断。" },
+          { name: "嘴巴", detail: "深吻、舌尖纠缠或让嘴唇持续参与亲密行为，更容易令她把兴奋误认成依赖与亲近。" }
+        ],
+        anatomy: "暖象牙色肌肤；乳房偏小而圆，轮廓轻盈，浅粉色乳晕较小，乳头细巧微翘；唇色是柔和桃粉，上唇略薄、下唇较丰润；臀部紧实圆润，耻丘覆着修整整齐的稀薄黑色体毛，外阴外唇浅粉、合拢紧密，短小内唇大多被遮住。"
+      },
+      "穆裳希": {
+        weaknesses: [
+          { name: "肛门", detail: "耐心而持续的刺激更容易击穿她对身体与节奏的控制。" },
+          { name: "阴道", detail: "准确的持续攻势容易令她在屈辱与快感的冲突中显露真实动摇。" },
+          { name: "耳朵", detail: "耳廓与耳后被低声贴近、亲吻或含咬，会先破坏她的从容。" }
+        ],
+        anatomy: "冷白肤色；乳房丰盈、呈挺拔水滴形，中小型乳晕为低饱和玫瑰棕，乳头短而紧致；耳廓薄而精巧，耳垂小圆；臀部饱满，肛门细褶呈略深的玫瑰棕；耻丘平滑丰润，黑色体毛修剪得极整齐，外阴外唇饱满，窄长的深玫瑰色内唇微微显露。"
+      },
+      "张曲溪": {
+        weaknesses: [
+          { name: "阴道", detail: "持续刺激时，她最难继续用轻佻与经验维持主动。" },
+          { name: "腋下", detail: "被亲吻或舔弄时，更容易从主动调情变成失去节奏。" },
+          { name: "肚脐", detail: "舌尖与指尖反复逗弄这处，会明显削弱她的逞强与从容。" }
+        ],
+        anatomy: "健康的暖麦色肌肤；乳房受胸肌承托而紧致，大小适中，小巧乳晕呈浅棕粉色，乳头硬挺；腋下干净少毛、肤色略深，抬臂时肌腱线条清晰；肚脐狭长而深；臀部高翘结实，耻丘留有短而整齐的黑色体毛，外阴外唇贴合，窄薄内唇为暖粉棕色。"
+      },
+      "王可可": {
+        weaknesses: [
+          { name: "失态时被持续盯着眼睛", detail: "在赤裸、动摇或即将失去镇定时，持续直视会让她难以把真实反应藏回教师式平静。" },
+          { name: "阴道", detail: "受到持续而准确的刺激时，她的克制更容易瓦解。" }
+        ],
+        anatomy: "柔白肤色；乳房中等偏丰满、呈自然水滴形，带有柔软却年轻的弧度，乳晕为柔和玫瑰棕，乳头纤细；眼睛是深棕色杏眼；臀部圆润柔软，耻丘黑色体毛整洁，外阴外唇柔软饱满，对称的深粉色内唇仅微微露出。"
+      }
+    });
 
     let state = PREVIEW_STATE;
     let userName = "你";
@@ -4844,13 +5451,31 @@
         root.append(el("div", "empty", "尚未颁布个人法令。"));
         return;
       }
-      [...rules].sort((a, b) => num(b?.优先级, -9999, 9999) - num(a?.优先级, -9999, 9999)).forEach(raw => {
+      [...rules].sort((a, b) => {
+        const dayDelta = num(a?.颁布日, 1, 15, 1) - num(b?.颁布日, 1, 15, 1);
+        return dayDelta || String(a?.id || "").localeCompare(String(b?.id || ""), "zh-CN", { numeric: true });
+      }).forEach(raw => {
         const ruleData = asObject(raw);
         const rule = el("article", `rule${ruleData.状态 === "已撤销" ? " is-revoked" : ""}`);
         const head = el("div", "rule-head");
         head.append(el("span", "", `${ruleData.id || "—"} · ${ruleData.标题 || "未命名法令"}`));
         head.append(el("span", "rule-meta", `第${num(ruleData.颁布日, 1, 15, 1)}日 · ${ruleData.状态 || "生效"}`));
         rule.append(head, el("p", "", ruleData.全文 || "暂无正文"));
+        if (ruleData.状态 !== "已撤销") {
+          const definition = asObject(ruleData.义务定义);
+          const daily = asObject(ruleData.本日履行);
+          const obligors = asObject(daily.义务人);
+          const fulfillment = el("div", "rule-fulfillment");
+          Object.entries(definition).forEach(([name, kind]) => {
+            const record = asObject(obligors[name]);
+            const ongoing = record.持续状态 === "进行中";
+            const completed = num(record.完成次数, 0, 99, 0) > 0;
+            const stateLabel = ongoing ? "进行中" : (kind === "有限" && completed ? "已履行" : "待履行");
+            const stateClass = ongoing ? "is-ongoing" : (stateLabel === "已履行" ? "is-complete" : "is-pending");
+            fulfillment.append(el("span", `rule-state ${stateClass}`, `${displayPerson(name, userName)} · ${stateLabel}`));
+          });
+          if (fulfillment.childElementCount) rule.append(fulfillment);
+        }
         root.append(rule);
       });
     }
@@ -4883,6 +5508,14 @@
         insightButton.setAttribute("aria-hidden", "true");
         actions.append(insightButton);
       }
+      if (TRUST_WEAKNESS_ARCHIVES[name] && insightSnapshotAvailable(system, INSIGHT_MODES.trust)) {
+        const weaknessButton = el("button", "weakness-open-btn special-open-btn", "性弱点");
+        weaknessButton.type = "button";
+        weaknessButton.dataset.archiveType = "weakness";
+        weaknessButton.tabIndex = -1;
+        weaknessButton.setAttribute("aria-hidden", "true");
+        actions.append(weaknessButton);
+      }
       if (name === "林安" && system._侦探日记已解锁 === true) {
         const diaryButton = el("button", "diary-open-btn special-open-btn", "侦探日记");
         diaryButton.type = "button";
@@ -4906,6 +5539,20 @@
         albumButton.tabIndex = -1;
         albumButton.setAttribute("aria-hidden", "true");
         actions.append(albumButton);
+      }
+      const relationshipRoster = name === "穆裳希"
+        ? asArray(system._穆裳希跟从者名单)
+        : name === "张曲溪"
+          ? asArray(system._张曲溪女朋友名单)
+          : [];
+      if (relationshipRoster.length > 0) {
+        const label = name === "穆裳希" ? "跟从者名单" : "女朋友名单";
+        const rosterButton = el("button", "relationship-list-open-btn special-open-btn", label);
+        rosterButton.type = "button";
+        rosterButton.dataset.archiveType = name === "穆裳希" ? "followers" : "girlfriends";
+        rosterButton.tabIndex = -1;
+        rosterButton.setAttribute("aria-hidden", "true");
+        actions.append(rosterButton);
       }
       if (name === "王可可" && system._姐妹合照已解锁 === true) {
         const sisterButton = el("button", "sister-open-btn special-open-btn", "姐妹合照");
@@ -5118,19 +5765,44 @@
       return face;
     }
 
-    function buildMapSheet() {
+    function buildMapSheet(nextState) {
       const sheet = el("section", "surface-sheet map-sheet");
       sheet.append(el("h2", "", "密室地图"), el("p", "surface-kicker", "Upper surface / 向上查看 · 横转时自动保持正向"));
       const map = el("div", "surface-map");
       const table = el("div", "surface-table", "圆桌大厅");
-      if (asObject(state.系统)._特殊档案已解锁 === true) {
+      if (asObject(nextState.系统)._特殊档案已解锁 === true) {
         table.append(el("span", "surface-scarecrow", "韩璇\n稻草人"));
       }
       map.append(table);
+      const roomNodes = new Map();
       [...NAMES, userName].forEach((name, index) => {
         const room = el("div", `surface-room r${index + 1}`);
-        room.append(el("span", "room-name", `${name}房间`), el("i", "room-toilet", "小厕所"));
+        const roomKey = name === userName ? "玩家房间" : `${name}房间`;
+        const occupants = el("span", "map-occupants");
+        room.append(el("span", "room-name", `${name}房间`), occupants, el("i", "room-toilet", "小厕所"));
+        roomNodes.set(roomKey, occupants);
         map.append(room);
+      });
+      const hallOccupants = el("span", "map-occupants");
+      table.append(hallOccupants);
+      const player = asObject(nextState.玩家);
+      const roles = asObject(nextState.角色);
+      const people = [[userName, player, "玩家房间"], ...NAMES.map(name => [name, asObject(roles[name]), `${name}房间`])];
+      people.forEach(([name, data, home]) => {
+        const location = String(data.地点 || home);
+        let target = location.includes("大厅") ? hallOccupants : null;
+        if (!target) {
+          for (const [roomKey, node] of roomNodes) {
+            const visibleRoomName = roomKey === "玩家房间" ? userName : roomKey.replace(/房间$/, "");
+            if (location.includes(roomKey) || location.includes(`${visibleRoomName}房间`) || (roomKey === "玩家房间" && /玩家房间|你的房间|个人房间/.test(location))) {
+              target = node;
+              break;
+            }
+          }
+        }
+        target = target || roomNodes.get(home) || hallOccupants;
+        const suffix = location.includes("小厕所") ? "·厕" : "";
+        target.append(el("b", "map-occupant", `${displayPerson(name, userName)}${suffix}`));
       });
       sheet.append(map);
       return sheet;
@@ -5163,7 +5835,7 @@
 
     function renderSurfaceOverlay(nextState) {
       const overlay = $("#surfaceOverlay");
-      overlay.replaceChildren(buildMapSheet(), buildRulesSheet(nextState));
+      overlay.replaceChildren(buildMapSheet(nextState), buildRulesSheet(nextState));
       overlay.dataset.view = pitch >= 45 ? "top" : pitch <= -45 ? "bottom" : "side";
     }
 
@@ -5343,6 +6015,59 @@
 
     function closeSisterPhoto(restoreFocus = true) {
       const backdrop = $("#sisterBackdrop");
+      backdrop.classList.remove("is-open");
+      backdrop.setAttribute("aria-hidden", "true");
+      if (restoreFocus && archiveLastFocused?.isConnected && typeof archiveLastFocused.focus === "function") archiveLastFocused.focus();
+      archiveLastFocused = null;
+      requestAnimationFrame(syncSpecialArchiveHitTarget);
+    }
+
+    function openRelationshipList(type, trigger) {
+      const system = asObject(state.系统);
+      const followers = asArray(system._穆裳希跟从者名单).map(String).filter(Boolean);
+      const girlfriends = asArray(system._张曲溪女朋友名单).map(String).filter(Boolean);
+      const roster = type === "followers" ? followers : type === "girlfriends" ? girlfriends : [];
+      if (!roster.length) return;
+      archiveLastFocused = trigger || document.activeElement;
+      $("#relationshipTitle").textContent = type === "followers" ? "穆裳希的跟从者" : "张曲溪的女朋友";
+      $("#relationshipList").replaceChildren(...roster.map(name => el("li", "", name)));
+      const backdrop = $("#relationshipBackdrop");
+      backdrop.classList.add("is-open");
+      backdrop.setAttribute("aria-hidden", "false");
+      hideSpecialArchiveHitTargets();
+      requestAnimationFrame(() => $("#closeRelationshipList").focus());
+    }
+
+    function closeRelationshipList(restoreFocus = true) {
+      const backdrop = $("#relationshipBackdrop");
+      backdrop.classList.remove("is-open");
+      backdrop.setAttribute("aria-hidden", "true");
+      if (restoreFocus && archiveLastFocused?.isConnected && typeof archiveLastFocused.focus === "function") archiveLastFocused.focus();
+      archiveLastFocused = null;
+      requestAnimationFrame(syncSpecialArchiveHitTarget);
+    }
+
+    function openWeaknessArchive(name, trigger) {
+      const system = asObject(state.系统);
+      const profile = TRUST_WEAKNESS_ARCHIVES[name];
+      if (!profile || !insightSnapshotAvailable(system, INSIGHT_MODES.trust)) return;
+      archiveLastFocused = trigger || document.activeElement;
+      $("#weaknessTitle").textContent = `${name} · 性弱点`;
+      $("#weaknessGrid").replaceChildren(...profile.weaknesses.map(item => {
+        const card = el("section", "weakness-card");
+        card.append(el("h3", "", item.name), el("p", "", item.detail));
+        return card;
+      }));
+      $("#weaknessAnatomy").textContent = profile.anatomy;
+      const backdrop = $("#weaknessBackdrop");
+      backdrop.classList.add("is-open");
+      backdrop.setAttribute("aria-hidden", "false");
+      hideSpecialArchiveHitTargets();
+      requestAnimationFrame(() => $("#closeWeakness").focus());
+    }
+
+    function closeWeaknessArchive(restoreFocus = true) {
+      const backdrop = $("#weaknessBackdrop");
       backdrop.classList.remove("is-open");
       backdrop.setAttribute("aria-hidden", "true");
       if (restoreFocus && archiveLastFocused?.isConnected && typeof archiveLastFocused.focus === "function") archiveLastFocused.focus();
@@ -5573,7 +6298,7 @@
       const stage = system._每日阶段 || "待颁布法令";
       const completed = NAMES.filter(name => asArray(system._玩家已互动角色).includes(name));
       const meetingState = String(system._法令会议状态 || "未开放");
-      const incompleteDecrees = Math.round(num(system._法令未完成数量, 0, 999, 0));
+      const activeDecrees = Math.round(num(system._生效法令数量, 0, 999, 0));
       const button = $("#primaryDailyAction");
       const forceButton = $("#forceComplianceAction");
       const status = $("#flowStatus");
@@ -5592,46 +6317,21 @@
         button.hidden = false;
       } else if (stage === "自由互动") {
         const interactionCopy = `今日互动 ${completed.length} / ${NAMES.length}：${completed.length ? completed.join("、") : "尚未与任何角色互动"}`;
-        status.textContent = interactionCopy;
-        if (meetingState === "待召开") {
-          status.textContent = completed.length === NAMES.length
-            ? `${interactionCopy} · 需完成法令履行会议后才能过夜`
-            : `${interactionCopy} · 可提前召开集体履行会议，不计入个人互动`;
-          if (system._可召开法令会议 === true) {
-            button.textContent = actionBusy ? "正在召集……" : "召开法令履行会议";
-            button.dataset.action = "complianceMeeting";
-            button.hidden = false;
-          }
-        } else if (meetingState === "待审计") {
-          status.textContent = `${interactionCopy} · 设施正在审计本日法令履行情况`;
-          button.textContent = "履行会议审计中……";
-          button.hidden = false;
-          button.disabled = true;
-        } else if (meetingState === "强制执行") {
-          status.textContent = `${interactionCopy} · 项圈正在强制执行全部到期法令`;
-          forceButton.textContent = "强制执行中……";
+        status.textContent = activeDecrees > 0
+          ? `${interactionCopy} · ${activeDecrees} 项生效法令会在每次互动中持续结算`
+          : interactionCopy;
+        if (meetingState === "强制执行") {
+          forceButton.textContent = "正在修正履行……";
           forceButton.hidden = false;
           forceButton.disabled = true;
-        } else if (meetingState === "需补履行") {
-          status.textContent = `${interactionCopy} · 仍有 ${incompleteDecrees} 项生效法令未完成`;
-          if (system._可召开法令会议 === true) {
-            button.textContent = actionBusy ? "正在召集……" : "再次召开履行会议";
-            button.dataset.action = "complianceMeeting";
-            button.hidden = false;
-            forceButton.textContent = actionBusy ? "正在强制……" : "强迫性完成";
-            forceButton.hidden = false;
-          }
-        } else if (meetingState === "已通过") {
-          status.textContent = completed.length === NAMES.length
-            ? `${interactionCopy} · 法令履行会议已通过`
-            : `${interactionCopy} · 本轮履行会议已通过，仍需完成剩余个人互动`;
-          if (system._可过夜 === true) {
-            button.textContent = actionBusy ? "正在提交……" : "过夜";
-            button.dataset.action = "overnight";
-            button.hidden = false;
-          }
-        } else {
-          status.textContent = `${interactionCopy} · 正在等待履行会议开放`;
+        } else if (activeDecrees > 0) {
+          forceButton.textContent = actionBusy ? "正在提交……" : "法令履行修正";
+          forceButton.hidden = false;
+        }
+        if (system._可过夜 === true) {
+          button.textContent = actionBusy ? "正在提交……" : "过夜";
+          button.dataset.action = "overnight";
+          button.hidden = false;
         }
       } else if (stage === "夜间") {
         status.textContent = "夜间结算中 · 请等待新一日广播";
@@ -5754,9 +6454,7 @@
       const bridge = window.KingGameBridge;
       const method = action === "decree"
         ? "requestDecree"
-        : action === "complianceMeeting"
-          ? "complianceMeeting"
-          : action === "forcedCompliance"
+        : action === "forcedCompliance"
             ? "forcedCompliance"
           : action === "overnight"
             ? "overnight"
@@ -5831,7 +6529,7 @@
     }
 
     function archiveOverlayOpen() {
-      return ["diaryBackdrop", "careerBackdrop", "albumBackdrop", "sisterBackdrop", "testamentBackdrop"]
+      return ["diaryBackdrop", "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "testamentBackdrop"]
         .some(id => $(`#${id}`)?.classList.contains("is-open"));
     }
 
@@ -5881,7 +6579,7 @@
     function interfaceOverlayOpen() {
       return [
         "playerRulesBackdrop", "interactionBackdrop", "portraitBackdrop", "diaryBackdrop",
-        "careerBackdrop", "albumBackdrop", "sisterBackdrop", "testamentBackdrop", "endingBackdrop"
+        "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "testamentBackdrop", "endingBackdrop"
       ].some(id => $(`#${id}`)?.classList.contains("is-open"));
     }
 
@@ -6031,7 +6729,7 @@
       const observer = new MutationObserver(() => requestAnimationFrame(syncInsightModeHitTarget));
       [
         "playerRulesBackdrop", "interactionBackdrop", "portraitBackdrop", "diaryBackdrop",
-        "careerBackdrop", "albumBackdrop", "sisterBackdrop", "endingBackdrop"
+        "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "endingBackdrop"
       ].forEach(id => observer.observe($(`#${id}`), { attributes: true, attributeFilter: ["class", "aria-hidden"] }));
     }
 
@@ -6093,6 +6791,8 @@
       const careerBackdrop = $("#careerBackdrop");
       const albumBackdrop = $("#albumBackdrop");
       const sisterBackdrop = $("#sisterBackdrop");
+      const relationshipBackdrop = $("#relationshipBackdrop");
+      const weaknessBackdrop = $("#weaknessBackdrop");
       const portraitFullImage = $("#portraitFullImage");
       portraitFullImage.addEventListener("load", () => $("#portraitFullStage").classList.remove("has-error"));
       portraitFullImage.addEventListener("error", () => $("#portraitFullStage").classList.add("has-error"));
@@ -6128,6 +6828,8 @@
         else if (type === "album") openAlbum(hit);
         else if (type === "sister") openSisterPhoto(hit);
         else if (type === "testament") openTestament(hit);
+        else if (type === "weakness") openWeaknessArchive(activeSideName(), hit);
+        else if (type === "followers" || type === "girlfriends") openRelationshipList(type, hit);
       });
       $("#closeDiary").addEventListener("click", () => closeDiary());
       $("#previousDiaryPage").addEventListener("click", () => { diaryPageIndex -= 1; renderDiaryPage(); });
@@ -6168,6 +6870,22 @@
         if (!sisterBackdrop.classList.contains("is-open")) return;
         if (event.key === "Escape") { event.preventDefault(); closeSisterPhoto(); }
         else if (event.key === "Tab") { event.preventDefault(); $("#closeSister").focus(); }
+      });
+
+      $("#closeRelationshipList").addEventListener("click", () => closeRelationshipList());
+      relationshipBackdrop.addEventListener("pointerdown", event => { if (event.target === relationshipBackdrop) closeRelationshipList(); });
+      relationshipBackdrop.addEventListener("keydown", event => {
+        if (!relationshipBackdrop.classList.contains("is-open")) return;
+        if (event.key === "Escape") { event.preventDefault(); closeRelationshipList(); }
+        else if (event.key === "Tab") { event.preventDefault(); $("#closeRelationshipList").focus(); }
+      });
+
+      $("#closeWeakness").addEventListener("click", () => closeWeaknessArchive());
+      weaknessBackdrop.addEventListener("pointerdown", event => { if (event.target === weaknessBackdrop) closeWeaknessArchive(); });
+      weaknessBackdrop.addEventListener("keydown", event => {
+        if (!weaknessBackdrop.classList.contains("is-open")) return;
+        if (event.key === "Escape") { event.preventDefault(); closeWeaknessArchive(); }
+        else if (event.key === "Tab") { event.preventDefault(); $("#closeWeakness").focus(); }
       });
 
       $("#reopenEnding").addEventListener("click", () => openEnding());
