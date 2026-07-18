@@ -752,7 +752,10 @@
     }
     .flow-copy { min-width: 0; color: #aaa18f; font: 11px/1.45 ui-sans-serif, system-ui, sans-serif; overflow-wrap: anywhere; }
     .flow-copy b { color: #dfca9d; }
+    .flow-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
     .flow-btn { flex: 0 0 auto; min-width: 112px; padding: 0 14px; font: 700 12px/1 ui-sans-serif, system-ui, sans-serif; }
+    .flow-btn.is-force { border-color: rgba(181,73,73,.72); color: #efc7c3; background: linear-gradient(#342020, #181414); }
+    .flow-btn.is-force:hover { border-color: #d06a62; color: #ffe1dd; }
     .flow-btn[hidden] { display: none; }
     .action-error { grid-column: 1 / -1; color: #e7a5a5; font: 700 11px/1.45 ui-sans-serif, system-ui, sans-serif; }
     .action-error:empty { display: none; }
@@ -1311,6 +1314,7 @@
       .controls { grid-template-columns: minmax(0, 1fr) auto; gap: 5px; }
       .rules-btn { padding-inline: 10px; font-size: 11px; }
       .day-flow { align-items: stretch; flex-direction: column; }
+      .flow-actions { width: 100%; flex-direction: column; }
       .flow-btn { width: 100%; }
       .utility-face { padding: 14px; }
       .utility-face h2 { font-size: 24px; }
@@ -1363,7 +1367,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var VERSION = 10;
+  var VERSION = 12;
   var SCHEDULE_ALGORITHM_VERSION = 6;
   var DAYS = 15;
   var FIXED_KEKE_DAY = 10;
@@ -1381,6 +1385,7 @@
     '未开放': true,
     '待召开': true,
     '待审计': true,
+    '强制执行': true,
     '需补履行': true,
     '已通过': true
   };
@@ -1492,19 +1497,45 @@
     return result;
   }
 
-  function normalizeArchiveGate(value) {
+  function normalizeStageLeaf(value, maximum) {
+    var number = Number(value);
+    if (!isFinite(number)) number = 0;
+    return Math.max(0, Math.min(maximum, Math.floor(number)));
+  }
+
+  function normalizeCharacterStage(alias, value) {
     var source = value && typeof value === 'object' ? value : {};
-    var baselineSource = source['基线'] && typeof source['基线'] === 'object' ? source['基线'] : {};
-    var authorization = ARCHIVE_ALIASES.indexOf(source['授权']) >= 0 ? source['授权'] : '';
+    if (alias === 'n4') {
+      return {
+        b: normalizeStageLeaf(source.b, 2),
+        x: normalizeStageLeaf(source.x, 1),
+        t: normalizeStageLeaf(source.t, 2),
+        k: normalizeStageLeaf(source.k, 2)
+      };
+    }
+    return { b: normalizeStageLeaf(source.b, 4), c: normalizeStageLeaf(source.c, 1) };
+  }
+
+  function normalizeStageBaseline(value) {
+    var source = value && typeof value === 'object' ? value : {};
     return {
-      '版本': Number(source['版本']) === 1 ? 1 : 0,
-      '基线': {
-        n1: baselineSource.n1 === true,
-        n2: baselineSource.n2 === true,
-        n3: baselineSource.n3 === true,
-        n4: baselineSource.n4 === true
-      },
-      '授权': authorization
+      b: normalizeStageLeaf(source.b, 4),
+      c: normalizeStageLeaf(source.c, 1),
+      x: normalizeStageLeaf(source.x, 1),
+      t: normalizeStageLeaf(source.t, 2)
+    };
+  }
+
+  function normalizeContentGate(value) {
+    var source = value && typeof value === 'object' ? value : {};
+    var actions = { none: true, archive: true, insight: true, photo: true, testament: true };
+    var role = ARCHIVE_ALIASES.indexOf(source['角色']) >= 0 ? source['角色'] : '';
+    return {
+      '版本': Number(source['版本']) === 2 ? 2 : 0,
+      '角色': role,
+      '基线': normalizeStageBaseline(source['基线']),
+      '授权动作': actions[source['授权动作']] ? source['授权动作'] : 'none',
+      '忏悔机会': source['忏悔机会'] === true
     };
   }
 
@@ -1521,25 +1552,64 @@
         : [],
       '状态': typeof value['状态'] === 'string' ? value['状态'] : '待生成'
     };
-    if (includePrivateGate !== false && value['档案门控'] && typeof value['档案门控'] === 'object') {
-      request['档案门控'] = normalizeArchiveGate(value['档案门控']);
+    if (includePrivateGate !== false && value['内容门控'] && typeof value['内容门控'] === 'object') {
+      request['内容门控'] = normalizeContentGate(value['内容门控']);
     }
     return request;
   }
 
-  function buildArchiveGate(system, roleName) {
+  function allStages(hidden) {
+    var source = hidden && typeof hidden === 'object' ? hidden : {};
+    var result = {};
+    ARCHIVE_ALIASES.forEach(function (alias) {
+      var character = source[alias] && typeof source[alias] === 'object' ? source[alias] : {};
+      result[alias] = normalizeCharacterStage(alias, character.s);
+    });
+    return result;
+  }
+
+  function authorizedStageAction(system, roleName) {
     var hidden = system && system.internal && typeof system.internal === 'object' ? system.internal : {};
-    var flags = normalizeAffectionEventState(hidden.f);
+    // 三人都已忏悔后，下一段可见剧情优先完成王可可向全员坦白。
+    // 此时不再同时授权任何个人档案/遗书事件，避免私下交付被误结算成公开揭露。
+    if (hidden.q && hidden.q.h === true && hidden.q.v !== true && hasCompleteConfessions(hidden)) return 'none';
     var alias = ARCHIVE_ALIAS_BY_NAME[roleName] || '';
     var character = alias && hidden[alias] && typeof hidden[alias] === 'object' ? hidden[alias] : {};
+    var stage = normalizeCharacterStage(alias, character.s);
+    if (alias === 'n4') {
+      if (stage.t === 1) return 'testament';
+      if (stage.b === 1 && stage.x === 0 && normalizeDay(system['_当前天数']) < 10) return 'photo';
+      return 'none';
+    }
+    if (!alias) return 'none';
+    if (stage.b === 1) return 'archive';
+    if (stage.b === 3) return 'insight';
+    return 'none';
+  }
+
+  function buildContentGate(system, roleName) {
+    var hidden = system && system.internal && typeof system.internal === 'object' ? system.internal : {};
+    var alias = ARCHIVE_ALIAS_BY_NAME[roleName] || 'n1';
+    var character = hidden[alias] && typeof hidden[alias] === 'object' ? hidden[alias] : {};
+    var stage = normalizeCharacterStage(alias, character.s);
+    var action = authorizedStageAction(system, roleName);
+    var baseline = {
+      b: stage.b,
+      c: alias === 'n4' ? 0 : stage.c,
+      x: alias === 'n4' ? stage.x : 0,
+      t: alias === 'n4' ? stage.t : 0
+    };
     var relations = character.r && typeof character.r === 'object' ? character.r : {};
-    var threshold = alias === 'n4' ? 50 : 30;
-    var dayEligible = alias !== 'n4' || normalizeDay(system['_当前天数']) < 10;
-    var authorization = alias && flags[alias] !== true && dayEligible && Number(relations.u) >= threshold ? alias : '';
+    var confessionOpportunity = alias !== 'n4'
+      && hidden.q && hidden.q.h === true
+      && stage.c === 0
+      && (Number(relations.u) >= 50 || Number(relations.n4) >= 50);
     return {
-      '版本': 1,
-      '基线': { n1: flags.n1, n2: flags.n2, n3: flags.n3, n4: flags.n4 },
-      '授权': authorization
+      '版本': 2,
+      '角色': alias,
+      '基线': baseline,
+      '授权动作': action,
+      '忏悔机会': confessionOpportunity
     };
   }
 
@@ -1597,7 +1667,6 @@
   function normalizeComplianceMeeting(value, day, phase, playerInteractions) {
     var source = value && typeof value === 'object' ? value : {};
     var normalizedDay = normalizeDay(day);
-    var complete = normalizePlayerInteractions(playerInteractions).length === WOMEN.length;
     var sameDay = Number(source['日期']) === normalizedDay;
     var state = sameDay && COMPLIANCE_STATES[source['状态']] ? source['状态'] : '未开放';
     var round = sameDay ? Math.max(0, Math.floor(Number(source['轮次']) || 0)) : 0;
@@ -1607,7 +1676,6 @@
       return createComplianceMeeting(normalizedDay, '未开放', 0, '');
     }
     if (phase === '自由互动') {
-      if (!complete) return createComplianceMeeting(normalizedDay, '未开放', round, signature);
       if (state === '未开放') state = '待召开';
       return createComplianceMeeting(normalizedDay, state, round, signature);
     }
@@ -1673,18 +1741,18 @@
     var signature = complianceRuleSignature(current);
     var meeting = normalizeComplianceMeeting(system['_法令履行会议'], system['_当前天数'], phase, interactions);
     var emergencyEnding = phase === '终局'
-      && system.internal && system.internal.e && system.internal.e.r === 'E' && system.internal.e.d === true;
+      && system.internal && system.internal.q && system.internal.q.r === 'E' && system.internal.q.d === true;
 
-    if (phase === '自由互动' && complete) {
+    if (phase === '自由互动') {
       if (meeting['规则签名'] && meeting['规则签名'] !== signature) {
         meeting['状态'] = '待召开';
       }
       meeting['规则签名'] = signature;
-      if (meeting['状态'] === '待审计' || meeting['状态'] === '需补履行' || meeting['状态'] === '已通过') {
+      if (meeting['状态'] === '待审计' || meeting['状态'] === '强制执行' || meeting['状态'] === '需补履行' || meeting['状态'] === '已通过') {
         var evaluation = complianceAuditResult(current, meeting, rules, signature);
         if (evaluation.fresh) {
           meeting['状态'] = evaluation.incomplete > 0 ? '需补履行' : '已通过';
-        } else if (meeting['状态'] !== '待审计') {
+        } else if (meeting['状态'] !== '待审计' && meeting['状态'] !== '强制执行') {
           meeting['状态'] = '待召开';
         }
       }
@@ -1702,18 +1770,11 @@
 
   function normalizeEndingState(value, relationshipDecreeFound) {
     var source = value && typeof value === 'object' ? value : {};
-    var confessionSource = source.c && typeof source.c === 'object' ? source.c : {};
     var route = source.r === 'A' || source.r === 'B' || source.r === 'C' || source.r === 'D' || source.r === 'E' ? source.r : '';
     return {
       h: source.h === true || relationshipDecreeFound === true,
       t: source.t === true,
-      c: {
-        n1: confessionSource.n1 === true,
-        n2: confessionSource.n2 === true,
-        n3: confessionSource.n3 === true
-      },
       v: source.v === true,
-      p: source.p === true,
       r: route,
       d: source.d === true && route !== ''
     };
@@ -1726,25 +1787,6 @@
       n1: valid[source.n1] ? source.n1 : '',
       n2: valid[source.n2] ? source.n2 : '',
       n4: valid[source.n4] ? source.n4 : ''
-    };
-  }
-
-  function normalizeAffectionEventState(value) {
-    var source = value && typeof value === 'object' ? value : {};
-    return {
-      n1: source.n1 === true,
-      n2: source.n2 === true,
-      n3: source.n3 === true,
-      n4: source.n4 === true
-    };
-  }
-
-  function normalizeInsightEventState(value) {
-    var source = value && typeof value === 'object' ? value : {};
-    return {
-      n1: source.n1 === true,
-      n2: source.n2 === true,
-      n3: source.n3 === true
     };
   }
 
@@ -1761,29 +1803,274 @@
     return result;
   }
 
+  function restoreUnauthorizedStageChanges(cache, request, day) {
+    if (!request || request['状态'] !== '待生成') return cache;
+    var gate = request && typeof request === 'object' ? normalizeContentGate(request['内容门控']) : null;
+    if (!gate || gate['版本'] !== 2 || !gate['角色']) return cache;
+    var targetAlias = ARCHIVE_ALIAS_BY_NAME[String(request['角色'] || '')] || '';
+    if (gate['角色'] !== targetAlias) return cache;
+    var action = gate['授权动作'];
+    var baseline = gate['基线'];
+    var stage = cache[targetAlias].s;
+    if (targetAlias === 'n4') {
+      var photoCompletion = action === 'photo' && baseline.b === 1 && stage.b === 2;
+      var photoAlreadyLatched = action === 'none' && baseline.b === 0 && stage.b === 1
+        && stage.x === 0 && Number(cache.n4.r && cache.n4.r.u) >= 50 && normalizeDay(day) < 10;
+      if (stage.b !== baseline.b && !photoCompletion && !photoAlreadyLatched) stage.b = baseline.b;
+      var testamentCompletion = action === 'testament' && baseline.t === 1 && stage.t === 2;
+      if (stage.t !== baseline.t && !testamentCompletion) stage.t = baseline.t;
+      stage.x = baseline.x;
+    } else {
+      var archiveCompletion = action === 'archive' && baseline.b === 1 && stage.b === 2;
+      var insightCompletion = action === 'insight' && baseline.b === 3 && stage.b === 4;
+      var nextArchiveLatched = action === 'none' && baseline.b === 0 && stage.b === 1
+        && Number(cache[targetAlias].r && cache[targetAlias].r.u) >= 30;
+      var nextInsightLatched = action === 'none' && baseline.b === 2 && stage.b === 3
+        && Number(cache[targetAlias].r && cache[targetAlias].r.u) >= 60;
+      if (stage.b !== baseline.b && !archiveCompletion && !insightCompletion && !nextArchiveLatched && !nextInsightLatched) stage.b = baseline.b;
+      if (stage.c !== baseline.c && !(gate['忏悔机会'] && stage.c === 1)) stage.c = baseline.c;
+    }
+    return cache;
+  }
+
+  function latchStages(cache, day) {
+    ['n1', 'n2', 'n3'].forEach(function (alias) {
+      var character = cache[alias];
+      var affection = character.r && Number(character.r.u);
+      if (character.s.b === 0 && affection >= 30) character.s.b = 1;
+      if (character.s.b === 2 && affection >= 60) character.s.b = 3;
+    });
+    var n4 = cache.n4;
+    var normalizedDay = normalizeDay(day);
+    var n4Affection = n4.r && Number(n4.r.u);
+    if (n4.s.b === 0 && n4Affection >= 50 && normalizedDay < 10) n4.s.b = 1;
+    if (normalizedDay >= 10 && n4.s.b < 2) n4.s.x = 1;
+    if (cache.q.h === true && normalizedDay > 10 && n4.s.t === 0) n4.s.t = 1;
+    return cache;
+  }
+
+  function hasKekeIssuedDecree(variables) {
+    var roles = variables && variables['角色'] && typeof variables['角色'] === 'object' ? variables['角色'] : {};
+    var keke = roles['王可可'] && typeof roles['王可可'] === 'object' ? roles['王可可'] : {};
+    var rules = Array.isArray(keke['颁布规则']) ? keke['颁布规则'] : [];
+    return rules.some(function (rule) {
+      return rule && typeof rule === 'object'
+        && /^R\d+$/.test(String(rule.id || ''))
+        && Number(rule['颁布日']) >= 1
+        && Number(rule['颁布日']) <= DAYS
+        && (rule['状态'] === '生效' || rule['状态'] === '已撤销');
+    });
+  }
+
+  function latchKekePersonaStage(variables) {
+    var system = variables && variables['系统'] && typeof variables['系统'] === 'object' ? variables['系统'] : {};
+    var hidden = system.internal && typeof system.internal === 'object' ? system.internal : {};
+    var n4 = hidden.n4 && typeof hidden.n4 === 'object' ? hidden.n4 : {};
+    n4.s = normalizeCharacterStage('n4', n4.s);
+    if (n4.s.t >= 2 || hidden.q && hidden.q.v === true) {
+      n4.s.k = 2;
+    } else if (n4.s.k < 1 && hasKekeIssuedDecree(variables)) {
+      n4.s.k = 1;
+    }
+    hidden.n4 = n4;
+    system.internal = hidden;
+    variables['系统'] = system;
+    return variables;
+  }
+
   function repairEndingCache(system, relationshipDecreeFound) {
     var legacyCache = system['_校验缓存'];
-    var sourceCache = legacyCache && typeof legacyCache === 'object'
-      ? legacyCache
-      : (system.internal && typeof system.internal === 'object' ? system.internal : {});
+    // `_校验缓存` 只用于一次性兼容没有 internal 的早期存档。它不能作为
+    // 第二份持久真源，更不能覆盖较新楼层已经写入的 internal。
+    var sourceCache = system.internal && typeof system.internal === 'object'
+      ? system.internal
+      : (legacyCache && typeof legacyCache === 'object' ? legacyCache : {});
     var cache = {};
     Object.keys(sourceCache).forEach(function (key) {
       cache[key] = sourceCache[key];
     });
-    var n3Source = cache.n3 && typeof cache.n3 === 'object' ? cache.n3 : {};
-    var n3 = {};
-    Object.keys(n3Source).forEach(function (key) {
-      n3[key] = n3Source[key];
+    ARCHIVE_ALIASES.forEach(function (alias) {
+      var characterSource = cache[alias] && typeof cache[alias] === 'object' ? cache[alias] : {};
+      var character = {};
+      Object.keys(characterSource).forEach(function (key) {
+        character[key] = characterSource[key];
+      });
+      character.s = normalizeCharacterStage(alias, characterSource.s);
+      cache[alias] = character;
     });
-    n3.x = normalizeN3ConquestLedger(n3Source.x);
-    cache.n3 = n3;
-    cache.e = normalizeEndingState(sourceCache.e, relationshipDecreeFound);
-    cache.f = normalizeAffectionEventState(sourceCache.f);
-    cache.g = normalizeInsightEventState(sourceCache.g);
+    cache.n3.x = normalizeN3ConquestLedger(cache.n3.x);
+    cache.q = normalizeEndingState(sourceCache.q, relationshipDecreeFound);
+
+    // v11 仅在这一处读取旧 f/g/e，合并到阶段状态后立即删除旧根。
+    var legacyArchive = sourceCache.f && typeof sourceCache.f === 'object' ? sourceCache.f : {};
+    var legacyInsight = sourceCache.g && typeof sourceCache.g === 'object' ? sourceCache.g : {};
+    var legacyEnding = sourceCache.e && typeof sourceCache.e === 'object' ? sourceCache.e : {};
+    ['n1', 'n2', 'n3'].forEach(function (alias) {
+      if (legacyArchive[alias] === true) cache[alias].s.b = Math.max(cache[alias].s.b, 2);
+      if (legacyInsight[alias] === true) cache[alias].s.b = Math.max(cache[alias].s.b, 4);
+      if (legacyEnding.c && legacyEnding.c[alias] === true) cache[alias].s.c = 1;
+    });
+    if (legacyArchive.n4 === true) cache.n4.s.b = Math.max(cache.n4.s.b, 2);
+    if (legacyEnding.p === true) cache.n4.s.t = Math.max(cache.n4.s.t, 2);
+    var migratedEnding = normalizeEndingState(legacyEnding, false);
+    cache.q.h = cache.q.h || migratedEnding.h;
+    cache.q.t = cache.q.t || migratedEnding.t;
+    cache.q.v = cache.q.v || migratedEnding.v;
+    if (!cache.q.r && migratedEnding.r) cache.q.r = migratedEnding.r;
+    cache.q.d = cache.q.d || migratedEnding.d;
+    delete cache.f;
+    delete cache.g;
+    delete cache.e;
     cache.p = normalizeInsightProjection(sourceCache.p);
+    restoreUnauthorizedStageChanges(cache, system['_最近互动请求'], system['_当前天数']);
+    latchStages(cache, system['_当前天数']);
+    // 完整遗书与私下坦白已经改变玩家掌握的证据，因此即使尚未向
+    // 其余三人公开（q.v=false），玩家侧王可可人设也立即进入真相阶段。
+    if (cache.n4.s.t >= 2 || cache.q.v === true) cache.n4.s.k = 2;
     system.internal = cache;
     delete system['_校验缓存'];
     return system;
+  }
+
+  function copyProjectionItem(target, source, fields) {
+    var output = target && typeof target === 'object' ? target : { m: '', a: [] };
+    var candidate = source && typeof source === 'object' ? source : {};
+    if (fields.m === true && typeof candidate.m === 'string') output.m = candidate.m;
+    if (fields.a === true && Array.isArray(candidate.a)) {
+      output.a = candidate.a.filter(function (entry) { return typeof entry === 'string'; }).slice(0, 3);
+    }
+    return output;
+  }
+
+  function hasCompleteConfessions(hidden) {
+    return ['n1', 'n2', 'n3'].every(function (alias) {
+      return hidden && hidden[alias] && hidden[alias].s && hidden[alias].s.c === 1;
+    });
+  }
+
+  /*
+   * 对一次生成的额外模型结果执行宿主裁决。
+   * baselineVariables 是生成开始前仅存在于宿主内存中的完整快照，不写入 MVU。
+   * 普通 m/a/r 等剧情状态仍可演化；流程阶段、终局叶与安全投影只放行本轮
+   * 冻结门控明确授权的变化。
+   */
+  function reconcileGeneratedVariables(candidateVariables, baselineVariables, chatName) {
+    var baseline = initializeVariables(baselineVariables, chatName);
+    var candidate = candidateVariables && typeof candidateVariables === 'object' ? candidateVariables : {};
+    var output = {};
+    Object.keys(candidate).forEach(function (key) { output[key] = candidate[key]; });
+
+    var baselineSystem = baseline['系统'] && typeof baseline['系统'] === 'object' ? baseline['系统'] : {};
+    var candidateSystem = candidate['系统'] && typeof candidate['系统'] === 'object' ? copySystem(candidate['系统']) : {};
+    // 冻结门控本身属于宿主请求，不接受模型改目标、改基线或改授权动作。
+    // 唯一允许的状态变化是宿主在确认生成成功后把同一请求置为已完成。
+    var frozenRequest = cloneInteractionRequest(baselineSystem['_最近互动请求']);
+    var candidateRequest = cloneInteractionRequest(candidateSystem['_最近互动请求']);
+    if (frozenRequest && candidateRequest
+      && frozenRequest['状态'] === '待生成' && candidateRequest['状态'] === '已完成'
+      && frozenRequest['角色'] === candidateRequest['角色']
+      && frozenRequest['方式'] === candidateRequest['方式']) {
+      frozenRequest['状态'] = '已完成';
+    }
+    candidateSystem['_最近互动请求'] = frozenRequest;
+    var baselineHidden = baselineSystem.internal && typeof baselineSystem.internal === 'object' ? baselineSystem.internal : {};
+    var candidateHidden = candidateSystem.internal && typeof candidateSystem.internal === 'object' ? candidateSystem.internal : {};
+    var protectedHidden = {};
+
+    Object.keys(candidateHidden).forEach(function (key) { protectedHidden[key] = candidateHidden[key]; });
+    ARCHIVE_ALIASES.forEach(function (alias) {
+      var candidateCharacter = candidateHidden[alias] && typeof candidateHidden[alias] === 'object'
+        ? candidateHidden[alias]
+        : {};
+      var nextCharacter = {};
+      Object.keys(candidateCharacter).forEach(function (key) { nextCharacter[key] = candidateCharacter[key]; });
+      nextCharacter.s = normalizeCharacterStage(alias, baselineHidden[alias] && baselineHidden[alias].s);
+      protectedHidden[alias] = nextCharacter;
+    });
+
+    var request = baselineSystem['_最近互动请求'];
+    var gate = request && request['状态'] === '待生成' ? normalizeContentGate(request['内容门控']) : null;
+    var targetAlias = gate && ARCHIVE_ALIAS_BY_NAME[String(request['角色'] || '')] || '';
+    var validGate = gate && gate['版本'] === 2 && targetAlias && gate['角色'] === targetAlias;
+    if (validGate) {
+      var rawStage = normalizeCharacterStage(targetAlias, candidateHidden[targetAlias] && candidateHidden[targetAlias].s);
+      var nextStage = protectedHidden[targetAlias].s;
+      var baselineStage = gate['基线'];
+      if (targetAlias === 'n4') {
+        if (gate['授权动作'] === 'photo' && baselineStage.b === 1 && rawStage.b === 2) nextStage.b = 2;
+        if (gate['授权动作'] === 'testament' && baselineStage.t === 1 && rawStage.t === 2) nextStage.t = 2;
+        // n4.s.x 永远不接受模型申请。
+        nextStage.x = normalizeCharacterStage('n4', baselineHidden.n4 && baselineHidden.n4.s).x;
+        nextStage.k = normalizeCharacterStage('n4', baselineHidden.n4 && baselineHidden.n4.s).k;
+      } else {
+        if (gate['授权动作'] === 'archive' && baselineStage.b === 1 && rawStage.b === 2) nextStage.b = 2;
+        if (gate['授权动作'] === 'insight' && baselineStage.b === 3 && rawStage.b === 4) nextStage.b = 4;
+        if (gate['忏悔机会'] === true && baselineStage.c === 0 && rawStage.c === 1) nextStage.c = 1;
+      }
+    }
+
+    var baselineEnding = normalizeEndingState(baselineHidden.q, false);
+    protectedHidden.q = baselineEnding;
+    protectedHidden.p = normalizeInsightProjection(baselineHidden.p);
+    delete protectedHidden.f;
+    delete protectedHidden.g;
+    delete protectedHidden.e;
+    candidateSystem.internal = protectedHidden;
+    delete candidateSystem['_校验缓存'];
+    output['系统'] = candidateSystem;
+
+    // 此处统一完成关系法令扫描、好感阈值锁存、照片错过锁与遗书待触发锁。
+    output = initializeVariables(output, chatName);
+    var reconciledSystem = output['系统'];
+    var reconciledHidden = reconciledSystem.internal;
+    var rawEnding = normalizeEndingState(candidateHidden.q, false);
+
+    // q.h 只由已广播规则扫描继承；q.t/q.v 只允许在已有关系法令的可见互动后
+    // 单向置真。公开坦白还必须建立在三人均已真实忏悔之上。
+    if (reconciledHidden.q.h === true) {
+      var completeConfessions = hasCompleteConfessions(reconciledHidden);
+      var publicRevealAuthorized = baselineEnding.h === true
+        && baselineEnding.v !== true
+        && hasCompleteConfessions(baselineHidden)
+        && !(validGate && targetAlias === 'n4' && gate['授权动作'] === 'testament');
+      var truthSupport = reconciledHidden.n4.s.t === 2
+        || completeConfessions
+        || (validGate && (gate['忏悔机会'] === true || gate['授权动作'] === 'insight'));
+      if (baselineEnding.t === true || (rawEnding.t === true && truthSupport)) reconciledHidden.q.t = true;
+      if (baselineEnding.v === true || (rawEnding.v === true && completeConfessions && publicRevealAuthorized)) {
+        reconciledHidden.q.v = true;
+        reconciledHidden.q.t = true;
+      }
+    }
+    reconciledHidden.q.r = baselineEnding.r;
+    reconciledHidden.q.d = baselineEnding.d;
+    latchKekePersonaStage(output);
+
+    // p 不是第二份真相源，只是已完成能力的中文安全投影。未完成能力、错误
+    // 角色或错字段的申请全部恢复基线；已完成能力允许后续持续刷新其授权范围。
+    var rawProjection = normalizeInsightProjection(candidateHidden.p);
+    var projection = normalizeInsightProjection(baselineHidden.p);
+    // b>=2/t>=1 时允许额外变量层预先维护安全中文投影；这只减少能力
+    // 解锁瞬间的空窗。getSnapshot 仍严格到 b=4/t=2 才向普通前端消费。
+    if (reconciledHidden.n1.s.b >= 2) {
+      projection.n1 = copyProjectionItem(projection.n1, rawProjection.n1, { m: true, a: true });
+      projection.n2 = copyProjectionItem(projection.n2, rawProjection.n2, { m: true });
+      projection.n3 = copyProjectionItem(projection.n3, rawProjection.n3, { m: true });
+    }
+    if (reconciledHidden.n2.s.b >= 2) {
+      projection.n2 = copyProjectionItem(projection.n2, rawProjection.n2, { m: true, a: true });
+      projection.n1 = copyProjectionItem(projection.n1, rawProjection.n1, { a: true });
+      projection.n3 = copyProjectionItem(projection.n3, rawProjection.n3, { a: true });
+    }
+    if (reconciledHidden.n3.s.b >= 2) {
+      projection.n3 = copyProjectionItem(projection.n3, rawProjection.n3, { m: true, a: true });
+    }
+    if (reconciledHidden.n4.s.t >= 1) {
+      projection.n4 = copyProjectionItem(projection.n4, rawProjection.n4, { m: true, a: true });
+    }
+    reconciledHidden.p = projection;
+    repairEndingPresentation(reconciledSystem);
+    return output;
   }
 
   function isAtLeast(value, threshold) {
@@ -1792,11 +2079,14 @@
 
   function decideEndingRoute(cache) {
     var source = cache && typeof cache === 'object' ? cache : {};
-    var ending = source.e && typeof source.e === 'object' ? source.e : normalizeEndingState({}, false);
+    var ending = source.q && typeof source.q === 'object' ? source.q : normalizeEndingState({}, false);
     if (ending.h !== true) {
       return 'A';
     }
-    var complete = ending.t === true && ending.c.n1 === true && ending.c.n2 === true && ending.c.n3 === true;
+    var complete = ending.t === true
+      && source.n1 && source.n1.s && source.n1.s.c === 1
+      && source.n2 && source.n2.s && source.n2.s.c === 1
+      && source.n3 && source.n3.s && source.n3.s.c === 1;
     var n4 = source.n4 && source.n4.r ? source.n4.r : {};
     var kekeReconcilesWithEveryone = isAtLeast(n4.n1, 80) && isAtLeast(n4.n2, 80) && isAtLeast(n4.n3, 80) && isAtLeast(n4.u, 80);
     if (complete && kekeReconcilesWithEveryone) {
@@ -1808,10 +2098,10 @@
     return 'B';
   }
 
-  function buildEndingDisplay(ending) {
+  function buildEndingDisplay(ending, cache) {
     var confessors = [];
     Object.keys(ENDING_NAMES).forEach(function (alias) {
-      if (ending.c[alias] === true) {
+      if (cache && cache[alias] && cache[alias].s && cache[alias].s.c === 1) {
         confessors.push(ENDING_NAMES[alias]);
       }
     });
@@ -1830,10 +2120,10 @@
 
   function repairEndingPresentation(system) {
     var cache = system.internal;
-    var ending = cache && cache.e;
+    var ending = cache && cache.q;
     var isFinal = system['_每日阶段'] === '终局' && (normalizeDay(system['_当前天数']) === DAYS || ending && ending.r === 'E');
     if (isFinal && ending && ending.d === true && ENDING_TITLES[ending.r]) {
-      system['结局展示'] = buildEndingDisplay(ending);
+      system['结局展示'] = buildEndingDisplay(ending, cache);
     } else {
       delete system['结局展示'];
     }
@@ -1843,7 +2133,7 @@
   function finalizeEnding(system) {
     repairEndingCache(system, false);
     var cache = system.internal;
-    var ending = cache.e;
+    var ending = cache.q;
     if (ending.d !== true) {
       ending.r = decideEndingRoute(cache);
       ending.d = true;
@@ -1875,7 +2165,7 @@
     });
     var system = copySystem(current['系统'] && typeof current['系统'] === 'object' ? current['系统'] : {});
     repairEndingCache(system, hasRelationshipDecree(current));
-    var ending = system.internal && system.internal.e;
+    var ending = system.internal && system.internal.q;
     if (system['_每日阶段'] === '终局' && (normalizeDay(system['_当前天数']) === DAYS || ending && ending.r === 'E')) {
       finalizeEnding(system);
     } else {
@@ -1888,12 +2178,12 @@
   function getEndingDisplay(source) {
     var system = getSystem(source);
     var cache = system.internal;
-    var ending = cache && cache.e;
+    var ending = cache && cache.q;
     var isFinal = system['_每日阶段'] === '终局' && (normalizeDay(system['_当前天数']) === DAYS || ending && ending.r === 'E');
     if (!isFinal || !ending || ending.d !== true || !ENDING_TITLES[ending.r]) {
       return null;
     }
-    return buildEndingDisplay(normalizeEndingState(ending, false));
+    return buildEndingDisplay(normalizeEndingState(ending, false), cache);
   }
 
   function repairDailyState(current, next) {
@@ -1901,7 +2191,7 @@
     var decreeBroadcast = current['_今日法令已广播'] === true;
     var phase = current['_每日阶段'];
 
-    var cachedEnding = current.internal && current.internal.e;
+    var cachedEnding = current.internal && current.internal.q;
     var emergencyEnding = phase === '终局' && cachedEnding && cachedEnding.r === 'E' && cachedEnding.d === true;
     if (emergencyEnding) {
       decreeBroadcast = false;
@@ -2277,8 +2567,20 @@
       next[key] = current[key];
     });
 
-    next['系统'] = initializeSystem(current['系统'], chatName);
-    return syncComplianceState(syncEndingState(next));
+    var system = initializeSystem(current['系统'], chatName);
+    if (hasRelationshipDecree(next)) {
+      system.internal.q.h = true;
+      latchStages(system.internal, system['_当前天数']);
+    }
+    var ending = system.internal && system.internal.q;
+    if (system['_每日阶段'] === '终局' && (normalizeDay(system['_当前天数']) === DAYS || ending && ending.r === 'E')) {
+      finalizeEnding(system);
+    } else {
+      repairEndingPresentation(system);
+    }
+    next['系统'] = system;
+    latchKekePersonaStage(next);
+    return syncComplianceState(next);
   }
 
   function setCurrentDay(existingSystem, day) {
@@ -2298,6 +2600,7 @@
     next['_国王次数'] = derived['_国王次数'];
     next['_法令履行会议'] = createComplianceMeeting(derived['_当前天数'], '未开放', 0, '');
     next['_可过夜'] = false;
+    repairEndingCache(next, false);
     return repairEndingPresentation(next);
   }
 
@@ -2319,6 +2622,34 @@
     var current = requireInitializedSystem(existingSystem);
     if (current['_每日阶段'] === '夜间' || current['_每日阶段'] === '终局') {
       throw new Error('当前阶段不能颁布法令');
+    }
+
+    var next = copySystem(current);
+    // 法令是两阶段事务：此处只记录“即将生成并广播”。
+    // 未知的法令正文尚未由模型写入，因此不能提前宣称已广播或开放大厅。
+    // 这也使第10日分支世界书能在发送输入框前保持开启。
+    next['_今日法令已广播'] = false;
+    next['_每日阶段'] = '待颁布法令';
+    next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
+    next['_玩家已互动角色'] = normalizePlayerInteractions(current['_玩家已互动角色']);
+    next['_最近互动请求'] = cloneInteractionRequest(current['_最近互动请求']);
+    next['_法令履行会议'] = createComplianceMeeting(current['_当前天数'], '未开放', 0, '');
+    next['_可过夜'] = false;
+
+    // 只有“王可可已经被宿主确定为本日国王，且玩家实际提交了
+    // 颁布动作”才允许在生成前预置她的嫉妒误读阶段。单纯抽中国王不触发。
+    // 若发送或生成未开始，前端事务会将这个预置与世界书一起回滚。
+    if (next['_当前国王'] === '王可可') {
+      repairEndingCache(next, false);
+      if (next.internal.n4.s.k < 1) next.internal.n4.s.k = 1;
+    }
+    return next;
+  }
+
+  function resolveDecree(existingSystem) {
+    var current = requireInitializedSystem(existingSystem);
+    if (current['_每日阶段'] === '夜间' || current['_每日阶段'] === '终局') {
+      throw new Error('当前阶段不能完成法令广播');
     }
 
     var next = copySystem(current);
@@ -2354,8 +2685,8 @@
 
     if (strikes >= 2) {
       repairEndingCache(next, false);
-      next.internal.e.r = 'E';
-      next.internal.e.d = true;
+      next.internal.q.r = 'E';
+      next.internal.q.d = true;
       next['_每日阶段'] = '终局';
     }
     return repairEndingPresentation(next);
@@ -2398,7 +2729,7 @@
       '方式': normalizedMethod,
       '补全对象': completionTargets,
       '状态': '待生成',
-      '档案门控': buildArchiveGate(current, roleName)
+      '内容门控': buildContentGate(current, roleName)
     };
     var meeting = normalizeComplianceMeeting(
       current['_法令履行会议'],
@@ -2406,7 +2737,9 @@
       '自由互动',
       playerInteractions
     );
-    meeting['状态'] = playerInteractions.length === WOMEN.length ? '待召开' : '未开放';
+    // 任意一次个人互动都会使旧会议审计失效；会议本身始终是集体流程，
+    // 不会因此补全任何个人互动或女性矩阵边。
+    meeting['状态'] = '待召开';
     next['_法令履行会议'] = meeting;
     next['_可过夜'] = false;
     return next;
@@ -2433,14 +2766,11 @@
     return next;
   }
 
-  function beginComplianceMeeting(existingSystem, variables) {
+  function beginComplianceRound(existingSystem, variables, forced) {
     var current = requireInitializedSystem(existingSystem);
     var playerInteractions = normalizePlayerInteractions(current['_玩家已互动角色']);
     if (current['_每日阶段'] !== '自由互动' || current['_今日法令已广播'] !== true) {
       throw new Error('只有自由互动阶段可以召开法令履行会议');
-    }
-    if (playerInteractions.length !== WOMEN.length) {
-      throw new Error('与四名角色完成互动后才能召开法令履行会议');
     }
     var source = variables && typeof variables === 'object'
       ? variables
@@ -2452,18 +2782,29 @@
       current['_每日阶段'],
       playerInteractions
     );
+    if (forced === true && previous['状态'] !== '需补履行') {
+      throw new Error('只有会议已确认存在到期未完成法令时才能强迫性完成');
+    }
     var next = copySystem(current);
     next['_女性互动矩阵'] = normalizeInteractionMatrix(current['_女性互动矩阵']);
     next['_玩家已互动角色'] = playerInteractions;
     next['_最近互动请求'] = cloneInteractionRequest(current['_最近互动请求']);
     next['_法令履行会议'] = createComplianceMeeting(
       current['_当前天数'],
-      '待审计',
+      forced === true ? '强制执行' : '待审计',
       previous['轮次'] + 1,
       signature
     );
     next['_可过夜'] = false;
     return next;
+  }
+
+  function beginComplianceMeeting(existingSystem, variables) {
+    return beginComplianceRound(existingSystem, variables, false);
+  }
+
+  function beginForcedCompliance(existingSystem, variables) {
+    return beginComplianceRound(existingSystem, variables, true);
   }
 
   function beginOvernight(existingSystem) {
@@ -2546,8 +2887,9 @@
     var signature = complianceRuleSignature(source);
     var audit = complianceAuditResult(source, meeting, rules, signature);
     var canOpenMeeting = system['_每日阶段'] === '自由互动'
-      && normalizePlayerInteractions(system['_玩家已互动角色']).length === WOMEN.length
-      && meeting['状态'] !== '已通过';
+      && meeting['状态'] !== '已通过'
+      && meeting['状态'] !== '待审计'
+      && meeting['状态'] !== '强制执行';
     var snapshot = {
       '_日程已锁定': system['_日程已锁定'] === true,
       '_当前天数': derived ? derived['_当前天数'] : normalizeDay(system['_当前天数']),
@@ -2569,27 +2911,27 @@
     if (endingDisplay) {
       snapshot['结局展示'] = endingDisplay;
     }
-    if (system.internal && system.internal.e && system.internal.e.h === true) {
+    var hidden = system.internal && typeof system.internal === 'object' ? system.internal : {};
+    var stages = allStages(hidden);
+    if (hidden.q && hidden.q.h === true) {
       snapshot['_特殊档案已解锁'] = true;
     }
-    if (system.internal && system.internal.f && system.internal.f.n1 === true) {
+    if (stages.n1.b >= 2) {
       snapshot['_侦探日记已解锁'] = true;
     }
-    if (system.internal && system.internal.f && system.internal.f.n2 === true) {
+    if (stages.n2.b >= 2) {
       snapshot['_创业事迹已解锁'] = true;
     }
-    if (system.internal && system.internal.f && system.internal.f.n3 === true) {
+    if (stages.n3.b >= 2) {
       snapshot['_风流相册已解锁'] = true;
     }
-    if (system.internal && system.internal.f && system.internal.f.n4 === true) {
+    if (stages.n4.b >= 2) {
       snapshot['_姐妹合照已解锁'] = true;
     }
-    if (system.internal && system.internal.e && system.internal.e.p === true) {
+    if (stages.n4.t >= 2) {
       snapshot['_妹妹遗书已解锁'] = true;
     }
 
-    var hidden = system.internal && typeof system.internal === 'object' ? system.internal : {};
-    var insightFlags = normalizeInsightEventState(hidden.g);
     var insightProjection = normalizeInsightProjection(hidden.p);
 
     function publicRoleView(name, fields) {
@@ -2628,7 +2970,7 @@
       return view;
     }
 
-    if (insightFlags.n1) {
+    if (stages.n1.b >= 4) {
       snapshot['_侦探状态洞察'] = {
         '林安': privateRoleView('n1', { m: true, a: true, r: true }),
         '穆裳希': privateRoleView('n2', { m: true }),
@@ -2636,7 +2978,7 @@
         '王可可': publicRoleView('王可可', { m: true })
       };
     }
-    if (insightFlags.n2) {
+    if (stages.n2.b >= 4) {
       snapshot['_商人远见洞察'] = {
         '林安': privateRoleView('n1', { a: true }),
         '穆裳希': privateRoleView('n2', { m: true, a: true, r: true }),
@@ -2644,7 +2986,7 @@
         '王可可': publicRoleView('王可可', { a: true })
       };
     }
-    if (insightFlags.n3) {
+    if (stages.n3.b >= 4) {
       snapshot['_情场王子洞察'] = {
         '林安': privateRoleView('n1', { r: true }),
         '穆裳希': privateRoleView('n2', { r: true }),
@@ -2652,7 +2994,7 @@
         '王可可': publicRoleView('王可可', { r: true })
       };
     }
-    if (hidden.e && hidden.e.p === true) {
+    if (stages.n4.t >= 2) {
       snapshot['_可可信任洞察'] = privateRoleView('n4', { m: true, a: true, r: true });
     }
 
@@ -2676,16 +3018,19 @@
     getActiveDecreeSignature: complianceRuleSignature,
     initializeSystem: initializeSystem,
     initializeVariables: initializeVariables,
+    reconcileGeneratedVariables: reconcileGeneratedVariables,
     syncEndingState: syncEndingState,
     syncComplianceState: syncComplianceState,
     getEndingDisplay: getEndingDisplay,
     prepareDecree: prepareDecree,
     setCurrentDay: setCurrentDay,
     beginDecree: beginDecree,
+    resolveDecree: resolveDecree,
     rejectImpossiblePlayerDecree: rejectImpossiblePlayerDecree,
     submitInteraction: submitInteraction,
     resolveInteraction: resolveInteraction,
     beginComplianceMeeting: beginComplianceMeeting,
+    beginForcedCompliance: beginForcedCompliance,
     beginOvernight: beginOvernight,
     startNextDay: startNextDay,
     advanceDay: advanceDay,
@@ -2696,9 +3041,10 @@
 <script>(function () {
   'use strict';
 
-  var INITIAL_STATE = {"系统":{"_版本":10,"_日程已锁定":false,"_当前天数":1,"_当前国王":"","_国王次数":{"玩家":0,"林安":0,"穆裳希":0,"张曲溪":0,"王可可":0},"_每日阶段":"待颁布法令","_今日法令已广播":false,"_女性互动矩阵":{"林安":{"林安":true,"穆裳希":false,"张曲溪":false,"王可可":false},"穆裳希":{"林安":false,"穆裳希":true,"张曲溪":false,"王可可":false},"张曲溪":{"林安":false,"穆裳希":false,"张曲溪":true,"王可可":false},"王可可":{"林安":false,"穆裳希":false,"张曲溪":false,"王可可":true}},"_玩家已互动角色":[],"_最近互动请求":null,"_法令履行会议":{"日期":1,"轮次":0,"状态":"未开放","规则签名":""},"_可过夜":false,"玩家主观认知":{"林安":["她自称自由侦探，性格大大咧咧，对眼前的小说式展开明显兴奋","她醒来后既慌乱又好奇，目前没有表现出复杂心机"],"穆裳希":["她是企业创办人与经营者，习惯控制表情和局面","她醒来后首先怀疑唯一男性玩家，但紧张和手抖并未完全藏住"],"张曲溪":["她是外表英气、体格强健的女大学生","她醒来后对所有人保持距离，目前最明显的是警惕和质疑"],"王可可":["她公开身份是高中女教师，醒来时有真实可见的惊慌","她试图调停互疑并维持秩序，目前看不出比其他人掌握更多信息"]},"当前时间":"第1日 08:10","当前地点":"个人房间","当前阶段":"等待法令","公开线索":[]},"玩家":{"颁布规则":[]},"角色":{"林安":{"信息":{"年龄":25,"公开身份":"自诩女侦探的无业家里蹲"},"状态":{"身体":"正常，刚从熟睡中醒来","当前行动":"循着广播声检查墙面与扬声器"},"上衣":{"衣着":"棕色猎鹿帽、格纹短披肩与米白衬衫","肉体":"上半身无明显外伤，脸侧留有贴桌熟睡的浅印"},"下衣":{"衣着":"深棕灯芯绒马裤与系带短靴","肉体":"下半身活动正常，无明显外伤"},"心理":"完了，我刚才是不是把桌子舔干净了……旁边那个人应该没看见吧？等等，自由侦探怎么就成“自居”了？","行动倾向":["检查录音来源","勘查环境"],"颁布规则":[],"关系":{"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":3}}},"穆裳希":{"信息":{"年龄":27,"公开身份":"企业创办人与经营者"},"状态":{"身体":"正常，情绪高度紧绷","当前行动":"记录广播内容并观察房间设施"},"上衣":{"衣着":"炭黑修身西装与暗红丝质上衣","肉体":"呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红"},"下衣":{"衣着":"同色西装长裤与黑色尖头短靴","肉体":"站姿稳定，下半身无明显外伤"},"心理":"连公益项目都翻过。公司里有谁碰得到这么完整的资料？那个男人也不能排除……该死，手怎么还在抖。","行动倾向":["监视玩家动向","核对环境线索"],"颁布规则":[],"关系":{"林安":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-8}}},"张曲溪":{"信息":{"年龄":22,"公开身份":"长发高马尾的英气女大学生"},"状态":{"身体":"正常，肌肉线条饱满","当前行动":"守住安全距离并观察出口与广播设施"},"上衣":{"衣着":"暗绿短款大学棒球夹克与黑色圆领上衣","肉体":"肩背与前臂活动正常，无明显伤口、红肿或疼痛反应"},"下衣":{"衣着":"深色工装长裤与运动鞋","肉体":"双腿活动正常，无明显伤口或红肿"},"心理":"“王子”……连这种破外号都知道。到底是谁把我翻得这么干净？","行动倾向":["防备录音者","守住安全距离"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-2}}},"王可可":{"信息":{"年龄":32,"公开身份":"高中女教师"},"状态":{"身体":"正常，刚苏醒时呼吸略急","当前行动":"调停互疑并提议先核对广播与环境"},"上衣":{"衣着":"浅蓝针织开衫与象牙白衬衫","肉体":"双肩略紧，按在项圈边缘的指尖微凉"},"下衣":{"衣着":"烟灰色过膝百褶裙与浅口皮鞋","肉体":"步态正常，无明显外伤"},"心理":"学生那边不会也被盯上了吧……别抖，至少让大家把这段录音听完。","行动倾向":["调停冲突","组织环境检查"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"玩家":{"好感度":8}}}}};
+  var INITIAL_STATE = {"系统":{"_版本":12,"_日程已锁定":false,"_当前天数":1,"_当前国王":"","_国王次数":{"玩家":0,"林安":0,"穆裳希":0,"张曲溪":0,"王可可":0},"_每日阶段":"待颁布法令","_今日法令已广播":false,"_女性互动矩阵":{"林安":{"林安":true,"穆裳希":false,"张曲溪":false,"王可可":false},"穆裳希":{"林安":false,"穆裳希":true,"张曲溪":false,"王可可":false},"张曲溪":{"林安":false,"穆裳希":false,"张曲溪":true,"王可可":false},"王可可":{"林安":false,"穆裳希":false,"张曲溪":false,"王可可":true}},"_玩家已互动角色":[],"_最近互动请求":null,"_法令履行会议":{"日期":1,"轮次":0,"状态":"未开放","规则签名":""},"_可过夜":false,"玩家主观认知":{"林安":["她自称自由侦探，性格大大咧咧，对眼前的小说式展开明显兴奋","她醒来后既慌乱又好奇，目前没有表现出复杂心机"],"穆裳希":["她是企业创办人与经营者，习惯控制表情和局面","她醒来后首先怀疑唯一男性玩家，但紧张和手抖并未完全藏住"],"张曲溪":["她是外表英气、体格强健的女大学生","她醒来后对所有人保持距离，目前最明显的是警惕和质疑"],"王可可":["她公开身份是高中女教师，醒来时有真实可见的惊慌","她试图调停互疑并维持秩序，目前看不出比其他人掌握更多信息"]},"当前时间":"第1日 08:10","当前地点":"个人房间","当前阶段":"等待法令","公开线索":[]},"玩家":{"颁布规则":[]},"角色":{"林安":{"信息":{"年龄":25,"公开身份":"自诩女侦探的无业家里蹲"},"状态":{"身体":"正常，刚从熟睡中醒来","当前行动":"循着广播声检查墙面与扬声器"},"上衣":{"衣着":"棕色猎鹿帽、格纹短披肩与米白衬衫","肉体":"上半身无明显外伤，脸侧留有贴桌熟睡的浅印"},"下衣":{"衣着":"深棕灯芯绒马裤与系带短靴","肉体":"下半身活动正常，无明显外伤"},"心理":"完了，我刚才是不是把桌子舔干净了……旁边那个人应该没看见吧？等等，自由侦探怎么就成“自居”了？","行动倾向":["检查录音来源","勘查环境"],"颁布规则":[],"关系":{"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":3}}},"穆裳希":{"信息":{"年龄":27,"公开身份":"企业创办人与经营者"},"状态":{"身体":"正常，情绪高度紧绷","当前行动":"记录广播内容并观察房间设施"},"上衣":{"衣着":"炭黑修身西装与暗红丝质上衣","肉体":"呼吸已恢复平稳，手腕有刚被项圈摩擦过的浅红"},"下衣":{"衣着":"同色西装长裤与黑色尖头短靴","肉体":"站姿稳定，下半身无明显外伤"},"心理":"连公益项目都翻过。公司里有谁碰得到这么完整的资料？那个男人也不能排除……该死，手怎么还在抖。","行动倾向":["监视玩家动向","核对环境线索"],"颁布规则":[],"关系":{"林安":{"好感度":0},"张曲溪":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-8}}},"张曲溪":{"信息":{"年龄":22,"公开身份":"长发高马尾的英气女大学生"},"状态":{"身体":"正常，肌肉线条饱满","当前行动":"守住安全距离并观察出口与广播设施"},"上衣":{"衣着":"暗绿短款大学棒球夹克与黑色圆领上衣","肉体":"肩背与前臂活动正常，无明显伤口、红肿或疼痛反应"},"下衣":{"衣着":"深色工装长裤与运动鞋","肉体":"双腿活动正常，无明显伤口或红肿"},"心理":"“王子”……连这种破外号都知道。到底是谁把我翻得这么干净？","行动倾向":["防备录音者","守住安全距离"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"王可可":{"好感度":0},"玩家":{"好感度":-2}}},"王可可":{"信息":{"年龄":32,"公开身份":"高中女教师"},"状态":{"身体":"正常，刚苏醒时呼吸略急","当前行动":"调停互疑并提议先核对广播与环境"},"上衣":{"衣着":"浅蓝针织开衫与象牙白衬衫","肉体":"双肩略紧，按在项圈边缘的指尖微凉"},"下衣":{"衣着":"烟灰色过膝百褶裙与浅口皮鞋","肉体":"步态正常，无明显外伤"},"心理":"学生那边不会也被盯上了吧……别抖，至少让大家把这段录音听完。","行动倾向":["调停冲突","组织环境检查"],"颁布规则":[],"关系":{"林安":{"好感度":0},"穆裳希":{"好感度":0},"张曲溪":{"好感度":0},"玩家":{"好感度":8}}}}};
   var EXPECTED_CARD_NAME = "读心术者的匿名国王游戏（louisHM制作·完全免费）";
   var EXPECTED_WORLD_BOOK_NAME = "读心术者的匿名国王游戏（louisHM制作·完全免费）";
+  var STAGE_ENTRY_RULES = [{"name":"[mvu_plot][STAGE-N1-ACTION-A]","kind":"stage","role":"n1","track":"b","values":[1]},{"name":"[mvu_update][STAGE-N1-SETTLE-A]","kind":"stage","role":"n1","track":"b","values":[1]},{"name":"[mvu_plot][STAGE-N1-KNOWN-A]","kind":"stage","role":"n1","track":"b","values":[2,3,4]},{"name":"[mvu_plot][STAGE-N1-ACTION-B]","kind":"stage","role":"n1","track":"b","values":[3]},{"name":"[mvu_update][STAGE-N1-SETTLE-B]","kind":"stage","role":"n1","track":"b","values":[2,3,4]},{"name":"[mvu_plot][STAGE-N1-KNOWN-B]","kind":"stage","role":"n1","track":"b","values":[4]},{"name":"[mvu_plot][STAGE-N2-ACTION-A]","kind":"stage","role":"n2","track":"b","values":[1]},{"name":"[mvu_update][STAGE-N2-SETTLE-A]","kind":"stage","role":"n2","track":"b","values":[1]},{"name":"[mvu_plot][STAGE-N2-KNOWN-A]","kind":"stage","role":"n2","track":"b","values":[2,3,4]},{"name":"[mvu_plot][STAGE-N2-ACTION-B]","kind":"stage","role":"n2","track":"b","values":[3]},{"name":"[mvu_update][STAGE-N2-SETTLE-B]","kind":"stage","role":"n2","track":"b","values":[2,3,4]},{"name":"[mvu_plot][STAGE-N2-KNOWN-B]","kind":"stage","role":"n2","track":"b","values":[4]},{"name":"[mvu_plot][STAGE-N3-ACTION-A]","kind":"stage","role":"n3","track":"b","values":[1]},{"name":"[mvu_update][STAGE-N3-SETTLE-A]","kind":"stage","role":"n3","track":"b","values":[1]},{"name":"[mvu_plot][STAGE-N3-KNOWN-A]","kind":"stage","role":"n3","track":"b","values":[2,3,4]},{"name":"[mvu_plot][STAGE-N3-ACTION-B]","kind":"stage","role":"n3","track":"b","values":[3]},{"name":"[mvu_update][STAGE-N3-SETTLE-B]","kind":"stage","role":"n3","track":"b","values":[2,3,4]},{"name":"[mvu_plot][STAGE-N3-KNOWN-B]","kind":"stage","role":"n3","track":"b","values":[4]},{"name":"[mvu_plot][STAGE-N4-ACTION-A]","kind":"stage","role":"n4","track":"b","values":[1],"require":{"x":0,"dayMaxExclusive":10}},{"name":"[mvu_update][STAGE-N4-SETTLE-A]","kind":"stage","role":"n4","track":"b","values":[1],"require":{"x":0,"dayMaxExclusive":10}},{"name":"[mvu_plot][STAGE-N4-KNOWN-A]","kind":"stage","role":"n4","track":"b","values":[2]},{"name":"[mvu_plot][STAGE-N4-ACTION-B]","kind":"stage","role":"n4","track":"t","values":[1]},{"name":"[mvu_update][STAGE-N4-SETTLE-B]","kind":"stage","role":"n4","track":"t","values":[1,2]},{"name":"[mvu_plot][STAGE-N4-KNOWN-B]","kind":"stage","role":"n4","track":"t","values":[2]},{"name":"[mvu_update][STAGE-N4-PERSONA-0]","kind":"stage","role":"n4","track":"k","values":[0]},{"name":"[mvu_update][STAGE-N4-PERSONA-1]","kind":"stage","role":"n4","track":"k","values":[1]},{"name":"[mvu_update][STAGE-N4-PERSONA-2]","kind":"stage","role":"n4","track":"k","values":[2]},{"name":"[mvu_plot][FLOW-DAY10-H]","kind":"day10_h"},{"name":"[mvu_plot][FLOW-DAY10-EXTREME]","kind":"day10_extreme"},{"name":"[mvu_plot][FLOW-H-ACTIVE]","kind":"h_active"},{"name":"[mvu_plot][FLOW-CONFESSION-READY-N1]","kind":"confession_ready","role":"n1"},{"name":"[mvu_plot][FLOW-CONFESSION-READY-N2]","kind":"confession_ready","role":"n2"},{"name":"[mvu_plot][FLOW-CONFESSION-READY-N3]","kind":"confession_ready","role":"n3"},{"name":"[mvu_plot][FLOW-REVEAL-NOW]","kind":"reveal_now"},{"name":"[mvu_update][FLOW-REVEAL-SETTLE]","kind":"reveal_now"},{"name":"[mvu_plot][FLOW-REVEALED]","kind":"revealed"},{"name":"[mvu_plot][ENDING-A]","kind":"ending","route":"A"},{"name":"[mvu_plot][ENDING-B]","kind":"ending","route":"B"},{"name":"[mvu_plot][ENDING-C]","kind":"ending","route":"C"},{"name":"[mvu_plot][ENDING-D]","kind":"ending","route":"D"},{"name":"[mvu_plot][ENDING-E]","kind":"ending","route":"E"}];
   var LOCAL_PREVIEW = false;
   var listeners = [];
   var cachedState = null;
@@ -2925,19 +3271,6 @@
   }
 
   function currentMessageOption(host) {
-    try {
-      var owner = typeof host.getCurrentMessageId === 'function'
-        ? host
-        : (host.TavernHelper && typeof host.TavernHelper.getCurrentMessageId === 'function'
-          ? host.TavernHelper
-          : null);
-      var id = owner ? owner.getCurrentMessageId() : null;
-      if (id !== undefined && id !== null && id !== '') {
-        return { type: 'message', message_id: id };
-      }
-    } catch (error) {
-      // 某些宿主把前端放进全局 iframe；此时楼层接口会主动抛错。
-    }
     return { type: 'message', message_id: 'latest' };
   }
 
@@ -3174,6 +3507,304 @@
     return false;
   }
 
+  function stageStateSignature(state) {
+    var system = state && state['系统'] && typeof state['系统'] === 'object' ? state['系统'] : {};
+    var hidden = system.internal && typeof system.internal === 'object' ? system.internal : {};
+    var stages = {};
+    var relations = {};
+    ['n1', 'n2', 'n3', 'n4'].forEach(function (alias) {
+      var character = hidden[alias] && typeof hidden[alias] === 'object' ? hidden[alias] : {};
+      stages[alias] = clone(character.s && typeof character.s === 'object' ? character.s : {});
+    });
+    ['n1', 'n2', 'n3'].forEach(function (alias) {
+      var roleRelations = hidden[alias] && hidden[alias].r && typeof hidden[alias].r === 'object' ? hidden[alias].r : {};
+      relations[alias] = { u: Number(roleRelations.u) || 0, n4: Number(roleRelations.n4) || 0 };
+    });
+    var n4Relations = hidden.n4 && hidden.n4.r && typeof hidden.n4.r === 'object' ? hidden.n4.r : {};
+    relations.n4 = {
+      n1: Number(n4Relations.n1) || 0,
+      n2: Number(n4Relations.n2) || 0,
+      n3: Number(n4Relations.n3) || 0,
+      u: Number(n4Relations.u) || 0
+    };
+    var q = hidden.q && typeof hidden.q === 'object' ? hidden.q : {};
+    var request = system['_最近互动请求'] && typeof system['_最近互动请求'] === 'object' ? system['_最近互动请求'] : {};
+    var contentGate = request['内容门控'] && typeof request['内容门控'] === 'object' ? request['内容门控'] : {};
+    return JSON.stringify({
+      day: Number(system['_当前天数']) || 1,
+      king: String(system['_当前国王'] || ''),
+      broadcast: system['_今日法令已广播'] === true,
+      request: {
+        status: String(request['状态'] || ''),
+        version: Number(contentGate['版本']) || 0,
+        role: String(contentGate['角色'] || ''),
+        confession: contentGate['忏悔机会'] === true
+      },
+      s: stages,
+      q: { h: q.h === true, t: q.t === true, v: q.v === true, r: String(q.r || ''), d: q.d === true },
+      r: relations
+    });
+  }
+
+  function worldInfoEntries(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.entries)) return data.entries;
+    if (data && data.entries && typeof data.entries === 'object') return Object.keys(data.entries).map(function (key) { return data.entries[key]; });
+    if (data && typeof data === 'object') {
+      return Object.keys(data).map(function (key) { return data[key]; }).filter(function (entry) {
+        return entry && typeof entry === 'object' && (entry.comment !== undefined || entry.uid !== undefined);
+      });
+    }
+    return [];
+  }
+
+  function setWorldInfoEntryEnabled(entry, enabled) {
+    var nextEnabled = enabled === true;
+    var nextDisabled = !nextEnabled;
+    var changed = false;
+    if (entry.enabled !== nextEnabled) { entry.enabled = nextEnabled; changed = true; }
+    if (entry.disable !== nextDisabled) { entry.disable = nextDisabled; changed = true; }
+    if (entry.disabled !== nextDisabled) { entry.disabled = nextDisabled; changed = true; }
+    if (entry.extra && typeof entry.extra === 'object' && entry.extra.enabled !== nextEnabled) {
+      entry.extra.enabled = nextEnabled;
+      changed = true;
+    }
+    return changed;
+  }
+
+  function stageRuleEnabled(rule, state) {
+    var system = state && state['系统'] && typeof state['系统'] === 'object' ? state['系统'] : {};
+    var hidden = system.internal && typeof system.internal === 'object' ? system.internal : {};
+    var q = hidden.q && typeof hidden.q === 'object' ? hidden.q : {};
+    var kind = String(rule && rule.kind || 'stage');
+    var day = Number(system['_当前天数']) || 1;
+    var currentKing = String(system['_当前国王'] || '');
+    var n4Relations = hidden.n4 && hidden.n4.r && typeof hidden.n4.r === 'object' ? hidden.n4.r : {};
+    var day10RelationshipReady = ['n1', 'n2', 'n3', 'u'].some(function (target) {
+      return Number(n4Relations[target]) >= 50;
+    });
+    if (kind === 'day10_h') {
+      return day === 10 && currentKing === '王可可' && system['_今日法令已广播'] !== true && q.h !== true && day10RelationshipReady;
+    }
+    if (kind === 'day10_extreme') {
+      return day === 10 && currentKing === '王可可' && system['_今日法令已广播'] !== true && q.h !== true && !day10RelationshipReady;
+    }
+    if (kind === 'h_active') return q.h === true && q.v !== true;
+    if (kind === 'confession_ready') {
+      var confessionRole = String(rule.role || '');
+      if (['n1', 'n2', 'n3'].indexOf(confessionRole) < 0 || q.h !== true) return false;
+      var confessionRequest = system['_最近互动请求'] && typeof system['_最近互动请求'] === 'object' ? system['_最近互动请求'] : {};
+      var confessionGate = confessionRequest['内容门控'] && typeof confessionRequest['内容门控'] === 'object' ? confessionRequest['内容门控'] : {};
+      if (String(confessionRequest['状态'] || '') !== '待生成'
+        || Number(confessionGate['版本']) !== 2
+        || String(confessionGate['角色'] || '') !== confessionRole
+        || confessionGate['忏悔机会'] !== true) return false;
+      var confessionCharacter = hidden[confessionRole] && typeof hidden[confessionRole] === 'object' ? hidden[confessionRole] : {};
+      var confessionStage = confessionCharacter.s && typeof confessionCharacter.s === 'object' ? confessionCharacter.s : {};
+      var confessionRelations = confessionCharacter.r && typeof confessionCharacter.r === 'object' ? confessionCharacter.r : {};
+      return Number(confessionStage.c) === 0
+        && Math.max(Number(confessionRelations.u) || 0, Number(confessionRelations.n4) || 0) >= 50;
+    }
+    if (kind === 'reveal_now') {
+      return q.h === true && q.v !== true && ['n1', 'n2', 'n3'].every(function (alias) {
+        var characterStage = hidden[alias] && hidden[alias].s && typeof hidden[alias].s === 'object' ? hidden[alias].s : {};
+        return Number(characterStage.c) === 1;
+      });
+    }
+    if (kind === 'revealed') return q.v === true;
+    if (kind === 'ending') {
+      var route = String(rule.route || rule.value || '');
+      return q.d === true && String(q.r || '') === route;
+    }
+    if (kind !== 'stage') return false;
+    var character = hidden[rule.role] && typeof hidden[rule.role] === 'object' ? hidden[rule.role] : {};
+    var stage = character.s && typeof character.s === 'object' ? character.s : {};
+    var enabled = Array.isArray(rule.values) && rule.values.indexOf(Number(stage[rule.track])) >= 0;
+    var requirement = rule.require && typeof rule.require === 'object' ? rule.require : {};
+    if (requirement.x !== undefined && Number(stage.x) !== Number(requirement.x)) enabled = false;
+    if (requirement.dayMaxExclusive !== undefined && Number(system['_当前天数']) >= Number(requirement.dayMaxExclusive)) enabled = false;
+    return enabled;
+  }
+
+  async function importWorldInfoModule(host) {
+    if (host.__KING_GAME_WORLD_INFO_MODULE_PROMISE__) return host.__KING_GAME_WORLD_INFO_MODULE_PROMISE__;
+    host.__KING_GAME_WORLD_INFO_MODULE_PROMISE__ = (async function () {
+      var attempts = [
+        function () { return host.eval && host.eval("import('./scripts/world-info.js')"); },
+        function () { return host.eval && host.eval("import('/scripts/world-info.js')"); }
+      ];
+      for (var index = 0; index < attempts.length; index += 1) {
+        try {
+          var module = await attempts[index]();
+          if (module && typeof module.loadWorldInfo === 'function' && typeof module.saveWorldInfo === 'function') return module;
+        } catch (error) {}
+      }
+      throw new Error('无法加载 SillyTavern world-info.js');
+    })();
+    return host.__KING_GAME_WORLD_INFO_MODULE_PROMISE__;
+  }
+
+  async function applyStageEntryRules(state) {
+    if (!Array.isArray(STAGE_ENTRY_RULES) || !STAGE_ENTRY_RULES.length) return;
+    if (LOCAL_PREVIEW === true && !hasHostRuntime()) return;
+    var host = hostWindow();
+    var module = await importWorldInfoModule(host);
+    var data = await module.loadWorldInfo(EXPECTED_WORLD_BOOK_NAME);
+    var entries = worldInfoEntries(data);
+    var byComment = Object.create(null);
+    entries.forEach(function (entry) {
+      var comment = String(entry && entry.comment || '').trim();
+      if (comment) byComment[comment] = entry;
+    });
+    var missing = [];
+    var changed = false;
+    STAGE_ENTRY_RULES.forEach(function (rule) {
+      var entry = byComment[String(rule.name || '').trim()];
+      if (!entry) {
+        missing.push(rule.name);
+        return;
+      }
+      if (setWorldInfoEntryEnabled(entry, stageRuleEnabled(rule, state))) changed = true;
+    });
+    if (missing.length) throw new Error('世界书缺少阶段条目：' + missing.join('、'));
+    if (changed) {
+      await module.saveWorldInfo(EXPECTED_WORLD_BOOK_NAME, data, true);
+      if (typeof module.updateWorldInfoList === 'function') await module.updateWorldInfoList();
+    }
+  }
+
+  function queueStageEntrySync(stateProvider, force) {
+    var host = hostWindow();
+    var previous = host.__KING_GAME_STAGE_SYNC_PROMISE__ || Promise.resolve();
+    var task = previous.catch(function () {}).then(async function () {
+      var supplied = typeof stateProvider === 'function' ? await stateProvider() : stateProvider;
+      var latest = fillDefaults(supplied, INITIAL_STATE);
+      latest = window.KingGameState.initializeVariables(latest, chatName());
+      var signature = stageStateSignature(latest);
+      if (force !== true && host.__KING_GAME_STAGE_SYNC_LAST_SIGNATURE__ === signature) return latest;
+      await applyStageEntryRules(latest);
+      host.__KING_GAME_STAGE_SYNC_LAST_SIGNATURE__ = signature;
+      return latest;
+    });
+    host.__KING_GAME_STAGE_SYNC_PROMISE__ = task;
+    return task;
+  }
+
+  function syncStageEntriesFromLatest(force) {
+    return queueStageEntrySync(async function () {
+      var latestRecord = await readHostRecord();
+      return latestRecord.state;
+    }, force);
+  }
+
+  function syncStageEntriesForState(state, force) {
+    // 按钮事务不在写入后再猜 latest 是否已刷新：直接将刚刚
+    // 成功持久化的完整快照排入同一串行世界书队列。只有该快照
+    // 对应的所有灯态保存完成后，commitAction 才允许发送输入框。
+    var snapshot = clone(state);
+    return queueStageEntrySync(snapshot, force);
+  }
+
+  function nativeStageSyncEventNames(host) {
+    var events = host && host.tavern_events && typeof host.tavern_events === 'object' ? host.tavern_events : {};
+    var groups = {
+      selection: [events.MESSAGE_SWIPED, 'message_swiped'],
+      mutation: [
+        events.MESSAGE_UPDATED, 'message_updated',
+        events.MESSAGE_EDITED, 'message_edited',
+        events.MESSAGE_DELETED, 'message_deleted'
+      ],
+      chat: [events.CHAT_CHANGED, 'chat_changed'],
+      generation: [
+        events.GENERATION_STARTED, 'generation_started',
+        events.GENERATION_AFTER_COMMANDS, 'generation_after_commands'
+      ]
+    };
+    var seen = Object.create(null);
+    Object.keys(groups).forEach(function (group) {
+      groups[group] = groups[group].filter(function (name) {
+        var value = String(name == null ? '' : name).trim();
+        if (!value || seen[value]) return false;
+        seen[value] = true;
+        return true;
+      });
+    });
+    return groups;
+  }
+
+  function registerNativeStageSyncEvents() {
+    if (LOCAL_PREVIEW === true && !hasHostRuntime()) return false;
+    var host = hostWindow();
+    if (host.__KING_GAME_NATIVE_STAGE_SYNC_BOUND__ === true) return true;
+    var bind = null;
+    if (typeof host.eventOn === 'function') {
+      bind = function (name, callback) { host.eventOn(name, callback); };
+    } else if (host.eventSource && typeof host.eventSource.on === 'function') {
+      bind = function (name, callback) { host.eventSource.on(name, callback); };
+    }
+    if (!bind) return false;
+
+    var groups = nativeStageSyncEventNames(host);
+    function silentSync() {
+      return inspectAuthorization().then(function (authorization) {
+        return authorization.authorized ? syncStageEntriesFromLatest(true) : null;
+      }).catch(function (error) {
+        console.warn('[KingGame] 原生消息事件后的世界书阶段同步失败', error);
+        return null;
+      });
+    }
+    function delayedSync() {
+      Promise.resolve().then(silentSync);
+      if (typeof host.setTimeout === 'function') host.setTimeout(silentSync, 120);
+      else if (typeof setTimeout === 'function') setTimeout(silentSync, 120);
+    }
+    function delayedChatSync() {
+      // 聊天之间共享同一本世界书，却不共享阶段。先废弃上一聊天的签名，
+      // 再在聊天元数据切换的当前微任务与短延迟后各重读一次 latest。
+      host.__KING_GAME_STAGE_SYNC_LAST_SIGNATURE__ = null;
+      delayedSync();
+    }
+    try {
+      groups.selection.concat(groups.mutation).forEach(function (name) {
+        bind(name, delayedSync);
+      });
+      groups.chat.forEach(function (name) {
+        bind(name, delayedChatSync);
+      });
+      // 按钮生成路径会显式 await 同步；原生发送/重 Roll 绕过按钮时也至少在
+      // generation-before 事件立刻进入同一串行同步队列。若事件总线会等待
+      // Promise，返回值同时提供真正的生成前屏障。
+      groups.generation.forEach(function (name) {
+        bind(name, silentSync);
+      });
+      host.__KING_GAME_NATIVE_STAGE_SYNC_BOUND__ = true;
+      return true;
+    } catch (error) {
+      console.warn('[KingGame] 原生世界书同步事件注册失败', error);
+      return false;
+    }
+  }
+
+  function beginGenerationTransaction(baseline) {
+    var host = hostWindow();
+    var transaction = {
+      active: true,
+      baseline: clone(baseline),
+      startedAt: Date.now(),
+      lastReconciled: null
+    };
+    host.__KING_GAME_GENERATION_TRANSACTION__ = transaction;
+    return transaction;
+  }
+
+  function endGenerationTransaction(transaction) {
+    var host = hostWindow();
+    if (host.__KING_GAME_GENERATION_TRANSACTION__ === transaction) {
+      transaction.active = false;
+      delete host.__KING_GAME_GENERATION_TRANSACTION__;
+    }
+  }
+
   function publish(state) {
     cachedState = visibleState(state);
     listeners.slice().forEach(function (listener) {
@@ -3182,10 +3813,19 @@
     window.dispatchEvent(new CustomEvent('kinggame:state', { detail: clone(cachedState) }));
   }
 
-  async function sendUserCommand(message) {
+  function wrapPrivateActionCommand(message) {
+    var text = String(message || '').trim();
+    if (!text) return '';
+    if (/^<\s*KingGameActionImpl\s*>[\s\S]*<\/\s*KingGameActionImpl\s*>$/i.test(text)) return text;
+    return '<KingGameActionImpl>\n' + text + '\n</KingGameActionImpl>';
+  }
+
+  async function sendUserCommand(message, requireConfirmedGeneration) {
     var host = hostWindow();
     var ctx = context();
-    var text = String(message || '').trim();
+    // 所有由前端按钮自动写入聊天的私密流程指令都使用同一个显示封装。
+    // 卡内正则会在最近八层把它折叠，并在更旧楼层完全隐藏；提示词侧只去掉标签、保留指令正文。
+    var text = wrapPrivateActionCommand(message);
     if (!text) throw new Error('不能发送空的操作请求');
 
     if (host === window && !host.SillyTavern && !host.TavernHelper) {
@@ -3236,6 +3876,10 @@
       console.warn('[KingGame] TavernHelper 发送失败，尝试输入框降级', error);
     }
 
+    if (requireConfirmedGeneration === true) {
+      throw new Error('当前宿主没有可确认生成完成的 API；为避免把未生成请求误记为成功，已取消本次提交');
+    }
+
     try {
       var doc = host.document;
       var input = doc && doc.querySelector('#send_textarea, textarea[name="message"], textarea[data-testid="send-textarea"]');
@@ -3267,14 +3911,58 @@
       var actionArgs = typeof args === 'function' ? args(before) : args;
       after['系统'] = api[apiName].apply(api, [before['系统']].concat(actionArgs || []));
       if (!await writeHostRecord(record, after)) throw new Error('聊天变量写入失败，操作没有发送');
-      publish(after);
+      var generationCompleted = false;
+      var transaction = null;
       try {
+        // 固定事务屏障：先写完变量，再强制以该快照管理世界书，
+        // 两者均完成以后才构造并发送输入框指令。
+        await syncStageEntriesForState(after, true);
+        publish(after);
         var command = typeof commandFactory === 'function' ? commandFactory(after) : commandFactory;
-        await sendUserCommand(command);
-      } catch (sendError) {
+        transaction = beginGenerationTransaction(after);
+        await sendUserCommand(command, true);
+        generationCompleted = true;
+        var latestRecord = await readHostRecord();
+        var latestCandidate = fillDefaults(latestRecord.state, INITIAL_STATE);
+        var reconciled = typeof api.reconcileGeneratedVariables === 'function'
+          ? api.reconcileGeneratedVariables(latestCandidate, after, chatName())
+          : api.initializeVariables(latestCandidate, chatName());
+        var resolved = clone(reconciled);
+        if (apiName === 'beginDecree') {
+          if (typeof api.resolveDecree !== 'function') throw new Error('状态引擎缺少法令广播结算能力');
+          resolved['系统'] = api.resolveDecree(reconciled['系统']);
+        } else if (apiName === 'submitInteraction') {
+          resolved['系统'] = api.resolveInteraction(reconciled['系统']);
+        }
+        if (!await writeHostRecord(latestRecord, resolved)) {
+          throw new Error('回复已生成，但未能持久化宿主裁决后的状态；请刷新后检查最新楼层');
+        }
+        endGenerationTransaction(transaction);
+        transaction = null;
+        await syncStageEntriesForState(resolved, true);
+        publish(resolved);
+      } catch (operationError) {
+        if (transaction) {
+          endGenerationTransaction(transaction);
+          transaction = null;
+        }
+        if (generationCompleted) {
+          throw operationError;
+        }
         var rolledBack = await writeHostRecord(record, before);
-        if (rolledBack) publish(before);
-        throw new Error(sendError.message + (rolledBack ? '；本次状态已回滚' : '；状态回滚失败，请刷新后检查'));
+        var worldbookRolledBack = false;
+        if (rolledBack) {
+          try {
+            await syncStageEntriesForState(before, true);
+            worldbookRolledBack = true;
+          } catch (rollbackError) {
+            console.warn('[KingGame] 世界书阶段回滚失败', rollbackError);
+          }
+          publish(before);
+        }
+        throw new Error(operationError.message + (rolledBack && worldbookRolledBack
+          ? '；本次变量与世界书状态已回滚'
+          : '；回滚不完整，请刷新后检查'));
       }
       return clone(cachedState);
     } finally {
@@ -3286,7 +3974,11 @@
     var record = await readHostRecord();
     var withDefaults = fillDefaults(record.state, INITIAL_STATE);
     var initialized = window.KingGameState.initializeVariables(withDefaults, chatName());
-    await writeHostRecord(record, initialized);
+    if (!await writeHostRecord(record, initialized)) throw new Error('聊天变量初始化写入失败');
+    // 世界书灯态属于宿主共享状态，不属于单一聊天。新开/切换聊天或重新载入
+    // 前端时必须无条件以该聊天最新楼层重刷，不能因阶段签名恰好相同而沿用
+    // 上一个聊天、手动改灯或重新导入世界书留下的状态。
+    await syncStageEntriesForState(initialized, true);
     publish(initialized);
     return initialized;
   }
@@ -3297,7 +3989,10 @@
 
   var ready = authorizationReady.then(function (authorization) {
     if (!authorization.authorized) return null;
-    return initialize();
+    return initialize().then(function (initialized) {
+      registerNativeStageSyncEvents();
+      return initialized;
+    });
   }).catch(function (error) {
     console.warn('[KingGame] 宿主初始化失败', error);
     return null;
@@ -3324,6 +4019,7 @@
       var after = clone(before);
       after['系统'] = api.prepareDecree(before['系统'], chatName());
       if (!await writeHostRecord(record, after)) throw new Error('聊天变量写入失败，未能选出当日国王');
+      await syncStageEntriesForState(after, true);
       publish(after);
       return clone(cachedState);
     } finally {
@@ -3437,10 +4133,10 @@
       var state = fillDefaults(record.state, INITIAL_STATE);
       state = window.KingGameState.initializeVariables(state, chatName());
       if (!await writeHostRecord(record, state)) throw new Error('聊天变量写入失败，隐藏终局累计状态未能持久化');
+      await syncStageEntriesForState(state, true);
       publish(state);
       return clone(cachedState);
     },
-    sendUserCommand: sendUserCommand,
     prepareDecree: prepareDecree,
     requestDecree: async function (payload) {
       var submitted = String(payload || '').trim();
@@ -3476,8 +4172,8 @@
       var protectedDisclosure = attemptsPrivateKnowledgeDisclosure(trimmed);
       return commitAction('submitInteraction', [roleName, trimmed], function (next) {
         var request = (next['系统'] || {})['_最近互动请求'] || {};
-        var archiveGate = request['档案门控'] || {};
-        var archiveAuthorization = Number(archiveGate['版本']) === 1 ? String(archiveGate['授权'] || '') : '';
+        var contentGate = request['内容门控'] || {};
+        var authorizedAction = Number(contentGate['版本']) === 2 ? String(contentGate['授权动作'] || 'none') : 'none';
         var supplements = Array.isArray(request['补全对象']) ? request['补全对象'] : [];
         var pairBlocks = supplements.map(function (otherName) {
           return '<InteractionPairImpl pair="' + roleName + '-' + otherName + '">\\n在这里直接写完' + roleName + '与' + otherName + '的实际互动正文\\n</InteractionPairImpl>';
@@ -3488,10 +4184,18 @@
         var intent = protectedDisclosure
           ? '我原本想向' + roleName + '泄露自己的所谓读心术或私人国王情报，但这两项秘密不可公开。请让{{user}}在任何人听见、看见或收到具体内容前临时收住话、停止展示或换成不含秘密的说法；不要复述原输入中的秘密内容，也不要让任何角色因此获知或准确推断。'
           : '我想以“' + trimmed + '”的方式与' + roleName + '互动。请把它作为行动意图来展开，不要擅自替我补写具体台词。';
-        var archiveGuard = archiveAuthorization
-          ? '【私密流程约束】本次只有专门世界书EJS明确授权的那一个一次性个人记录事件可以发生；不得另行发明、合并或提前展示其他尚未公开的长期记录或纪念物。具体内容只服从该EJS，不得从本提示猜测。'
-          : '【私密流程约束】本次互动开始前没有一次性个人记录事件授权。无论本轮让目标多么高兴、真实好感在回复中上涨多少，任何角色都不得主动掏出、交付、展示或新提及任何尚未公开的长期私人记录或纪念物；跨过门槛只能等下一次点击互动重新判定。';
-        return '【每日流程·互动请求】本互动进行时，全部仍生效法令继续同步执行；未明写未来开始时间、期限或延迟条件的限制默认早已从广播后立即且持续生效。说话、推理、争执或拖延不会暂停已到期/持续义务，客观可执行的违令在数秒警告后立即升级为强烈连续电击，直至开始可观察地遵从。' + archiveGuard + intent + followup;
+        var actionGuards = {
+          archive: '【私密阶段约束·个人记录】本次只允许专门世界书 EJS 授权的单一个人记录事件；具体内容只服从该 EJS，不得合并或提前展示其他记录。',
+          photo: '【私密阶段约束·合照】本次只允许专门世界书 EJS 授权的合照事件；具体可见内容只服从该 EJS，不得藉机泄露更深真相。',
+          insight: '【私密阶段约束·洞察】本次只允许专门世界书 EJS 授权的单一洞察事件；严格限定在 EJS 列出的主体与字段范围，不得扩张成全知。',
+          testament: '【私密阶段约束·遗书】本次只允许专门世界书 EJS 授权的私密遗书事件；必须满足该 EJS 的现场、隐私与可见完成条件。',
+          none: '【私密阶段约束·无授权】本次互动开始前没有个人记录、合照、洞察或遗书事件授权。无论本轮让目标多么高兴、真实好感在回复中上涨多少，都不得在本回复追加这些事件；跨过门槛只能等下一次点击互动重新判定。'
+        };
+        var confessionGuard = contentGate['忏悔机会'] === true
+          ? '【忏悔机会】本次只是允许目标在自愿揭露曾美化或隐瞒的黑暗部分并真实悔过后结算忏悔；机会不等于自动忏悔。'
+          : '【忏悔门控】本次开始前没有忏悔机会，本回复才达到的条件不得同回合结算为忏悔完成。';
+        var actionGuard = actionGuards[authorizedAction] || actionGuards.none;
+        return '【每日流程·互动请求】本互动进行时，全部仍生效法令继续同步执行；未明写未来开始时间、期限或延迟条件的限制默认早已从广播后立即且持续生效。说话、推理、争执或拖延不会暂停已到期/持续义务，客观可执行的违令在数秒警告后立即升级为强烈连续电击，直至开始可观察地遵从。' + actionGuard + confessionGuard + intent + followup;
       });
     },
     complianceMeeting: function () {
@@ -3512,6 +4216,22 @@
           + meeting['规则签名'] + '”。五名参与者必须留在{{user}}能够观察的同一现场，逐条核对并尽可能履行以下当前生效法令：'
           + ruleText
           + '。已撤销法令不进入会议；后颁布法令只在实际冲突范围内覆盖旧法令，未冲突部分仍须履行。没有明写未来开始时间、完成期限或可观察延迟条件的限制，从广播结束就已经到期并持续生效；例如禁止穿衣者必须在讨论前脱下并一直保持，不能到会议才首次处理。只有明确的未来时点/条件尚未到达才可判尚未到期。已到期义务与持续义务在会议、讨论、争执和审计期间始终继续生效，不得因为正在开会而暂停、宽限或自动视为完成。对客观可判定且身体能够执行的拖延或拒绝，设施只给数秒明确警告，随后迅速升级为正式强烈连续脉冲、剧痛与严重失禁，直至当事人开始可观察地遵从；不得用长篇争论无限拖延，也不得让项圈判断真假、诚意、记忆、感情或思想。剧情可以让四名女性自行完成她们能够主动完成的义务，但绝不能替{{user}}说话、选择、接过物品或执行任何需要玩家主动完成的动作；若某条到期义务仍需{{user}}行动，必须把它明确留作未完成事项并停下来等待玩家后续互动，不能伪造完成。会议正文必须全部原地包在唯一一组<DecreeComplianceMeetingImpl>与</DecreeComplianceMeetingImpl>之间；该块是本轮最后一段剧情内容，闭标签后不得继续任何动作、台词或环境收束，下一行只输出<StatusPlaceHolderImpl/>。不得使用<DecreeRoundtableImpl>或<InteractionPairImpl>，本会议不计入玩家互动数组或女性互动矩阵。';
+      });
+    },
+    forcedCompliance: function () {
+      return commitAction('beginForcedCompliance', function (before) {
+        return [before];
+      }, function (next) {
+        var api = window.KingGameState;
+        var system = next['系统'] || {};
+        var meeting = system['_法令履行会议'] || {};
+        var activeRules = api && typeof api.getActiveDecrees === 'function'
+          ? api.getActiveDecrees(next)
+          : [];
+        return '【前端私密操作，不是公开发言】【每日流程·强迫性完成】在上一轮履行会议已经确认仍有到期义务未完成后，{{user}}看见其他参与者仍在抗拒，明确决定自己也不再自愿配合，任由项圈执行强制。本次点击只授权这一项拒绝与随后在电击胁迫下完成法令的流程，不代表自愿、同意、享受或原谅。宿主已开启第'
+          + meeting['日期'] + '日第' + meeting['轮次'] + '轮强制执行，必须在同一条回复内一次处理以下全部当前生效法令：'
+          + JSON.stringify(activeRules)
+          + '。先用极短现场反应表现{{user}}停止配合、其他人仍有抗拒，随后项圈立即以远强于最低示范的连续电流惩罚所有客观违令者；不得再安排长篇讨论、讨价还价、轮流拒绝或下一轮会议。对所有已经到期且现实可执行的动作，电击必须持续逼迫包括{{user}}在内的相关人员真正开始并完成最低限度的合规动作，直到该项法令在本轮不再是“到期未完成”；这项按钮授权描写{{user}}在痛苦强迫下完成必要动作，但不得额外替他表达偏好、情感、主动同意或超出法令的选择。若法令要求回答、说真话或坦白，只能强制可观察的开口回答，项圈仍不能判断内容真假。明确尚未到达的未来时点、尚未触发的客观条件、纯许可或被更高优先级规则覆盖的部分按原状核验，不得为了凑完成而提前执行。持续义务必须在场景结束时处于客观合规状态。强制过程仍服从现实边界、当前伤害上限与非致死限制；不得把疼痛本身冒充另一项动作的完成。整段必须包在唯一一组<DecreeComplianceMeetingImpl>与</DecreeComplianceMeetingImpl>之间，闭标签后下一行只输出<StatusPlaceHolderImpl/>；不得生成<InteractionPairImpl>，不得修改或补全玩家互动数组与女性互动矩阵。';
       });
     },
     overnight: function () {
@@ -3557,7 +4277,10 @@
       <button class="rules-btn" id="openPlayerRules" type="button">你的法令</button>
       <section class="day-flow" aria-label="每日行动流程">
         <div class="flow-copy" id="flowStatus" aria-live="polite">正在读取今日流程……</div>
-        <button class="flow-btn" id="primaryDailyAction" type="button" hidden></button>
+        <div class="flow-actions">
+          <button class="flow-btn" id="primaryDailyAction" type="button" hidden></button>
+          <button class="flow-btn is-force" id="forceComplianceAction" type="button" data-action="forcedCompliance" hidden>强迫性完成</button>
+        </div>
       </section>
       <div class="action-error" id="actionError" role="alert"></div>
     </footer>
@@ -4551,7 +5274,7 @@
         "我几次想把这些全告诉你，话到嘴边又缩了回去。我做了一个草率又懦弱的决定，还自欺欺人地以为这样就能结束痛苦。现在想来，我只是把一道永远不会愈合的伤留给了你。",
         "姐姐，对不起。你从来不该替我的选择承担罪责。"
       ].forEach(text => paper.append(el("p", "", text)));
-      paper.append(el("p", "testament-signature", "你没能拉住的妹妹"));
+      paper.append(el("p", "testament-signature", "韩璇"));
       viewer.append(head, paper);
       backdrop.append(viewer);
       $("#sisterBackdrop").insertAdjacentElement("afterend", backdrop);
@@ -4691,7 +5414,8 @@
       const preservedIndex = activeSideNames.indexOf(previousName);
       faceIndex = preservedIndex >= 0 ? preservedIndex : 0;
       const sideCount = activeSideNames.length;
-      angle = faceIndex * (360 / sideCount);
+      const canonicalAngle = faceIndex * (360 / sideCount);
+      angle = canonicalAngle + Math.round((angle - canonicalAngle) / 360) * 360;
       configurePrismGeometry(sideCount);
       renderSideNavigation();
       $("#currentKing").textContent = system._当前国王 ? displayPerson(system._当前国王, userName) : "尚未选出";
@@ -4741,10 +5465,13 @@
       const meetingState = String(system._法令会议状态 || "未开放");
       const incompleteDecrees = Math.round(num(system._法令未完成数量, 0, 999, 0));
       const button = $("#primaryDailyAction");
+      const forceButton = $("#forceComplianceAction");
       const status = $("#flowStatus");
       button.hidden = true;
       button.disabled = actionBusy;
       button.dataset.action = "";
+      forceButton.hidden = true;
+      forceButton.disabled = actionBusy;
       if (stage === "待颁布法令") {
         const day = Math.round(num(system._当前天数, 1, 15, 1));
         status.textContent = day === 1
@@ -4756,36 +5483,45 @@
       } else if (stage === "自由互动") {
         const interactionCopy = `今日互动 ${completed.length} / ${NAMES.length}：${completed.length ? completed.join("、") : "尚未与任何角色互动"}`;
         status.textContent = interactionCopy;
-        if (completed.length === NAMES.length) {
-          if (meetingState === "待召开") {
-            status.textContent = `${interactionCopy} · 需完成法令履行会议后才能过夜`;
-            if (system._可召开法令会议 === true) {
-              button.textContent = actionBusy ? "正在召集……" : "召开法令履行会议";
-              button.dataset.action = "complianceMeeting";
-              button.hidden = false;
-            }
-          } else if (meetingState === "待审计") {
-            status.textContent = `${interactionCopy} · 设施正在审计本日法令履行情况`;
-            button.textContent = "履行会议审计中……";
+        if (meetingState === "待召开") {
+          status.textContent = completed.length === NAMES.length
+            ? `${interactionCopy} · 需完成法令履行会议后才能过夜`
+            : `${interactionCopy} · 可提前召开集体履行会议，不计入个人互动`;
+          if (system._可召开法令会议 === true) {
+            button.textContent = actionBusy ? "正在召集……" : "召开法令履行会议";
+            button.dataset.action = "complianceMeeting";
             button.hidden = false;
-            button.disabled = true;
-          } else if (meetingState === "需补履行") {
-            status.textContent = `${interactionCopy} · 仍有 ${incompleteDecrees} 项生效法令未完成`;
-            if (system._可召开法令会议 === true) {
-              button.textContent = actionBusy ? "正在召集……" : "再次召开履行会议";
-              button.dataset.action = "complianceMeeting";
-              button.hidden = false;
-            }
-          } else if (meetingState === "已通过") {
-            status.textContent = `${interactionCopy} · 法令履行会议已通过`;
-            if (system._可过夜 === true) {
-              button.textContent = actionBusy ? "正在提交……" : "过夜";
-              button.dataset.action = "overnight";
-              button.hidden = false;
-            }
-          } else {
-            status.textContent = `${interactionCopy} · 正在等待履行会议开放`;
           }
+        } else if (meetingState === "待审计") {
+          status.textContent = `${interactionCopy} · 设施正在审计本日法令履行情况`;
+          button.textContent = "履行会议审计中……";
+          button.hidden = false;
+          button.disabled = true;
+        } else if (meetingState === "强制执行") {
+          status.textContent = `${interactionCopy} · 项圈正在强制执行全部到期法令`;
+          forceButton.textContent = "强制执行中……";
+          forceButton.hidden = false;
+          forceButton.disabled = true;
+        } else if (meetingState === "需补履行") {
+          status.textContent = `${interactionCopy} · 仍有 ${incompleteDecrees} 项生效法令未完成`;
+          if (system._可召开法令会议 === true) {
+            button.textContent = actionBusy ? "正在召集……" : "再次召开履行会议";
+            button.dataset.action = "complianceMeeting";
+            button.hidden = false;
+            forceButton.textContent = actionBusy ? "正在强制……" : "强迫性完成";
+            forceButton.hidden = false;
+          }
+        } else if (meetingState === "已通过") {
+          status.textContent = completed.length === NAMES.length
+            ? `${interactionCopy} · 法令履行会议已通过`
+            : `${interactionCopy} · 本轮履行会议已通过，仍需完成剩余个人互动`;
+          if (system._可过夜 === true) {
+            button.textContent = actionBusy ? "正在提交……" : "过夜";
+            button.dataset.action = "overnight";
+            button.hidden = false;
+          }
+        } else {
+          status.textContent = `${interactionCopy} · 正在等待履行会议开放`;
         }
       } else if (stage === "夜间") {
         status.textContent = "夜间结算中 · 请等待新一日广播";
@@ -4901,15 +5637,17 @@
       }
     }
 
-    async function runDailyAction() {
+    async function runDailyAction(event) {
       if (actionBusy) return;
-      const button = $("#primaryDailyAction");
+      const button = event?.currentTarget || $("#primaryDailyAction");
       const action = button.dataset.action;
       const bridge = window.KingGameBridge;
       const method = action === "decree"
         ? "requestDecree"
         : action === "complianceMeeting"
           ? "complianceMeeting"
+          : action === "forcedCompliance"
+            ? "forcedCompliance"
           : action === "overnight"
             ? "overnight"
             : "";
@@ -5341,6 +6079,7 @@
     function bindDailyFlow() {
       const backdrop = $("#interactionBackdrop");
       $("#primaryDailyAction").addEventListener("click", runDailyAction);
+      $("#forceComplianceAction").addEventListener("click", runDailyAction);
       $("#interactionHitTarget").addEventListener("click", event => openInteraction(event.currentTarget.dataset.interactionName || activeSideName()));
       $("#cancelInteraction").addEventListener("click", closeInteraction);
       $("#submitInteraction").addEventListener("click", submitInteractionRequest);
