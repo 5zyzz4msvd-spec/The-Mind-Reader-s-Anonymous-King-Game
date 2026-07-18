@@ -3918,7 +3918,7 @@
         // 两者均完成以后才构造并发送输入框指令。
         await syncStageEntriesForState(after, true);
         publish(after);
-        var command = typeof commandFactory === 'function' ? commandFactory(after) : commandFactory;
+        var command = typeof commandFactory === 'function' ? commandFactory(after, before) : commandFactory;
         transaction = beginGenerationTransaction(after);
         await sendUserCommand(command, true);
         generationCompleted = true;
@@ -4221,17 +4221,44 @@
     forcedCompliance: function () {
       return commitAction('beginForcedCompliance', function (before) {
         return [before];
-      }, function (next) {
+      }, function (next, before) {
         var api = window.KingGameState;
         var system = next['系统'] || {};
         var meeting = system['_法令履行会议'] || {};
         var activeRules = api && typeof api.getActiveDecrees === 'function'
           ? api.getActiveDecrees(next)
           : [];
-        return '【前端私密操作，不是公开发言】【每日流程·强迫性完成】在上一轮履行会议已经确认仍有到期义务未完成后，{{user}}看见其他参与者仍在抗拒，明确决定自己也不再自愿配合，任由项圈执行强制。本次点击只授权这一项拒绝与随后在电击胁迫下完成法令的流程，不代表自愿、同意、享受或原谅。宿主已开启第'
+        var publicActiveRules = activeRules.map(function (rule) {
+          return {
+            '规则ID': rule['规则ID'],
+            '标题': rule['标题'],
+            '全文': rule['全文'],
+            '颁布日': rule['颁布日'],
+            '优先级': rule['优先级']
+          };
+        });
+        var priorAudit = before && before['系统'] && before['系统']['法令履行审计'];
+        var priorResults = priorAudit && Array.isArray(priorAudit['结果']) ? priorAudit['结果'] : [];
+        var incompleteRules = [];
+        priorResults.forEach(function (result) {
+          if (!result || result['判定'] !== '到期未完成') return;
+          var matched = activeRules.find(function (rule) {
+            return rule['颁布者'] === result['颁布者'] && rule['规则ID'] === result['规则ID'];
+          });
+          if (!matched) return;
+          incompleteRules.push({
+            '规则ID': matched['规则ID'],
+            '标题': matched['标题'],
+            '全文': matched['全文'],
+            '上轮逐人状态说明': String(result['说明'] || '')
+          });
+        });
+        return '【前端私密操作，不是公开发言】【每日流程·强迫性完成】在上一轮履行会议已经确认仍有到期义务未完成后，{{user}}看见仍有人抗拒，选择不再替任何人拖延、兜底或等待，任由设施立即按每个人的实际履行状态执行强制。本次点击不自动把{{user}}或任何已合规者视为违令，只授权对仍有本人到期义务未完成者施加强制；被迫完成不代表自愿、同意、享受或原谅。宿主已开启第'
           + meeting['日期'] + '日第' + meeting['轮次'] + '轮强制执行，必须在同一条回复内一次处理以下全部当前生效法令：'
-          + JSON.stringify(activeRules)
-          + '。先用极短现场反应表现{{user}}停止配合、其他人仍有抗拒，随后项圈立即以远强于最低示范的连续电流惩罚所有客观违令者；不得再安排长篇讨论、讨价还价、轮流拒绝或下一轮会议。对所有已经到期且现实可执行的动作，电击必须持续逼迫包括{{user}}在内的相关人员真正开始并完成最低限度的合规动作，直到该项法令在本轮不再是“到期未完成”；这项按钮授权描写{{user}}在痛苦强迫下完成必要动作，但不得额外替他表达偏好、情感、主动同意或超出法令的选择。若法令要求回答、说真话或坦白，只能强制可观察的开口回答，项圈仍不能判断内容真假。明确尚未到达的未来时点、尚未触发的客观条件、纯许可或被更高优先级规则覆盖的部分按原状核验，不得为了凑完成而提前执行。持续义务必须在场景结束时处于客观合规状态。强制过程仍服从现实边界、当前伤害上限与非致死限制；不得把疼痛本身冒充另一项动作的完成。整段必须包在唯一一组<DecreeComplianceMeetingImpl>与</DecreeComplianceMeetingImpl>之间，闭标签后下一行只输出<StatusPlaceHolderImpl/>；不得生成<InteractionPairImpl>，不得修改或补全玩家互动数组与女性互动矩阵。';
+          + JSON.stringify(publicActiveRules)
+          + '。上一轮明确判为到期未完成的条目及其可见逐人状态为：'
+          + JSON.stringify(incompleteRules)
+          + '。该清单只用于锁定尚未完成者；已完成者除非本轮新发生客观违令，否则不得重新处罚。先依据每条法令的约束对象、本人到期动作和上一轮可见履行事实逐人逐项判断；不得再安排长篇讨论、讨价还价、轮流拒绝或下一轮会议。只有仍在拒绝、拖延、擅自中止持续义务，或客观未完成本人到期动作的人才受电击；已经完成、持续合规或法令没有约束其本人的参与者，绝不得因在场、受益、配合、成为被动承受方或他人违令而连坐。多人共同动作也按每个人自己的可观察义务判定：一人已经配合而另一人拒绝时，只处罚拒绝或未履行者。对仍未完成且现实可执行的动作，项圈立即以远强于最低示范的连续电流逼迫对应违令者真正开始并完成最低限度合规动作，直到该人的该项义务不再“到期未完成”。{{user}}仅当某条法令明确约束他，且他的该项义务仍未完成或他当下停止持续合规时才受罚；这时按钮授权描写他在痛苦强迫下完成必要动作，但不得额外替他表达偏好、情感、主动同意或超出法令的选择。若法令要求回答、说真话或坦白，只能强制可观察的开口回答，项圈仍不能判断内容真假。明确尚未到达的未来时点、尚未触发的客观条件、纯许可或被更高优先级规则覆盖的部分按原状核验，不得为了凑完成而提前执行。持续义务必须在场景结束时由各自义务人处于客观合规状态。强制过程仍服从现实边界、当前伤害上限与非致死限制；不得把疼痛本身冒充另一项动作的完成。整段必须包在唯一一组<DecreeComplianceMeetingImpl>与</DecreeComplianceMeetingImpl>之间，闭标签后下一行只输出<StatusPlaceHolderImpl/>；不得生成<InteractionPairImpl>，不得修改或补全玩家互动数组与女性互动矩阵。';
       });
     },
     overnight: function () {
