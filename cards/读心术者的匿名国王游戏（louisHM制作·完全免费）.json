@@ -629,6 +629,74 @@
       },
       "regex_scripts": [
         {
+          "id": "king-game-galgame-dialogue-v1",
+          "scriptName": "（关闭Galgame模式请关这两条）01·人物对白",
+          "findRegex": "/<\\s*GalgameDialogueImpl\\s+speaker=\"(林安|穆裳希|张曲溪|王可可)\"\\s+portrait=\"(lin-an-[ab]|mu-shangxi-[ab]|zhang-quxi-[ab]|wang-keke-[ab])\"\\s*>\\s*([\\s\\S]*?)\\s*<\\/\\s*GalgameDialogueImpl\\s*>/g",
+          "replaceString": "<section data-king-game-galgame=\"dialogue\" style=\"margin:12px 0;padding:12px 14px;border:1px solid rgba(78,150,224,.34);border-left:3px solid #4e96e0;background:linear-gradient(135deg,rgba(32,66,112,.24),rgba(10,12,24,.88));color:#dcecff;font-family:ui-sans-serif,system-ui,sans-serif\"><div style=\"display:flex;align-items:center;gap:12px\"><img src=\"https://cdn.jsdelivr.net/gh/5zyzz4msvd-spec/The-Mind-Reader-s-Anonymous-King-Game@12feacb567e80f363fab1f55a9da571bc5148ae8/dist/webview/assets/$2.webp\" alt=\"$1\" style=\"width:58px;height:58px;flex:0 0 58px;display:block;object-fit:cover;object-position:50% 24%;border:1px solid rgba(126,187,244,.52);border-radius:10px;filter:saturate(.82) contrast(1.02)\"><div style=\"min-width:0;flex:1\"><div style=\"display:flex;align-items:center;gap:9px;margin-bottom:5px\"><strong style=\"color:#73b8ff;font-size:16px;letter-spacing:.04em\">$1</strong><span style=\"padding:2px 7px;border-radius:999px;background:rgba(27,144,167,.25);color:#47d1e4;font-size:10px;font-weight:800;letter-spacing:.12em\">对白</span></div><div style=\"color:#cfe6ff;font-size:15px;line-height:1.75\">“$3”</div></div></div></section>",
+          "trimStrings": [],
+          "placement": [
+            2
+          ],
+          "disabled": false,
+          "markdownOnly": true,
+          "promptOnly": false,
+          "runOnEdit": true,
+          "substituteRegex": 0,
+          "minDepth": null,
+          "maxDepth": 3
+        },
+        {
+          "id": "king-game-galgame-thought-v1",
+          "scriptName": "（关闭Galgame模式请关这两条）02·人物读心",
+          "findRegex": "/<\\s*GalgameThoughtImpl\\s+speaker=\"(林安|穆裳希|张曲溪|王可可)\"\\s+portrait=\"(lin-an-[ab]|mu-shangxi-[ab]|zhang-quxi-[ab]|wang-keke-[ab])\"\\s*>\\s*([\\s\\S]*?)\\s*<\\/\\s*GalgameThoughtImpl\\s*>/g",
+          "replaceString": "<section data-king-game-galgame=\"thought\" style=\"margin:10px 0 14px;padding:13px 16px;border:1px solid rgba(117,124,174,.28);border-left:3px solid #7881bd;background:linear-gradient(135deg,rgba(47,50,82,.34),rgba(13,15,28,.92));color:#d8d9eb;font-family:ui-sans-serif,system-ui,sans-serif\"><div style=\"display:flex;align-items:center;gap:9px;margin-bottom:8px\"><img src=\"https://cdn.jsdelivr.net/gh/5zyzz4msvd-spec/The-Mind-Reader-s-Anonymous-King-Game@12feacb567e80f363fab1f55a9da571bc5148ae8/dist/webview/assets/$2.webp\" alt=\"$1\" style=\"width:28px;height:28px;flex:0 0 28px;display:block;object-fit:cover;object-position:50% 24%;border:1px solid rgba(153,158,205,.42);border-radius:7px;filter:saturate(.58) brightness(.78)\"><strong style=\"color:#aeb5e6;font-size:12px;letter-spacing:.08em\">$1 · 读心术</strong></div><div style=\"padding-left:7px;color:#d6d5e4;font-family:STKaiti,KaiTi,serif;font-size:15px;font-style:italic;line-height:1.9\">$3</div></section>",
+          "trimStrings": [],
+          "placement": [
+            2
+          ],
+          "disabled": false,
+          "markdownOnly": true,
+          "promptOnly": false,
+          "runOnEdit": true,
+          "substituteRegex": 0,
+          "minDepth": null,
+          "maxDepth": 3
+        },
+        {
+          "id": "king-game-galgame-hide-old-v1",
+          "scriptName": "[Galgame内部]隐藏较早人物对白与读心",
+          "findRegex": "/<\\s*Galgame(Dialogue|Thought)Impl\\s+speaker=\"(?:林安|穆裳希|张曲溪|王可可)\"\\s+portrait=\"(?:lin-an-[ab]|mu-shangxi-[ab]|zhang-quxi-[ab]|wang-keke-[ab])\"\\s*>\\s*[\\s\\S]*?\\s*<\\/\\s*Galgame\\1Impl\\s*>/g",
+          "replaceString": "",
+          "trimStrings": [],
+          "placement": [
+            2
+          ],
+          "disabled": false,
+          "markdownOnly": true,
+          "promptOnly": false,
+          "runOnEdit": true,
+          "substituteRegex": 0,
+          "minDepth": 4,
+          "maxDepth": null
+        },
+        {
+          "id": "king-game-galgame-prompt-unpack-v1",
+          "scriptName": "[提示词]Galgame人物对白与读心解封装",
+          "findRegex": "/<\\s*Galgame(Dialogue|Thought)Impl\\s+speaker=\"(林安|穆裳希|张曲溪|王可可)\"\\s+portrait=\"(?:lin-an-[ab]|mu-shangxi-[ab]|zhang-quxi-[ab]|wang-keke-[ab])\"\\s*>\\s*([\\s\\S]*?)\\s*<\\/\\s*Galgame\\1Impl\\s*>/g",
+          "replaceString": "$2：$3",
+          "trimStrings": [],
+          "placement": [
+            2
+          ],
+          "disabled": false,
+          "markdownOnly": false,
+          "promptOnly": true,
+          "runOnEdit": true,
+          "substituteRegex": 0,
+          "minDepth": null,
+          "maxDepth": null
+        },
+        {
           "id": "king-game-frontend-action-fold-v1",
           "scriptName": "国王游戏·前端自动输入折叠",
           "findRegex": "/<\\s*KingGameActionImpl\\s*>\\s*([\\s\\S]*?)\\s*<\\/\\s*KingGameActionImpl\\s*>/g",
@@ -768,7 +836,7 @@
           "id": "king-game-ui-v4",
           "scriptName": "国王游戏·四面角色面板",
           "findRegex": "(?:<\\s*StatusPlaceHolderImpl\\s*\\/?\\s*>|<\\s*KingGameStatusPlaceHolderImpl\\s*\\/?\\s*>|<\\s*king-game-ui\\s*>\\s*<\\/\\s*king-game-ui\\s*>)",
-          "replaceString": "```\n<body>\n<script>\nwindow.__KING_GAME_ASSET_BASE__ = \"https://cdn.jsdelivr.net/gh/5zyzz4msvd-spec/The-Mind-Reader-s-Anonymous-King-Game@7f81237cc6ceb5fa2cdda27db323100c28017c67/dist/webview/assets/\";\nwindow.__KING_GAME_FRONTEND_COMMIT__ = \"7f81237cc6ceb5fa2cdda27db323100c28017c67\";\n(function () {\n  var url = \"https://cdn.jsdelivr.net/gh/5zyzz4msvd-spec/The-Mind-Reader-s-Anonymous-King-Game@7f81237cc6ceb5fa2cdda27db323100c28017c67/dist/webview/st-load-inline.html\";\n  function fail(error) {\n    console.error('[KingGame] CDN 前端加载失败', error);\n    document.body.innerHTML = '<main style=\"min-height:420px;display:grid;place-items:center;background:#0b0d0c;color:#e9ddc5;font:700 15px/1.7 system-ui;padding:28px;text-align:center\">前端加载失败，请检查网络连接或 CDN 缓存。</main>';\n  }\n  if (window.jQuery && typeof window.jQuery.fn.load === 'function') {\n    window.jQuery('body').load(url, function (_response, status, xhr) {\n      if (status === 'error') fail(new Error('HTTP ' + (xhr && xhr.status || 0)));\n    });\n    return;\n  }\n  fetch(url, { cache: 'force-cache' }).then(function (response) {\n    if (!response.ok) throw new Error('HTTP ' + response.status);\n    return response.text();\n  }).then(function (html) {\n    document.body.innerHTML = html;\n    Array.from(document.body.querySelectorAll('script')).forEach(function (oldScript) {\n      var script = document.createElement('script');\n      Array.from(oldScript.attributes).forEach(function (attr) { script.setAttribute(attr.name, attr.value); });\n      script.textContent = oldScript.textContent || '';\n      oldScript.replaceWith(script);\n    });\n  }).catch(fail);\n})();\n</script>\n</body>\n```",
+          "replaceString": "```\n<body>\n<script>\nwindow.__KING_GAME_ASSET_BASE__ = \"https://cdn.jsdelivr.net/gh/5zyzz4msvd-spec/The-Mind-Reader-s-Anonymous-King-Game@12feacb567e80f363fab1f55a9da571bc5148ae8/dist/webview/assets/\";\nwindow.__KING_GAME_FRONTEND_COMMIT__ = \"12feacb567e80f363fab1f55a9da571bc5148ae8\";\n(function () {\n  var url = \"https://cdn.jsdelivr.net/gh/5zyzz4msvd-spec/The-Mind-Reader-s-Anonymous-King-Game@12feacb567e80f363fab1f55a9da571bc5148ae8/dist/webview/st-load-inline.html\";\n  function fail(error) {\n    console.error('[KingGame] CDN 前端加载失败', error);\n    document.body.innerHTML = '<main style=\"min-height:420px;display:grid;place-items:center;background:#0b0d0c;color:#e9ddc5;font:700 15px/1.7 system-ui;padding:28px;text-align:center\">前端加载失败，请检查网络连接或 CDN 缓存。</main>';\n  }\n  if (window.jQuery && typeof window.jQuery.fn.load === 'function') {\n    window.jQuery('body').load(url, function (_response, status, xhr) {\n      if (status === 'error') fail(new Error('HTTP ' + (xhr && xhr.status || 0)));\n    });\n    return;\n  }\n  fetch(url, { cache: 'force-cache' }).then(function (response) {\n    if (!response.ok) throw new Error('HTTP ' + response.status);\n    return response.text();\n  }).then(function (html) {\n    document.body.innerHTML = html;\n    Array.from(document.body.querySelectorAll('script')).forEach(function (oldScript) {\n      var script = document.createElement('script');\n      Array.from(oldScript.attributes).forEach(function (attr) { script.setAttribute(attr.name, attr.value); });\n      script.textContent = oldScript.textContent || '';\n      oldScript.replaceWith(script);\n    });\n  }).catch(fail);\n})();\n</script>\n</body>\n```",
           "trimStrings": [],
           "placement": [
             2
@@ -843,6 +911,34 @@
           "case_sensitive": false,
           "use_regex": false,
           "priority": 100,
+          "id": 28,
+          "name": "[mvu_plot][00]（关闭Galgame模式请关这个）人物对白与读心显示协议",
+          "comment": "[mvu_plot][00]（关闭Galgame模式请关这个）人物对白与读心显示协议",
+          "keys": [],
+          "secondary_keys": [],
+          "content": "<%_ {\nvar alertPortraits = getvar('stat_data.系统._特殊档案已解锁', { defaults: false }) === true;\nvar suffix = alertPortraits ? 'b' : 'a';\nvar portraitKeys = {\n  林安: 'lin-an-' + suffix,\n  穆裳希: 'mu-shangxi-' + suffix,\n  张曲溪: 'zhang-quxi-' + suffix,\n  王可可: 'wang-keke-' + suffix\n};\nprint('【Galgame可见输出协议】本协议只改变玩家可见正文的标记与显示，不改变事件、视角、知识边界、变量结算或既有内容块。' + String.fromCharCode(10));\nprint('本轮人物头像键（speaker 与 portrait 必须按此表逐字配对）：' + JSON.stringify(portraitKeys) + String.fromCharCode(10));\nprint('- 四名女性每一段玩家当前能听见的直接台词，单独写成：<GalgameDialogueImpl speaker=\"角色中文名\" portrait=\"对应头像键\">台词原文</GalgameDialogueImpl>。' + String.fromCharCode(10));\nprint('- 作为所谓“读心术”展示给{{user}}的每一段主观心声，单独写成：<GalgameThoughtImpl speaker=\"角色中文名\" portrait=\"对应头像键\">第一人称主观心声</GalgameThoughtImpl>。该标签只表示{{user}}的主观读心感知，不证明女性真实内心。' + String.fromCharCode(10));\nprint('- speaker 只能是林安、穆裳希、张曲溪、王可可。标签内部只放台词或心声本身；说话人名与引号不另写，动作、表情、环境与旁白留在标签外，视觉正则会自动补齐姓名和引号。每段独立包装，禁止空标签、HTML、代码围栏、交叉或嵌套。' + String.fromCharCode(10));\nprint('- 不包装{{user}}的台词或内心、普通旁白、动作描写、环境、无人格设施广播、系统/OOC文字、分析、变量块或控制标签。没有合规的玩家可见心声时不输出 Thought 标签，绝不能为补齐格式新增玩家尚不知道的事实。' + String.fromCharCode(10));\nprint('- DecreeRoundtableImpl、InteractionPairImpl、DecreeComplianceMeetingImpl 与 KingGameActionImpl 保持原位；若其中含合规台词或主观读心，只在原容器内部包装对应文字，绝不包住整个容器。StatusPlaceHolderImpl 仍独占最后一行且永不包装。' + String.fromCharCode(10));\nprint('- 本世界书条目关闭后，停止输出上述两种 Galgame 标签，恢复本卡原有普通正文格式。');\n} _%>",
+          "constant": true,
+          "selective": false,
+          "vectorized": false,
+          "position": "before_char",
+          "insertion_order": 0,
+          "extensions": {
+            "position": 0,
+            "depth": 4,
+            "role": 0,
+            "probability": 100,
+            "useProbability": true,
+            "exclude_recursion": true,
+            "prevent_recursion": true,
+            "selectiveLogic": 0,
+            "display_index": 0
+          }
+        },
+        {
+          "enabled": true,
+          "case_sensitive": false,
+          "use_regex": false,
+          "priority": 100,
           "id": 0,
           "name": "[mvu_update][00]系统与流程变量",
           "comment": "[mvu_update][00]系统与流程变量",
@@ -863,7 +959,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 0
+            "display_index": 1
           }
         },
         {
@@ -895,7 +991,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 1
+            "display_index": 2
           }
         },
         {
@@ -927,7 +1023,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 2
+            "display_index": 3
           }
         },
         {
@@ -959,7 +1055,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 3
+            "display_index": 4
           }
         },
         {
@@ -991,7 +1087,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 4
+            "display_index": 5
           }
         },
         {
@@ -1019,7 +1115,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 5
+            "display_index": 6
           }
         },
         {
@@ -1047,7 +1143,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 6
+            "display_index": 7
           }
         },
         {
@@ -1075,7 +1171,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 7
+            "display_index": 8
           }
         },
         {
@@ -1103,7 +1199,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 8
+            "display_index": 9
           }
         },
         {
@@ -1131,7 +1227,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 9
+            "display_index": 10
           }
         },
         {
@@ -1159,7 +1255,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 10
+            "display_index": 11
           }
         },
         {
@@ -1187,7 +1283,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 11
+            "display_index": 12
           }
         },
         {
@@ -1215,7 +1311,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 12
+            "display_index": 13
           }
         },
         {
@@ -1243,7 +1339,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 13
+            "display_index": 14
           }
         },
         {
@@ -1276,7 +1372,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 14
+            "display_index": 15
           }
         },
         {
@@ -1304,7 +1400,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 15
+            "display_index": 16
           }
         },
         {
@@ -1332,7 +1428,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 16
+            "display_index": 17
           }
         },
         {
@@ -1366,7 +1462,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 17
+            "display_index": 18
           }
         },
         {
@@ -1401,7 +1497,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 18
+            "display_index": 19
           }
         },
         {
@@ -1435,7 +1531,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 19
+            "display_index": 20
           }
         },
         {
@@ -1465,7 +1561,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 20
+            "display_index": 21
           }
         },
         {
@@ -1495,7 +1591,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 21
+            "display_index": 22
           }
         },
         {
@@ -1523,7 +1619,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 22
+            "display_index": 23
           }
         },
         {
@@ -1555,7 +1651,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 23
+            "display_index": 24
           }
         },
         {
@@ -1587,7 +1683,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 24
+            "display_index": 25
           }
         },
         {
@@ -1619,7 +1715,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 25
+            "display_index": 26
           }
         },
         {
@@ -1651,7 +1747,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 26
+            "display_index": 27
           }
         },
         {
@@ -1683,7 +1779,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 27
+            "display_index": 28
           }
         },
         {
@@ -1715,7 +1811,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 28
+            "display_index": 29
           }
         },
         {
@@ -1747,7 +1843,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 29
+            "display_index": 30
           }
         },
         {
@@ -1775,7 +1871,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 30
+            "display_index": 31
           }
         },
         {
@@ -1803,7 +1899,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 31
+            "display_index": 32
           }
         },
         {
@@ -1831,7 +1927,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 32
+            "display_index": 33
           }
         },
         {
@@ -1859,7 +1955,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 33
+            "display_index": 34
           }
         },
         {
@@ -1887,7 +1983,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 34
+            "display_index": 35
           }
         },
         {
@@ -1915,7 +2011,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 35
+            "display_index": 36
           }
         },
         {
@@ -1943,7 +2039,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 36
+            "display_index": 37
           }
         },
         {
@@ -1971,7 +2067,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 37
+            "display_index": 38
           }
         },
         {
@@ -1999,7 +2095,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 38
+            "display_index": 39
           }
         },
         {
@@ -2027,7 +2123,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 39
+            "display_index": 40
           }
         },
         {
@@ -2055,7 +2151,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 40
+            "display_index": 41
           }
         },
         {
@@ -2083,7 +2179,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 41
+            "display_index": 42
           }
         },
         {
@@ -2111,7 +2207,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 42
+            "display_index": 43
           }
         },
         {
@@ -2139,7 +2235,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 43
+            "display_index": 44
           }
         },
         {
@@ -2167,7 +2263,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 44
+            "display_index": 45
           }
         },
         {
@@ -2195,7 +2291,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 45
+            "display_index": 46
           }
         },
         {
@@ -2223,7 +2319,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 46
+            "display_index": 47
           }
         },
         {
@@ -2251,7 +2347,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 47
+            "display_index": 48
           }
         },
         {
@@ -2279,7 +2375,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 48
+            "display_index": 49
           }
         },
         {
@@ -2307,7 +2403,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 49
+            "display_index": 50
           }
         },
         {
@@ -2335,7 +2431,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 50
+            "display_index": 51
           }
         },
         {
@@ -2363,7 +2459,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 51
+            "display_index": 52
           }
         },
         {
@@ -2391,7 +2487,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 52
+            "display_index": 53
           }
         },
         {
@@ -2419,7 +2515,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 53
+            "display_index": 54
           }
         },
         {
@@ -2447,7 +2543,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 54
+            "display_index": 55
           }
         },
         {
@@ -2475,7 +2571,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 55
+            "display_index": 56
           }
         },
         {
@@ -2503,7 +2599,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 56
+            "display_index": 57
           }
         },
         {
@@ -2531,7 +2627,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 57
+            "display_index": 58
           }
         },
         {
@@ -2559,7 +2655,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 58
+            "display_index": 59
           }
         },
         {
@@ -2587,7 +2683,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 59
+            "display_index": 60
           }
         },
         {
@@ -2615,7 +2711,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 60
+            "display_index": 61
           }
         },
         {
@@ -2643,7 +2739,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 61
+            "display_index": 62
           }
         },
         {
@@ -2671,7 +2767,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 62
+            "display_index": 63
           }
         },
         {
@@ -2699,7 +2795,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 63
+            "display_index": 64
           }
         },
         {
@@ -2727,7 +2823,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 64
+            "display_index": 65
           }
         },
         {
@@ -2755,7 +2851,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 65
+            "display_index": 66
           }
         },
         {
@@ -2783,7 +2879,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 66
+            "display_index": 67
           }
         },
         {
@@ -2811,7 +2907,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 67
+            "display_index": 68
           }
         },
         {
@@ -2839,7 +2935,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 68
+            "display_index": 69
           }
         },
         {
@@ -2867,7 +2963,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 69
+            "display_index": 70
           }
         },
         {
@@ -2895,7 +2991,7 @@
             "exclude_recursion": false,
             "prevent_recursion": false,
             "selectiveLogic": 0,
-            "display_index": 70
+            "display_index": 71
           }
         },
         {
@@ -2923,7 +3019,7 @@
             "exclude_recursion": true,
             "prevent_recursion": true,
             "selectiveLogic": 0,
-            "display_index": 71
+            "display_index": 72
           }
         },
         {
