@@ -4524,25 +4524,6 @@
     return disclosure && (mindSecret || kingSecret);
   }
 
-  function projectActiveRules(state, includeOwner) {
-    var api = window.KingGameState;
-    var activeRules = api && typeof api.getActiveDecrees === 'function'
-      ? api.getActiveDecrees(state)
-      : [];
-    return activeRules.map(function (rule) {
-      var projected = {
-        '规则ID': rule['规则ID'],
-        '标题': rule['标题'],
-        '全文': rule['全文'],
-        '颁布日': rule['颁布日'],
-        '义务定义': rule['义务定义'],
-        '本日履行': rule['本日履行']
-      };
-      if (includeOwner === true) projected['颁布者'] = rule['颁布者'];
-      return projected;
-    });
-  }
-
   window.KingGameBridge = {
     getUserName: function () { return userName(); },
     getCardName: function () { return cardName(); },
@@ -4588,11 +4569,10 @@
       }
       return commitAction('beginDecree', [], function (next) {
         var system = next['系统'] || {};
-        var existingRules = projectActiveRules(next, true);
         var playerSubmission = system['_当前国王'] === '玩家'
-          ? '玩家提交的新法令内容或撤销目标是：“' + submitted + '”。请据此完成正式颁布或撤销。'
-          : '宿主已经确定当日国王为“' + system['_当前国王'] + '”。必须只由此人依据其人设和当前关系决定法令内容。';
-        return '【前端私密操作，不是公开发言】【每日流程·房间平板颁布法令】五人此刻分别被锁在各自房间。玩家平板私下显示、只读宿主变量中的当日国王是“' + system['_当前国王'] + '”，不得重新抽签、改选、猜测或让另一人代为颁布。只有当日国王自己的平板开放颁布或撤销界面，其余四台只显示等待。' + playerSubmission + '当前仍生效的法令为：' + JSON.stringify(existingRules) + '。新增法令前必须逐条检查真实冲突：若新规则会令一条或多条旧规则在同一义务人、重叠时空及同一客观行为或状态上无法同时履行，就在同一轮变量更新中先把每条真正冲突的旧规则状态 replace 为“失效”，再向今日国王自己的数组 add 独立的新规则。旧对象必须保留在原颁布者数组供历史查看；失效后不再执行、不会进入后续提示，也不会因新规则撤销而复活。仅主题相似、受益者相同或都涉及亲密不算冲突，无关规则不得失效。撤销同样只把一条当前生效规则 replace 为“失效”，不得 remove、迁移或同时新增。系统不使用优先级、合并或回落。完成后先向全员广播法令正文但不公开国王身份，再让五间房门同时解锁；广播与解锁以前不得让任何人进入大厅、串门或当面互动。正式广播时必须按原文冻结义务定义：只有被明确要求主动履行的人列入，有限动作记有限、需一直维持的状态或过程记持续、两者兼有记混合；受益者、授权使用者、被动承受者和自愿配合者不自动列入。法令若未明写未来开始时间、完成期限或可观察延迟触发条件，就从广播完毕立即开始并持续生效；持续义务开始后只算进行中，不算永久完成，之后每个场景仍须维持，停止或中断即违规；但只要换日前仍客观维持“进行中”，它就算当日合规，不阻止过夜，下一日继续生效。明确写出的未来时点尚未到达才可等待。圆桌短会、争辩和分析都不暂停已到期或持续义务；客观可执行的拖延只允许数秒警告，随后项圈必须迅速以强烈连续脉冲逼迫开始遵从。全段严格留在{{user}}所在房间，不得切去当日国王或其他女性的房间展示她们提交法令、等待或听见广播的私下镜头。门开后，本次前端操作仅额外授权{{user}}随四名女性来到中央圆桌旁这一项流程转场，不得替他发言、表态或作选择；随后必须在这一条AI回复内按世界书完成固定的广播后圆桌短会，让四名女性各有可辨反应，展开6—10个有效来回、约700—1100个汉字，再停在等待玩家下一步操作。把短会全部正文原地包在唯一一组<DecreeRoundtableImpl>与</DecreeRoundtableImpl>之间；闭标签必须是本轮最后一段剧情内容，下一行只输出<StatusPlaceHolderImpl/>。该短会不计入玩家互动数组或女性互动矩阵，不得使用<InteractionPairImpl>，不得趁机生成{{user}}与尚未点击女性的独立互动。';
+          ? '玩家提交：“' + submitted + '”。按其原意正式新增或撤销。'
+          : '只由“' + system['_当前国王'] + '”依人设与当前关系决定新增或撤销。';
+        return '【每日流程·房间平板颁布法令】今日国王为“' + system['_当前国王'] + '”（仅玩家平板私知；不得重抽、改人或泄露来源）。五人仍锁在各自房间。' + playerSubmission + '旧法令只读【当前公开局势】的唯一生效投影；新增、撤销、真冲突失效、义务冻结、广播开门与即时履行均按本轮已启用世界书执行，不在此重复正文或台账。叙事留在{{user}}房内直到广播开门；有效广播后在同一回复完成规定的圆桌短会，正文原地包在唯一一组<DecreeRoundtableImpl>与</DecreeRoundtableImpl>之间；闭标签后下一行只输出<StatusPlaceHolderImpl/>。短会不计互动，不得输出<InteractionPairImpl>或抢占后续个人互动。';
       });
     },
     submitInteraction: function (roleName, method) {
@@ -4641,17 +4621,11 @@
       });
     },
     overnight: function () {
-      return commitAction('advanceDay', [], function (next, before) {
+      return commitAction('advanceDay', [], function (next) {
         var system = next['系统'] || {};
-        var continuingRules = projectActiveRules(before).filter(function (rule) {
-          var definition = rule['义务定义'] && typeof rule['义务定义'] === 'object' ? rule['义务定义'] : {};
-          return Object.keys(definition).some(function (name) {
-            return definition[name] === '持续' || definition[name] === '混合';
-          });
-        });
         return system['_每日阶段'] === '终局'
-          ? '【每日流程·过夜】第15日已经结束。请描写最后一夜与国王游戏终局。'
-          : '【每日流程·过夜】今日四次玩家互动已经完成，我选择结束本日并过夜。请只从{{user}}单一有限视角描写夜间结算；不需要另行召开法令履行会议。换日前仍含持续或混合义务的公开法令及其本日台账为：' + JSON.stringify(continuingRules) + '。这些法令不会因换日、睡眠、有限证据按日清空或通常的回房习惯而失效：有限义务的新日状态恢复为待履行；睡前仍客观保持进行中的持续/混合义务在新日本日履行中恢复为进行中，过程并未结束；睡前已中断或违规者不得伪造恢复。若持续法令要求共同位置、同床、身体接触、照料或持续性行为，{{user}}可以留在相关角色房间过夜，相关人物也应留在法令能够继续履行的位置，并同步更新/玩家/地点、/角色/<名字>/地点与/系统/当前地点，不得为了“各自回房”而中断。只有不存在跨夜位置/过程要求时，{{user}}才自然回到自己的房间。不得凭空创造新法令，也不得让未被某条义务定义列名的人因为过夜接受额外行为。下一日清晨只描写{{user}}醒来时能感知的所在房间、身边人物、门锁和平板；若法令要求他留在他人房间，就不得硬写成在自己房间醒来。房门仍在新法令广播前锁闭，不得切去其他房间的女性视角或让任何人提前进入大厅。';
+          ? '【每日流程·过夜】第15日结束；只从{{user}}有限视角按当前启用的终局条目描写最后一夜与结局。'
+          : '【每日流程·过夜】结束本日并进入次日；无需另开履行会议。跨夜法令只读【当前公开局势】的唯一生效投影：有限义务按新日重置，仍在维持的持续或混合义务与其客观地点、接触和过程继续，不能用通常回房打断；中断者不得伪造为进行中。只描写{{user}}能感知的过夜与次晨，法令广播前房门保持锁闭，不切女性视角或提前进入大厅。地点只在人物实际移动时更新，未移动者不得输出同值replace。';
       });
     }
   };
