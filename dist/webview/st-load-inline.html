@@ -1744,7 +1744,6 @@
       return Math.min(99, sum + entry['次数']);
     }, 0);
     var continuous = source['持续状态'];
-    if (continuous === '合规') continuous = '进行中';
     if (continuous !== '待判定' && continuous !== '进行中' && continuous !== '违规') continuous = '不适用';
     return { '完成次数': completed, '证据': evidence, '持续状态': continuous };
   }
@@ -1791,13 +1790,15 @@
     return { '日期': normalizedDay, '义务人': obligors };
   }
 
-  function isRepairableRule(rule) {
+  function isCurrentRule(rule) {
     return rule && typeof rule === 'object'
-      && typeof rule.id === 'string'
+      && /^R\d+$/.test(String(rule.id || ''))
       && typeof rule['标题'] === 'string'
       && typeof rule['全文'] === 'string'
       && Number.isFinite(Number(rule['颁布日']))
-      && (rule['状态'] === '生效' || rule['状态'] === '失效' || rule['状态'] === '已撤销');
+      && (rule['状态'] === '生效' || rule['状态'] === '失效')
+      && normalizeObligationDefinition(rule['义务定义']) !== null
+      && rule['本日履行'] && typeof rule['本日履行'] === 'object';
   }
 
   function repairDailyRuleFulfillment(existingVariables) {
@@ -1814,17 +1815,13 @@
       var rules = Array.isArray(source['颁布规则']) ? source['颁布规则'] : [];
       var changed = false;
       var nextRules = rules.map(function (rule) {
-        if (!isRepairableRule(rule)) return rule;
+        if (!isCurrentRule(rule)) return rule;
         changed = true;
         var nextRule = {};
         Object.keys(rule).forEach(function (key) { nextRule[key] = rule[key]; });
         var definition = normalizeObligationDefinition(rule['义务定义']);
         if (definition) nextRule['义务定义'] = definition;
-        // v16 起冲突与撤销都只把旧规则标记为“失效”；历史对象不再合并或删除。
-        nextRule['状态'] = rule['状态'] === '生效' ? '生效' : '失效';
-        delete nextRule['合并来源'];
-        // v13 起优先级不再有任何运行语义；新存档逐步清除旧字段。
-        delete nextRule['优先级'];
+        nextRule['状态'] = rule['状态'];
         nextRule['本日履行'] = normalizeDailyRuleFulfillment(rule['本日履行'], day, definition);
         return nextRule;
       });
@@ -1903,10 +1900,10 @@
     var candidateRuleKeys = Object.create(null);
     PARTICIPANTS.forEach(function (owner) {
       holderRules(baseline, owner).forEach(function (rule) {
-        if (isRepairableRule(rule)) baselineRuleKeys[owner + '\u0000' + rule.id] = true;
+        if (isCurrentRule(rule)) baselineRuleKeys[owner + '\u0000' + rule.id] = true;
       });
       holderRules(candidate, owner).forEach(function (rule) {
-        if (isRepairableRule(rule)) candidateRuleKeys[owner + '\u0000' + rule.id] = true;
+        if (isCurrentRule(rule)) candidateRuleKeys[owner + '\u0000' + rule.id] = true;
       });
     });
     var rollbackNewRules = Object.keys(baselineRuleKeys).some(function (key) {
@@ -1920,11 +1917,19 @@
       var baselineRules = Array.isArray(baselineSource['颁布规则']) ? baselineSource['颁布规则'] : [];
       var baselineById = Object.create(null);
       baselineRules.forEach(function (rule) {
-        if (isRepairableRule(rule) && !baselineById[rule.id]) baselineById[rule.id] = rule;
+        if (isCurrentRule(rule) && !baselineById[rule.id]) baselineById[rule.id] = rule;
       });
       var changed = false;
       var nextRules = rules.map(function (rule) {
-        if (!isRepairableRule(rule)) return rule;
+        if (!isCurrentRule(rule)) {
+          changed = true;
+          var invalidId = rule && typeof rule === 'object' ? String(rule.id || '') : '';
+          var validBaseline = invalidId && baselineById[invalidId];
+          if (!validBaseline) return null;
+          var restoredBaseline = {};
+          Object.keys(validBaseline).forEach(function (key) { restoredBaseline[key] = validBaseline[key]; });
+          return restoredBaseline;
+        }
         var previous = baselineById[rule.id];
         if (!previous && (rollbackNewRules || owner !== currentKing || rule['状态'] !== '生效')) {
           changed = true;
@@ -1934,8 +1939,6 @@
         Object.keys(rule).forEach(function (key) { nextRule[key] = rule[key]; });
         var definition = normalizeObligationDefinition(rule['义务定义'] || (previous && previous['义务定义']));
         if (definition) nextRule['义务定义'] = definition;
-        delete nextRule['合并来源'];
-        delete nextRule['优先级'];
         if (previous) {
           var previousStatus = previous['状态'] === '生效' ? '生效' : '失效';
           var requestedStatus = rule['状态'] === '生效' ? '生效' : '失效';
@@ -1955,16 +1958,14 @@
       }).filter(function (rule) { return rule !== null; });
       var present = Object.create(null);
       nextRules.forEach(function (rule) {
-        if (isRepairableRule(rule)) present[rule.id] = true;
+        if (isCurrentRule(rule)) present[rule.id] = true;
       });
       baselineRules.forEach(function (rule) {
-        if (!isRepairableRule(rule) || present[rule.id]) return;
+        if (!isCurrentRule(rule) || present[rule.id]) return;
         // 规则历史永不物理删除；冲突和撤销都只能把状态改成“失效”。
         var restored = {};
         Object.keys(rule).forEach(function (key) { restored[key] = rule[key]; });
-        restored['状态'] = rule['状态'] === '生效' ? '生效' : '失效';
-        delete restored['合并来源'];
-        delete restored['优先级'];
+        restored['状态'] = rule['状态'];
         nextRules.push(restored);
         changed = true;
       });
@@ -2003,7 +2004,7 @@
     holders.forEach(function (holder) {
       var list = holder.value && Array.isArray(holder.value['颁布规则']) ? holder.value['颁布规则'] : [];
       list.forEach(function (rule) {
-        if (!rule || typeof rule !== 'object' || rule['状态'] !== '生效') return;
+        if (!isCurrentRule(rule) || rule['状态'] !== '生效') return;
         rules.push({
           '颁布者': holder.name,
           '规则ID': typeof rule.id === 'string' ? rule.id : '',
@@ -2044,9 +2045,6 @@
     var complete = interactions.length === WOMEN.length;
     var emergencyEnding = phase === '终局'
       && system.internal && system.internal.q && system.internal.q.r === 'E' && system.internal.q.d === true;
-    delete system['_法令履行会议'];
-    delete system['法令履行审计'];
-    delete system['公开线索'];
     system['_可过夜'] = !emergencyEnding
       && phase === '自由互动'
       && complete;
@@ -2200,7 +2198,7 @@
         && /^R\d+$/.test(String(rule.id || ''))
         && Number(rule['颁布日']) >= 1
         && Number(rule['颁布日']) <= DAYS
-        && (rule['状态'] === '生效' || rule['状态'] === '失效' || rule['状态'] === '已撤销');
+        && (rule['状态'] === '生效' || rule['状态'] === '失效');
     });
   }
 
@@ -2221,12 +2219,7 @@
   }
 
   function repairEndingCache(system, relationshipDecreeFound) {
-    var legacyCache = system['_校验缓存'];
-    // `_校验缓存` 只用于一次性兼容没有 internal 的早期存档。它不能作为
-    // 第二份持久真源，更不能覆盖较新楼层已经写入的 internal。
-    var sourceCache = system.internal && typeof system.internal === 'object'
-      ? system.internal
-      : (legacyCache && typeof legacyCache === 'object' ? legacyCache : {});
+    var sourceCache = system.internal && typeof system.internal === 'object' ? system.internal : {};
     var cache = {};
     Object.keys(sourceCache).forEach(function (key) {
       cache[key] = sourceCache[key];
@@ -2249,26 +2242,6 @@
     cache.n3.g = normalizeRelationshipRoster(cache.n3.g, GIRLFRIEND_CANDIDATES);
     cache.q = normalizeEndingState(sourceCache.q, relationshipDecreeFound);
 
-    // v11 仅在这一处读取旧 f/g/e，合并到阶段状态后立即删除旧根。
-    var legacyArchive = sourceCache.f && typeof sourceCache.f === 'object' ? sourceCache.f : {};
-    var legacyInsight = sourceCache.g && typeof sourceCache.g === 'object' ? sourceCache.g : {};
-    var legacyEnding = sourceCache.e && typeof sourceCache.e === 'object' ? sourceCache.e : {};
-    ['n1', 'n2', 'n3'].forEach(function (alias) {
-      if (legacyArchive[alias] === true) cache[alias].s.b = Math.max(cache[alias].s.b, 2);
-      if (legacyInsight[alias] === true) cache[alias].s.b = Math.max(cache[alias].s.b, 4);
-      if (legacyEnding.c && legacyEnding.c[alias] === true) cache[alias].s.c = 1;
-    });
-    if (legacyArchive.n4 === true) cache.n4.s.b = Math.max(cache.n4.s.b, 2);
-    if (legacyEnding.p === true) cache.n4.s.t = Math.max(cache.n4.s.t, 2);
-    var migratedEnding = normalizeEndingState(legacyEnding, false);
-    cache.q.h = cache.q.h || migratedEnding.h;
-    cache.q.t = cache.q.t || migratedEnding.t;
-    cache.q.v = cache.q.v || migratedEnding.v;
-    if (!cache.q.r && migratedEnding.r) cache.q.r = migratedEnding.r;
-    cache.q.d = cache.q.d || migratedEnding.d;
-    delete cache.f;
-    delete cache.g;
-    delete cache.e;
     cache.p = normalizeInsightProjection(sourceCache.p);
     restoreUnauthorizedStageChanges(cache, system['_最近互动请求'], system['_当前天数']);
     latchStages(cache, system['_当前天数']);
@@ -2276,7 +2249,6 @@
     // 其余三人公开（q.v=false），玩家侧王可可人设也立即进入真相阶段。
     if (cache.n4.s.t >= 2 || cache.q.v === true) cache.n4.s.k = 2;
     system.internal = cache;
-    delete system['_校验缓存'];
     return system;
   }
 
@@ -2415,11 +2387,7 @@
     var baselineEnding = normalizeEndingState(baselineHidden.q, false);
     protectedHidden.q = baselineEnding;
     protectedHidden.p = normalizeInsightProjection(baselineHidden.p);
-    delete protectedHidden.f;
-    delete protectedHidden.g;
-    delete protectedHidden.e;
     candidateSystem.internal = protectedHidden;
-    delete candidateSystem['_校验缓存'];
     output['系统'] = candidateSystem;
 
     // 此处统一完成关系法令扫描、好感阈值锁存、照片错过锁与遗书待触发锁。
@@ -2784,10 +2752,7 @@
 
   function normalizeSchedule(value) {
     if (!Array.isArray(value)) return [];
-    return value.map(function (entry) {
-      if (SCHEDULE_CODE_SET[entry]) return entry;
-      return NAME_TO_CODE[entry] || String(entry || '');
-    });
+    return value.map(function (entry) { return SCHEDULE_CODE_SET[entry] ? entry : String(entry || ''); });
   }
 
   function countKings(schedule, throughDay) {
@@ -2890,29 +2855,16 @@
     };
   }
 
-  function migrateHostPrivateFields(existingSystem) {
-    var next = copySystem(existingSystem && typeof existingSystem === 'object' ? existingSystem : {});
-    var pairs = [
-      ['_版本', '$版本'],
-      ['_日程已锁定', '$日程已锁定'],
-      ['_国王种子源', '$国王种子源'],
-      ['_国王日程', '$国王日程'],
-      ['_protocol_strikes', '$protocol_strikes'],
-      ['_国王次数', '$国王次数'],
-      ['_日程校验码', '$日程校验码']
-    ];
-    pairs.forEach(function (pair) {
-      if (next[pair[1]] === undefined && next[pair[0]] !== undefined) next[pair[1]] = next[pair[0]];
-      delete next[pair[0]];
-    });
-    delete next['_法令履行会议'];
-    delete next['法令履行审计'];
-    delete next['公开线索'];
-    return next;
+  function readCurrentSystem(existingSystem) {
+    var source = existingSystem && typeof existingSystem === 'object' ? existingSystem : {};
+    if (Object.keys(source).length > 0 && source['$版本'] !== VERSION) {
+      throw new Error('当前角色卡只接受 v' + VERSION + ' 变量，不再迁移旧版存档');
+    }
+    return copySystem(source);
   }
 
   function initializeSystem(existingSystem, chatName) {
-    var current = migrateHostPrivateFields(existingSystem);
+    var current = readCurrentSystem(existingSystem);
     var storedSchedule = normalizeSchedule(current['$国王日程']);
     var storedValidation = validateSchedule(storedSchedule);
     var storedSeed = typeof current['$国王种子源'] === 'string' && current['$国王种子源'].trim()
@@ -2940,7 +2892,7 @@
       return repairEndingPresentation(next);
     }
 
-    // 已锁定旧存档继续以原种子和合法日程为准；损坏日程仍可由原种子修复。
+    // 当前版本的已锁定局以保存种子和合法日程为准；损坏日程可由同一种子重建。
     var seed = storedSeed || normalizeChatName(chatName);
     var schedule = storedValidation.valid ? storedSchedule.slice() : createSchedule(seed);
     var derived = deriveDayState(schedule, next['_当前天数']);
@@ -3003,7 +2955,7 @@
   }
 
   function setCurrentDay(existingSystem, day) {
-    var current = migrateHostPrivateFields(existingSystem);
+    var current = readCurrentSystem(existingSystem);
     var schedule = normalizeSchedule(current['$国王日程']);
     var validation = validateSchedule(schedule);
     if (!validation.valid) {
@@ -3023,7 +2975,7 @@
   }
 
   function requireInitializedSystem(existingSystem) {
-    var current = migrateHostPrivateFields(existingSystem);
+    var current = readCurrentSystem(existingSystem);
     var schedule = normalizeSchedule(current['$国王日程']);
     var validation = validateSchedule(schedule);
     if (!validation.valid) {
@@ -3659,7 +3611,6 @@
         if (key.charAt(0) === '$') delete system[key];
       });
       delete system.internal;
-      delete system['_校验缓存'];
       delete system['_法令履行会议'];
       delete system['法令履行审计'];
       delete system['公开线索'];
@@ -4650,31 +4601,28 @@
       var protectedDisclosure = attemptsPrivateKnowledgeDisclosure(trimmed);
       return commitAction('submitInteraction', [roleName, trimmed], function (next) {
         var request = (next['系统'] || {})['_最近互动请求'] || {};
-        var publicActiveRules = projectActiveRules(next);
         var contentGate = request['内容门控'] || {};
         var authorizedAction = Number(contentGate['版本']) === 2 ? String(contentGate['授权动作'] || 'none') : 'none';
         var supplements = Array.isArray(request['补全对象']) ? request['补全对象'] : [];
-        var pairBlocks = supplements.map(function (otherName) {
-          return '<InteractionPairImpl pair="' + roleName + '-' + otherName + '">\\n在这里直接写完' + roleName + '与' + otherName + '的实际互动正文\\n</InteractionPairImpl>';
-        });
+        var pairList = supplements.map(function (otherName) { return roleName + '-' + otherName; }).join('、');
         var followup = supplements.length
-          ? '在这次互动结束后，依次描写' + roleName + '与' + supplements.join('、') + '之间今日尚未发生的互动。这些人必须在{{user}}能够看见或听见的当前公共空间内互动；不得切去别处、使用任何女性视角或描写{{user}}不在场的私下场景。每一组互动必须原地完整包在对应标签内：开标签放在该组正文之前，闭标签紧跟在该组正文之后；不要先写完全部互动再把配对标签集中放到文末。下列各块中的说明文字必须替换为实际互动正文，不得照抄：\\n' + pairBlocks.join('\\n') + '\\n标签顺序、pair姓名和半角连字符均不得修改，也不得为玩家与' + roleName + '的主互动生成标签。最后一个闭标签后立即停止角色剧情，只允许一句不包含任何角色新动作、台词、接触、邀请、命令执行或互动开端的中性环境收束；严禁继续生成{{user}}与任何未点击女性的互动，也严禁让未点击女性主动接近、呼唤、触碰、质问或要求{{user}}执行法令。玩家与其余女性的互动必须保留给各自后续前端按钮。'
-          : '这是追加互动，不需要把它误写成我已经说过某句具体台词。本轮没有新的女性补叙配对，不得输出任何<InteractionPairImpl>标签。';
+          ? '主互动后按此顺序补叙女性配对：' + pairList + '。每组须在{{user}}可见或可听的当前公共空间完成，不得切去别处、使用任何女性视角；将实际正文原地包为<InteractionPairImpl pair="A-B">…</InteractionPairImpl>，A-B逐项照抄清单，不得集中空标签，也不得给玩家主互动加标签。最后一组闭标签后最多一句中性环境收束，不得开启玩家与未点击女性的互动。'
+          : '本轮无女性补叙配对，不得输出<InteractionPairImpl>。';
         var intent = protectedDisclosure
           ? '我原本想向' + roleName + '泄露自己的所谓读心术或私人国王情报，但这两项秘密不可公开。请让{{user}}在任何人听见、看见或收到具体内容前临时收住话、停止展示或换成不含秘密的说法；不要复述原输入中的秘密内容，也不要让任何角色因此获知或准确推断。'
-          : '我想以“' + trimmed + '”的方式与' + roleName + '互动。请把它作为行动意图来展开，不要擅自替我补写具体台词。';
+          : '以“' + trimmed + '”与' + roleName + '互动；只展开行动意图，不替{{user}}补写具体台词。';
         var actionGuards = {
-          archive: '【受控内容门】本次只允许当前已启用的单个阶段事件；具体内容只服从当前启用世界书，不得合并、提前或越级其他事件。',
-          photo: '【受控内容门】本次只允许当前已启用的单个阶段事件；具体内容只服从当前启用世界书，不得合并、提前或越级其他事件。',
-          insight: '【受控内容门】本次只允许当前已启用的单个阶段事件；具体内容只服从当前启用世界书，不得合并、提前或越级其他事件。',
-          testament: '【受控内容门】本次只允许当前已启用的单个阶段事件；具体内容只服从当前启用世界书，不得合并、提前或越级其他事件。',
-          none: '【受控内容门】本次没有额外阶段事件授权；本轮新达到的条件不得追溯结算，必须等待后续互动重新判定。'
+          archive: '【受控内容门】仅执行当前启用的单项阶段事件，不合并或越级。',
+          photo: '【受控内容门】仅执行当前启用的单项阶段事件，不合并或越级。',
+          insight: '【受控内容门】仅执行当前启用的单项阶段事件，不合并或越级。',
+          testament: '【受控内容门】仅执行当前启用的单项阶段事件，不合并或越级。',
+          none: '【受控内容门】无阶段事件授权；本轮新达门槛留待下次。'
         };
         var confessionGuard = contentGate['忏悔机会'] === true
-          ? '【受控互动门】本次允许当前已启用的单个关系事件按专门条目判定；机会不等于自动完成。'
-          : '【受控互动门】本次没有额外关系事件授权；本轮新达到条件不追溯。';
+          ? '【受控互动门】可按当前专门条目判定单项关系事件，不等于完成。'
+          : '【受控互动门】无关系事件授权；本轮新达门槛留待下次。';
         var actionGuard = actionGuards[authorizedAction] || actionGuards.none;
-        return '【每日流程·互动请求】当前真正生效的公开法令为：' + JSON.stringify(publicActiveRules) + '。先按每条法令冻结的义务定义逐人建立约束范围：只有列名者会被该条项圈强迫；未列名者、受益者、授权使用者、被动承受方和临时配合者不自动受约束。严禁虚构不存在的规则、扩大原文对象，或把只约束另一人的法令当成目标女性必须接受行为的理由。法令只强迫一方行动时不自动强迫另一方合作；没有法令明确约束目标女性接受或配合的侵入性、亲密或性行为，只能由她基于当前关系、欲望、利益与风险自主选择，动机不足就应拒绝、躲避、阻止、反抗或谈条件，不能把生理反应、暧昧气氛或玩家意图写成同意。本互动进行时，全部仍生效法令都必须作为本轮真实约束同步执行并更新各自本日履行；未明写未来开始时间、期限或延迟条件的限制默认早已从广播后立即且持续生效。有限义务当天已在先前互动中客观完成的，不得重演或重复处罚。持续义务的“进行中”不是永久完成：一次开始后仍须贯穿本轮和后续场景，停止或中断立刻变为违规；但当前仍处于进行中就算今日合规并允许过夜，跨夜后法令和过程仍继续。说话、推理、争执或拖延不会暂停已到期/持续义务，客观可执行的违令在数秒警告后立即升级为强烈连续电击，直至有限义务完成或持续义务恢复进行中。' + actionGuard + confessionGuard + intent + followup;
+        return '【每日流程·互动请求】法令只使用【当前公开局势】的唯一生效投影，本轮同步执行并更新台账：仅义务定义列名者受强迫；有限已完成不重演，持续进行中须保持，违规按既有项圈规则即时纠正。不得虚构或扩大法令；单方义务不等于另一方同意，未受约束的亲密或侵入行为须按角色动机自主接受或拒绝。' + actionGuard + confessionGuard + intent + followup;
       });
     },
     complianceMeeting: function () {
