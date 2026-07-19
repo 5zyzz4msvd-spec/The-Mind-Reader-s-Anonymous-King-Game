@@ -1796,9 +1796,117 @@
       && typeof rule['标题'] === 'string'
       && typeof rule['全文'] === 'string'
       && Number.isFinite(Number(rule['颁布日']))
-      && (rule['状态'] === '生效' || rule['状态'] === '失效')
+      && (rule['状态'] === '待填充' || rule['状态'] === '生效' || rule['状态'] === '失效')
       && normalizeObligationDefinition(rule['义务定义']) !== null
       && rule['本日履行'] && typeof rule['本日履行'] === 'object';
+  }
+
+  function getRuleHolder(variables, owner) {
+    if (!variables || typeof variables !== 'object') return null;
+    if (owner === '玩家') return variables['玩家'];
+    return variables['角色'] && variables['角色'][owner];
+  }
+
+  function getPendingDecreeDraft(existingVariables) {
+    var variables = existingVariables && typeof existingVariables === 'object' ? existingVariables : {};
+    for (var ownerIndex = 0; ownerIndex < PARTICIPANTS.length; ownerIndex += 1) {
+      var owner = PARTICIPANTS[ownerIndex];
+      var holder = getRuleHolder(variables, owner);
+      var rules = holder && Array.isArray(holder['颁布规则']) ? holder['颁布规则'] : [];
+      for (var ruleIndex = 0; ruleIndex < rules.length; ruleIndex += 1) {
+        var rule = rules[ruleIndex];
+        if (!isCurrentRule(rule) || rule['状态'] !== '待填充') continue;
+        return {
+          owner: owner,
+          index: ruleIndex,
+          id: String(rule.id),
+          path: owner === '玩家'
+            ? '/玩家/颁布规则/' + String(ruleIndex)
+            : '/角色/' + owner + '/颁布规则/' + String(ruleIndex)
+        };
+      }
+    }
+    return null;
+  }
+
+  function stageDecreeDraft(existingVariables) {
+    var current = existingVariables && typeof existingVariables === 'object' ? existingVariables : {};
+    var system = current['系统'] && typeof current['系统'] === 'object' ? current['系统'] : {};
+    var owner = String(system['_当前国王'] || '');
+    if (!PARTICIPANT_SET[owner]) throw new Error('预建法令槽前必须先确定当日国王');
+    var day = normalizeDay(system['_当前天数']);
+    var maxRuleNumber = 0;
+
+    PARTICIPANTS.forEach(function (participant) {
+      var holder = getRuleHolder(current, participant);
+      var rules = holder && Array.isArray(holder['颁布规则']) ? holder['颁布规则'] : [];
+      rules.forEach(function (rule) {
+        var match = /^R(\d+)$/.exec(String(rule && rule.id || ''));
+        if (match) maxRuleNumber = Math.max(maxRuleNumber, Number(match[1]) || 0);
+      });
+    });
+
+    var output = {};
+    Object.keys(current).forEach(function (key) { output[key] = current[key]; });
+    var sourceRoles = current['角色'] && typeof current['角色'] === 'object' ? current['角色'] : {};
+    var nextRoles = {};
+    Object.keys(sourceRoles).forEach(function (name) { nextRoles[name] = sourceRoles[name]; });
+
+    function copyHolder(participant) {
+      var source = getRuleHolder(current, participant);
+      source = source && typeof source === 'object' ? source : {};
+      var next = {};
+      Object.keys(source).forEach(function (key) { next[key] = source[key]; });
+      next['颁布规则'] = (Array.isArray(source['颁布规则']) ? source['颁布规则'] : []).filter(function (rule) {
+        return !(isCurrentRule(rule) && rule['状态'] === '待填充');
+      });
+      return next;
+    }
+
+    var nextPlayer = copyHolder('玩家');
+    WOMEN.forEach(function (name) { nextRoles[name] = copyHolder(name); });
+    output['玩家'] = nextPlayer;
+    output['角色'] = nextRoles;
+
+    var target = owner === '玩家' ? nextPlayer : nextRoles[owner];
+    var nextId = 'R' + String(maxRuleNumber + 1).padStart(2, '0');
+    target['颁布规则'].push({
+      id: nextId,
+      '标题': '',
+      '全文': '',
+      '颁布日': day,
+      '状态': '待填充',
+      '义务定义': {},
+      '本日履行': { '日期': day, '义务人': {} }
+    });
+    return output;
+  }
+
+  function finalizeDecreeDraft(existingVariables) {
+    var current = existingVariables && typeof existingVariables === 'object' ? existingVariables : {};
+    var output = {};
+    Object.keys(current).forEach(function (key) { output[key] = current[key]; });
+    var sourceRoles = current['角色'] && typeof current['角色'] === 'object' ? current['角色'] : {};
+    var nextRoles = {};
+    Object.keys(sourceRoles).forEach(function (name) { nextRoles[name] = sourceRoles[name]; });
+
+    function cleanHolder(holder) {
+      var source = holder && typeof holder === 'object' ? holder : {};
+      var rules = Array.isArray(source['颁布规则']) ? source['颁布规则'] : [];
+      var cleaned = rules.filter(function (rule) {
+        return !(isCurrentRule(rule) && rule['状态'] === '待填充');
+      });
+      if (cleaned.length === rules.length) return source;
+      var next = {};
+      Object.keys(source).forEach(function (key) { next[key] = source[key]; });
+      next['颁布规则'] = cleaned;
+      return next;
+    }
+
+    output['玩家'] = cleanHolder(current['玩家']);
+    WOMEN.forEach(function (name) { nextRoles[name] = cleanHolder(sourceRoles[name]); });
+    output['角色'] = nextRoles;
+    return output;
   }
 
   function repairDailyRuleFulfillment(existingVariables) {
@@ -1896,20 +2004,6 @@
     }
 
     var currentKing = String(baselineSystem['_当前国王'] || '');
-    var baselineRuleKeys = Object.create(null);
-    var candidateRuleKeys = Object.create(null);
-    PARTICIPANTS.forEach(function (owner) {
-      holderRules(baseline, owner).forEach(function (rule) {
-        if (isCurrentRule(rule)) baselineRuleKeys[owner + '\u0000' + rule.id] = true;
-      });
-      holderRules(candidate, owner).forEach(function (rule) {
-        if (isCurrentRule(rule)) candidateRuleKeys[owner + '\u0000' + rule.id] = true;
-      });
-    });
-    var rollbackNewRules = Object.keys(baselineRuleKeys).some(function (key) {
-      return !candidateRuleKeys[key];
-    });
-
     function mergeHolder(owner, candidateHolder, baselineHolder) {
       var source = candidateHolder && typeof candidateHolder === 'object' ? candidateHolder : {};
       var baselineSource = baselineHolder && typeof baselineHolder === 'object' ? baselineHolder : {};
@@ -1931,19 +2025,41 @@
           return restoredBaseline;
         }
         var previous = baselineById[rule.id];
-        if (!previous && (rollbackNewRules || owner !== currentKing || rule['状态'] !== '生效')) {
+        // 新法令必须填充宿主预建的固定 ID/索引。模型自行 add 的任何
+        // 新 ID 都没有合法来源，即使碰巧放在真实国王数组也要丢弃。
+        if (!previous) {
           changed = true;
           return null;
         }
         var nextRule = {};
-        Object.keys(rule).forEach(function (key) { nextRule[key] = rule[key]; });
+        Object.keys(previous).forEach(function (key) { nextRule[key] = previous[key]; });
         var definition = normalizeObligationDefinition(rule['义务定义'] || (previous && previous['义务定义']));
-        if (definition) nextRule['义务定义'] = definition;
         if (previous) {
-          var previousStatus = previous['状态'] === '生效' ? '生效' : '失效';
-          var requestedStatus = rule['状态'] === '生效' ? '生效' : '失效';
-          // 失效是单向历史状态，旧规则不能被后续补丁复活。
-          nextRule['状态'] = previousStatus === '失效' ? '失效' : requestedStatus;
+          var previousStatus = previous['状态'];
+          var requestedStatus = rule['状态'];
+          if (previousStatus === '待填充') {
+            // 宿主草稿槽只能由当日国王在同一索引填成一条生效法令；
+            // 不能借草稿复活旧规则，也不能把它伪装成失效历史。
+            var canCommitDraft = owner === currentKing
+              && requestedStatus === '生效'
+              && String(rule.id || '') === String(previous.id || '')
+              && Number(rule['颁布日']) === Number(previous['颁布日'])
+              && String(rule['标题'] || '').trim().length > 0
+              && String(rule['全文'] || '').trim().length > 0
+              && definition && Object.keys(definition).length > 0;
+            if (canCommitDraft) {
+              nextRule['标题'] = String(rule['标题']);
+              nextRule['全文'] = String(rule['全文']);
+              nextRule['义务定义'] = definition;
+              nextRule['状态'] = '生效';
+            } else {
+              nextRule['状态'] = '待填充';
+            }
+          } else {
+            requestedStatus = requestedStatus === '生效' ? '生效' : '失效';
+            // 失效是单向历史状态，旧规则不能被后续补丁复活。
+            nextRule['状态'] = previousStatus === '失效' ? '失效' : requestedStatus;
+          }
         } else {
           nextRule['状态'] = rule['状态'] === '生效' ? '生效' : '失效';
         }
@@ -1951,7 +2067,7 @@
           previous && previous['本日履行'],
           rule['本日履行'],
           day,
-          definition
+          nextRule['义务定义']
         );
         changed = true;
         return nextRule;
@@ -1989,6 +2105,42 @@
     });
     output['角色'] = nextRoles;
     return output;
+  }
+
+  function isDecreeSettlementValid(candidateVariables, baselineVariables) {
+    var candidate = candidateVariables && typeof candidateVariables === 'object' ? candidateVariables : {};
+    var baseline = baselineVariables && typeof baselineVariables === 'object' ? baselineVariables : {};
+    var draft = getPendingDecreeDraft(baseline);
+    if (!draft) return false;
+    var candidateHolder = getRuleHolder(candidate, draft.owner);
+    var candidateRules = candidateHolder && Array.isArray(candidateHolder['颁布规则'])
+      ? candidateHolder['颁布规则']
+      : [];
+    var committed = candidateRules.some(function (rule) {
+      return isCurrentRule(rule)
+        && String(rule.id) === draft.id
+        && rule['状态'] === '生效'
+        && String(rule['标题'] || '').trim().length > 0
+        && String(rule['全文'] || '').trim().length > 0
+        && Object.keys(normalizeObligationDefinition(rule['义务定义']) || {}).length > 0;
+    });
+    if (committed) return true;
+
+    var revoked = 0;
+    PARTICIPANTS.forEach(function (owner) {
+      var beforeRules = getRuleHolder(baseline, owner);
+      beforeRules = beforeRules && Array.isArray(beforeRules['颁布规则']) ? beforeRules['颁布规则'] : [];
+      var afterRules = getRuleHolder(candidate, owner);
+      afterRules = afterRules && Array.isArray(afterRules['颁布规则']) ? afterRules['颁布规则'] : [];
+      beforeRules.forEach(function (beforeRule) {
+        if (!isCurrentRule(beforeRule) || beforeRule['状态'] !== '生效') return;
+        var afterRule = afterRules.find(function (rule) {
+          return isCurrentRule(rule) && String(rule.id) === String(beforeRule.id);
+        });
+        if (afterRule && afterRule['状态'] === '失效') revoked += 1;
+      });
+    });
+    return revoked === 1;
   }
 
   function activeDecrees(source) {
@@ -3338,6 +3490,10 @@
     getActiveDecreeSignature: complianceRuleSignature,
     normalizeDailyRuleFulfillment: normalizeDailyRuleFulfillment,
     repairDailyRuleFulfillment: repairDailyRuleFulfillment,
+    stageDecreeDraft: stageDecreeDraft,
+    getPendingDecreeDraft: getPendingDecreeDraft,
+    finalizeDecreeDraft: finalizeDecreeDraft,
+    isDecreeSettlementValid: isDecreeSettlementValid,
     initializeSystem: initializeSystem,
     initializeVariables: initializeVariables,
     reconcileGeneratedVariables: reconcileGeneratedVariables,
@@ -4316,6 +4472,10 @@
       var after = clone(before);
       var actionArgs = typeof args === 'function' ? args(before) : args;
       after['系统'] = api[apiName].apply(api, [before['系统']].concat(actionArgs || []));
+      if (apiName === 'beginDecree') {
+        if (typeof api.stageDecreeDraft !== 'function') throw new Error('状态引擎缺少法令槽预建能力');
+        after = api.stageDecreeDraft(after);
+      }
       if (apiName === 'advanceDay' && typeof api.repairDailyRuleFulfillment === 'function') {
         after = api.repairDailyRuleFulfillment(after);
       }
@@ -4336,6 +4496,18 @@
         var reconciled = typeof api.reconcileGeneratedVariables === 'function'
           ? api.reconcileGeneratedVariables(latestCandidate, after, chatName())
           : api.initializeVariables(latestCandidate, chatName());
+        if (apiName === 'beginDecree' && typeof api.isDecreeSettlementValid === 'function'
+          && !api.isDecreeSettlementValid(reconciled, after)) {
+          await writeHostRecord(latestRecord, before);
+          await syncStageEntriesForState(before, true);
+          publish(before);
+          endGenerationTransaction(transaction);
+          transaction = null;
+          throw new Error('本轮变量结果既未填充宿主法令槽，也未合法撤销一条生效法令；已回滚并保持待颁布阶段，请重试');
+        }
+        if (apiName === 'beginDecree' && typeof api.finalizeDecreeDraft === 'function') {
+          reconciled = api.finalizeDecreeDraft(reconciled);
+        }
         var resolved = clone(reconciled);
         if (apiName === 'beginDecree') {
           if (typeof api.resolveDecree !== 'function') throw new Error('状态引擎缺少法令广播结算能力');
@@ -4569,10 +4741,16 @@
       }
       return commitAction('beginDecree', [], function (next) {
         var system = next['系统'] || {};
+        var draft = typeof window.KingGameState.getPendingDecreeDraft === 'function'
+          ? window.KingGameState.getPendingDecreeDraft(next)
+          : null;
+        var draftContract = draft
+          ? '宿主已为本轮国王预建唯一法令槽' + draft.path + '（id=' + draft.id + '）。新增法令时只能整体replace这个精确索引并保留id、颁布日；不得按受约束者另选数组。若选择撤销，只改旧法令状态，草稿槽由宿主清理。'
+          : '';
         var playerSubmission = system['_当前国王'] === '玩家'
           ? '玩家提交：“' + submitted + '”。按其原意正式新增或撤销。'
           : '只由“' + system['_当前国王'] + '”依人设与当前关系决定新增或撤销。';
-        return '【每日流程·房间平板颁布法令】今日国王为“' + system['_当前国王'] + '”（仅玩家平板私知；不得重抽、改人或泄露来源）。五人仍锁在各自房间。' + playerSubmission + '旧法令只读【当前公开局势】的唯一生效投影；新增、撤销、真冲突失效、义务冻结、广播开门与即时履行均按本轮已启用世界书执行，不在此重复正文或台账。叙事留在{{user}}房内直到广播开门；有效广播后在同一回复完成规定的圆桌短会，正文原地包在唯一一组<DecreeRoundtableImpl>与</DecreeRoundtableImpl>之间；闭标签后下一行只输出<StatusPlaceHolderImpl/>。短会不计互动，不得输出<InteractionPairImpl>或抢占后续个人互动。';
+        return '【每日流程·房间平板颁布法令】今日国王为“' + system['_当前国王'] + '”（仅玩家平板私知；不得重抽、改人或泄露来源）。五人仍锁在各自房间。' + playerSubmission + draftContract + '旧法令只读【当前公开局势】的唯一生效投影；新增、撤销、真冲突失效、义务冻结、广播开门与即时履行均按本轮已启用世界书执行，不在此重复正文或台账。叙事留在{{user}}房内直到广播开门；有效广播后在同一回复完成规定的圆桌短会，正文原地包在唯一一组<DecreeRoundtableImpl>与</DecreeRoundtableImpl>之间；闭标签后下一行只输出<StatusPlaceHolderImpl/>。短会不计互动，不得输出<InteractionPairImpl>或抢占后续个人互动。';
       });
     },
     submitInteraction: function (roleName, method) {
@@ -5179,11 +5357,12 @@
 
     function renderRules(root, rules) {
       root.replaceChildren();
-      if (!asArray(rules).length) {
+      const visibleRules = asArray(rules).filter(rule => rule?.状态 === "生效" || rule?.状态 === "失效");
+      if (!visibleRules.length) {
         root.append(el("div", "empty", "尚未颁布个人法令。"));
         return;
       }
-      [...rules].sort((a, b) => {
+      [...visibleRules].sort((a, b) => {
         const dayDelta = num(a?.颁布日, 1, 15, 1) - num(b?.颁布日, 1, 15, 1);
         return dayDelta || String(a?.id || "").localeCompare(String(b?.id || ""), "zh-CN", { numeric: true });
       }).forEach(raw => {
