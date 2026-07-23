@@ -4425,12 +4425,21 @@
             : api.initializeVariables(latestCandidate, chatName());
         if (apiName === 'beginDecree' && typeof api.isDecreeSettlementValid === 'function'
           && !api.isDecreeSettlementValid(reconciled, after)) {
+          var expectedDraft = typeof api.getPendingDecreeDraft === 'function'
+            ? api.getPendingDecreeDraft(after)
+            : null;
+          var expectedDraftHint = expectedDraft
+            ? '预期 JSONPatch：op="replace"，path=' + JSON.stringify(expectedDraft.path)
+              + '，value.id=' + JSON.stringify(expectedDraft.id)
+              + '，value.颁布日=' + String(after['系统'] && after['系统']['_当前天数']) + '。'
+            : '';
           await writeHostRecord(latestRecord, before);
           await syncStageEntriesForState(before, true);
           publish(before);
           endGenerationTransaction(transaction);
           transaction = null;
-          throw new Error('本轮变量结果既未填充宿主法令槽，也未合法撤销一条生效法令；已回滚并保持待颁布阶段，请重试');
+          throw new Error('本轮变量结果既未写入前端识别的法令数组项，也未合法撤销一条生效法令。'
+            + expectedDraftHint + '已回滚并保持待颁布阶段，请重试');
         }
         if (apiName === 'beginDecree' && typeof api.finalizeDecreeDraft === 'function') {
           reconciled = api.finalizeDecreeDraft(reconciled);
@@ -4690,7 +4699,10 @@
           ? window.KingGameState.getPendingDecreeDraft(next)
           : null;
         var draftContract = draft
-          ? '宿主已为本轮国王预建唯一法令槽' + draft.path + '（id=' + draft.id + '）。新增法令时只能整体replace这个精确索引并保留id、颁布日；不得按受约束者另选数组。若选择撤销，只改旧法令状态，草稿槽由宿主清理。'
+          ? '前端已识别本轮新增法令的唯一MVU写入位置：path=' + JSON.stringify(draft.path)
+            + '；该位置属于“' + draft.owner + '”自己的颁布规则数组，冻结value.id=' + JSON.stringify(draft.id)
+            + '，冻结value.颁布日=' + String(system['_当前天数'])
+            + '。新增时JSONPatch只能对这个path执行一次整对象replace，并在value中逐字保留上述id与颁布日；不得生成“/法令槽/...”路径，不得按受约束者另选数组。若选择撤销，只改旧法令状态，前端会清理这个待填充数组项。'
           : '';
         var playerSubmission = system['_当前国王'] === '玩家'
           ? '玩家提交：“' + submitted + '”。按其原意正式新增或撤销。'
