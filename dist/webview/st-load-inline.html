@@ -3610,6 +3610,8 @@
   var initializationPromise = null;
   var GALGAME_MODE_META_KEY = 'king_game_galgame_enabled';
   var previewGalgameMode = true;
+  var galgameRequestSequence = 0;
+  var galgameStateEventsBound = false;
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -3754,18 +3756,6 @@
     });
   }
 
-  function currentGalgameInjector() {
-    var candidates = windowCandidates();
-    for (var index = 0; index < candidates.length; index += 1) {
-      try {
-        if (candidates[index].__KING_GAME_GALGAME_INJECTOR__) {
-          return candidates[index].__KING_GAME_GALGAME_INJECTOR__;
-        }
-      } catch (error) {}
-    }
-    return null;
-  }
-
   function readGalgameModeSetting() {
     var ctx = context();
     try {
@@ -3792,29 +3782,113 @@
     }
   }
 
-  function dispatchGalgameModeRequest(enabled) {
+  function dispatchGalgameModeRequest(detail) {
     windowCandidates().forEach(function (target) {
       try {
         if (typeof target.dispatchEvent !== 'function' || typeof target.CustomEvent !== 'function') return;
         target.dispatchEvent(new target.CustomEvent('kinggame:galgame-mode-request', {
-          detail: { enabled: enabled === true }
+          detail: detail
         }));
       } catch (error) {}
     });
   }
 
-  async function setGalgameMode(enabled) {
-    var next = await persistGalgameModeSetting(enabled);
-    var injector = currentGalgameInjector();
-    if (injector && typeof injector.setEnabled === 'function') {
-      await Promise.resolve(injector.setEnabled(next, 'frontend-button', false));
-    } else {
-      dispatchGalgameModeRequest(next);
+  function bindGalgameStateEvents() {
+    if (galgameStateEventsBound) return;
+    var didBind = false;
+    windowCandidates().forEach(function (target) {
+      try {
+        if (typeof target.addEventListener !== 'function') return;
+        target.addEventListener('kinggame:galgame-mode-state', function (event) {
+          var detail = event && event.detail && typeof event.detail === 'object' ? event.detail : {};
+          if (typeof detail.enabled !== 'boolean') return;
+          previewGalgameMode = detail.enabled;
+          if (target !== window) {
+            window.dispatchEvent(new CustomEvent('kinggame:galgame-mode', {
+              detail: {
+                enabled: detail.enabled,
+                error: String(detail.error || ''),
+                reason: String(detail.reason || '')
+              }
+            }));
+          }
+        });
+        didBind = true;
+      } catch (error) {}
+    });
+    galgameStateEventsBound = didBind;
+  }
+
+  function requestGalgameScriptState(detail, strict) {
+    if (LOCAL_PREVIEW || (hostWindow() === window && !hasHostRuntime())) {
+      if (detail && detail.query === true) return Promise.resolve(readGalgameModeSetting());
+      return persistGalgameModeSetting(detail && detail.enabled !== false);
     }
+    bindGalgameStateEvents();
+    var requestId = 'kg-galgame-' + Date.now() + '-' + (++galgameRequestSequence);
+    var payload = Object.assign({}, detail, { requestId: requestId });
+    return new Promise(function (resolve, reject) {
+      var settled = false;
+      var targets = windowCandidates();
+      var timer = null;
+      function cleanup() {
+        if (timer != null) clearTimeout(timer);
+        targets.forEach(function (target) {
+          try {
+            if (typeof target.removeEventListener === 'function') {
+              target.removeEventListener('kinggame:galgame-mode-state', handleState);
+            }
+          } catch (error) {}
+        });
+      }
+      function finish(callback, value) {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        callback(value);
+      }
+      function handleState(event) {
+        var state = event && event.detail && typeof event.detail === 'object' ? event.detail : {};
+        if (String(state.requestId || '') !== requestId || typeof state.enabled !== 'boolean') return;
+        previewGalgameMode = state.enabled;
+        if (state.error && strict) {
+          finish(reject, new Error('Galgame 酒馆助手脚本切换失败：' + state.error));
+          return;
+        }
+        finish(resolve, state.enabled);
+      }
+      targets.forEach(function (target) {
+        try {
+          if (typeof target.addEventListener === 'function') {
+            target.addEventListener('kinggame:galgame-mode-state', handleState);
+          }
+        } catch (error) {}
+      });
+      timer = setTimeout(function () {
+        if (strict) {
+          finish(reject, new Error('Galgame 酒馆助手脚本控制器未响应，请确认“国王游戏·宿主状态引擎”已启用'));
+        } else {
+          finish(resolve, readGalgameModeSetting());
+        }
+      }, 1200);
+      dispatchGalgameModeRequest(payload);
+    });
+  }
+
+  function getGalgameMode() {
+    return requestGalgameScriptState({ query: true, reason: 'frontend-read' }, false);
+  }
+
+  async function setGalgameMode(enabled) {
+    var actual = await requestGalgameScriptState({
+      enabled: enabled !== false,
+      reason: 'frontend-button'
+    }, true);
+    previewGalgameMode = actual;
     window.dispatchEvent(new CustomEvent('kinggame:galgame-mode', {
-      detail: { enabled: next }
+      detail: { enabled: actual }
     }));
-    return next;
+    return actual;
   }
 
   function currentCharacter() {
@@ -4771,9 +4845,9 @@
     getAuthorizationState: function () { return authorizationReady.then(clone); },
     getState: function () { return requireReady().then(function () { return clone(cachedState); }); },
     getVariables: function () { return this.getState(); },
-    getGalgameMode: function () { return Promise.resolve(readGalgameModeSetting()); },
+    getGalgameMode: getGalgameMode,
     setGalgameMode: setGalgameMode,
-    toggleGalgameMode: function () { return setGalgameMode(!readGalgameModeSetting()); },
+    toggleGalgameMode: async function () { return setGalgameMode(!(await getGalgameMode())); },
     subscribe: function (listener) {
       if (typeof listener !== 'function') return function () {};
       listeners.push(listener);
