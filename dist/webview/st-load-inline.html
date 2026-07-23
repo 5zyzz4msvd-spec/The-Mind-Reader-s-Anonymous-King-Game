@@ -1815,6 +1815,19 @@
     return variables['角色'] && variables['角色'][owner];
   }
 
+  function hasCurrentDayCommittedDecree(variables, system) {
+    var owner = system && typeof system === 'object' ? String(system['_当前国王'] || '') : '';
+    if (!PARTICIPANT_SET[owner]) return false;
+    var holder = getRuleHolder(variables, owner);
+    var rules = holder && Array.isArray(holder['颁布规则']) ? holder['颁布规则'] : [];
+    var day = normalizeDay(system['_当前天数']);
+    return rules.some(function (rule) {
+      return isCurrentRule(rule)
+        && rule['状态'] === '生效'
+        && Math.floor(Number(rule['颁布日'])) === day;
+    });
+  }
+
   function getPendingDecreeDraft(existingVariables) {
     var variables = existingVariables && typeof existingVariables === 'object' ? existingVariables : {};
     for (var ownerIndex = 0; ownerIndex < PARTICIPANTS.length; ownerIndex += 1) {
@@ -3059,6 +3072,20 @@
 
     next = repairDailyRuleFulfillment(next);
     var system = initializeSystem(next['系统'], chatName);
+    // 宿主阶段字段可能晚于 MVU 法令数组落盘，或在重载/重 Roll 后保留了
+    // “待颁布”旧快照。只把“当日国王名下、当日、已生效”的法令视为
+    // 本日广播完成证据；不能用任意生效法令推断，否则前几日永久法令会
+    // 错误跳过新一天的颁布流程。
+    if (system['$日程已锁定'] === true
+      && system['_每日阶段'] === '待颁布法令'
+      && system['_今日法令已广播'] !== true
+      && hasCurrentDayCommittedDecree(next, system)) {
+      system = copySystem(system);
+      system['_每日阶段'] = '自由互动';
+      system['_今日法令已广播'] = true;
+      system['_可过夜'] = false;
+      next = finalizeDecreeDraft(next);
+    }
     if (hasRelationshipDecree(next)) {
       system.internal.q.h = true;
       repairEndingCache(system, true);
