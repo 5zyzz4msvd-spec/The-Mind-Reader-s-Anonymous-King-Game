@@ -85,13 +85,61 @@
 
     .status-card { padding: 12px 14px; min-height: 88px; }
 
+    .status-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+
     .eyebrow {
-      margin: 0 0 5px;
+      margin: 0;
       color: var(--gold);
       font: 700 10px/1.2 ui-sans-serif, system-ui, sans-serif;
       letter-spacing: .2em;
       text-transform: uppercase;
     }
+
+    .galgame-toggle {
+      flex: 0 0 auto;
+      min-height: 27px;
+      padding: 5px 9px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid rgba(198,163,91,.55);
+      color: #f2d28d;
+      background: linear-gradient(145deg, rgba(71,57,29,.82), rgba(20,18,13,.96));
+      cursor: pointer;
+      font: 800 9px/1 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+      transition: border-color .18s ease, color .18s ease, background .18s ease, opacity .18s ease;
+    }
+
+    .galgame-toggle::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      flex: 0 0 7px;
+      border-radius: 50%;
+      background: #d8b767;
+      box-shadow: 0 0 9px rgba(216,183,103,.68);
+    }
+
+    .galgame-toggle[data-enabled="false"] {
+      border-color: rgba(136,139,137,.4);
+      color: #999d9a;
+      background: linear-gradient(145deg, rgba(35,36,35,.82), rgba(15,16,16,.96));
+    }
+
+    .galgame-toggle[data-enabled="false"]::before {
+      background: #6f7471;
+      box-shadow: none;
+    }
+
+    .galgame-toggle:disabled { cursor: wait; opacity: .58; }
 
     .king-line {
       display: flex;
@@ -1386,6 +1434,8 @@
       .topbar { grid-template-columns: 1fr 1.35fr; gap: 8px; }
       .map-card { grid-column: 1 / -1; grid-row: 1; height: 91px; }
       .status-card { min-height: 72px; padding: 9px 10px; }
+      .status-head { gap: 6px; }
+      .galgame-toggle { padding-inline: 7px; letter-spacing: .07em; }
       .view-nav { min-height: 72px; padding: 8px; gap: 5px; }
       .scene-line { margin-top: 4px; }
       .face-body { padding: 11px; gap: 10px; grid-template-columns: minmax(125px, 30%) minmax(0, 1fr); }
@@ -3558,6 +3608,8 @@
   var actionPending = false;
   var previewRecord = null;
   var initializationPromise = null;
+  var GALGAME_MODE_META_KEY = 'king_game_galgame_enabled';
+  var previewGalgameMode = true;
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -3700,6 +3752,69 @@
     return targets.filter(function (target, index) {
       return target && targets.indexOf(target) === index;
     });
+  }
+
+  function currentGalgameInjector() {
+    var candidates = windowCandidates();
+    for (var index = 0; index < candidates.length; index += 1) {
+      try {
+        if (candidates[index].__KING_GAME_GALGAME_INJECTOR__) {
+          return candidates[index].__KING_GAME_GALGAME_INJECTOR__;
+        }
+      } catch (error) {}
+    }
+    return null;
+  }
+
+  function readGalgameModeSetting() {
+    var ctx = context();
+    try {
+      var metadata = ctx && ctx.chatMetadata;
+      if (metadata && Object.prototype.hasOwnProperty.call(metadata, GALGAME_MODE_META_KEY)) {
+        return metadata[GALGAME_MODE_META_KEY] !== false;
+      }
+    } catch (error) {}
+    return previewGalgameMode;
+  }
+
+  async function persistGalgameModeSetting(enabled) {
+    var next = enabled !== false;
+    previewGalgameMode = next;
+    var ctx = context();
+    if (hostWindow() === window && !hasHostRuntime()) return next;
+    try {
+      if (!ctx.chatMetadata || typeof ctx.chatMetadata !== 'object') ctx.chatMetadata = {};
+      ctx.chatMetadata[GALGAME_MODE_META_KEY] = next;
+      if (typeof ctx.saveMetadata === 'function') await Promise.resolve(ctx.saveMetadata());
+      return next;
+    } catch (error) {
+      throw new Error('Galgame 模式状态保存失败，请刷新后重试');
+    }
+  }
+
+  function dispatchGalgameModeRequest(enabled) {
+    windowCandidates().forEach(function (target) {
+      try {
+        if (typeof target.dispatchEvent !== 'function' || typeof target.CustomEvent !== 'function') return;
+        target.dispatchEvent(new target.CustomEvent('kinggame:galgame-mode-request', {
+          detail: { enabled: enabled === true }
+        }));
+      } catch (error) {}
+    });
+  }
+
+  async function setGalgameMode(enabled) {
+    var next = await persistGalgameModeSetting(enabled);
+    var injector = currentGalgameInjector();
+    if (injector && typeof injector.setEnabled === 'function') {
+      await Promise.resolve(injector.setEnabled(next, 'frontend-button', false));
+    } else {
+      dispatchGalgameModeRequest(next);
+    }
+    window.dispatchEvent(new CustomEvent('kinggame:galgame-mode', {
+      detail: { enabled: next }
+    }));
+    return next;
   }
 
   function currentCharacter() {
@@ -4656,6 +4771,9 @@
     getAuthorizationState: function () { return authorizationReady.then(clone); },
     getState: function () { return requireReady().then(function () { return clone(cachedState); }); },
     getVariables: function () { return this.getState(); },
+    getGalgameMode: function () { return Promise.resolve(readGalgameModeSetting()); },
+    setGalgameMode: setGalgameMode,
+    toggleGalgameMode: function () { return setGalgameMode(!readGalgameModeSetting()); },
     subscribe: function (listener) {
       if (typeof listener !== 'function') return function () {};
       listeners.push(listener);
@@ -4770,7 +4888,10 @@
   <div class="app">
     
       <section class="status-card">
-        <p class="eyebrow">Private backdoor</p>
+        <div class="status-head">
+          <p class="eyebrow">Private backdoor</p>
+          <button class="galgame-toggle" id="galgameModeToggle" type="button" data-enabled="true" aria-pressed="true" title="关闭 Galgame 模式脚本">Galgame On</button>
+        </div>
         <div class="king-line"><span class="king-name" id="currentKing">—</span><span class="day-seal" id="currentDay">第 1 / 15 日</span></div>
         <div class="scene-line"><span id="sceneInfo">第1日 08:10 · 个人房间 · 等待法令</span><br>玩家平板后门 · 仅你可见 · 请勿泄露</div>
       </section>
@@ -5224,6 +5345,8 @@
     let modalMode = "";
     let interactionLastFocused = null;
     let actionBusy = false;
+    let galgameModeEnabled = true;
+    let galgameToggleBusy = false;
     let roomMoving = false;
     let hitSyncTimer = 0;
     let portraitLastFocused = null;
@@ -6803,12 +6926,58 @@
       });
     }
 
+    function renderGalgameToggle() {
+      const button = $("#galgameModeToggle");
+      if (!button) return;
+      button.dataset.enabled = galgameModeEnabled ? "true" : "false";
+      button.setAttribute("aria-pressed", galgameModeEnabled ? "true" : "false");
+      button.disabled = galgameToggleBusy;
+      button.textContent = galgameToggleBusy
+        ? "Galgame …"
+        : `Galgame ${galgameModeEnabled ? "On" : "Off"}`;
+      button.title = galgameModeEnabled ? "关闭 Galgame 模式脚本" : "开启 Galgame 模式脚本";
+    }
+
+    async function toggleGalgameMode() {
+      if (galgameToggleBusy) return;
+      const bridge = window.KingGameBridge;
+      if (!bridge || typeof bridge.setGalgameMode !== "function") {
+        showActionError("Galgame 模式桥接尚未就绪，请刷新页面后重试。");
+        return;
+      }
+      galgameToggleBusy = true;
+      renderGalgameToggle();
+      showActionError("");
+      try {
+        galgameModeEnabled = Boolean(await bridge.setGalgameMode(!galgameModeEnabled));
+      } catch (error) {
+        showActionError(error?.message || "Galgame 模式切换失败，请稍后重试。");
+      } finally {
+        galgameToggleBusy = false;
+        renderGalgameToggle();
+      }
+    }
+
+    function bindGalgameToggle() {
+      renderGalgameToggle();
+      $("#galgameModeToggle").addEventListener("click", toggleGalgameMode);
+      window.addEventListener("kinggame:galgame-mode", event => {
+        if (!event.detail || typeof event.detail.enabled !== "boolean") return;
+        galgameModeEnabled = event.detail.enabled;
+        renderGalgameToggle();
+      });
+    }
+
     async function readBridge() {
       const bridge = window.KingGameBridge;
       if (!bridge) return;
       try {
         if (typeof bridge.getUserName === "function") userName = String(await bridge.getUserName() || "你");
         else if (bridge.userName) userName = String(bridge.userName);
+        if (typeof bridge.getGalgameMode === "function") {
+          galgameModeEnabled = Boolean(await bridge.getGalgameMode());
+          renderGalgameToggle();
+        }
         render(state);
 
         let hostedState;
@@ -6845,6 +7014,7 @@
       bindDrawer();
       bindMediaModals();
       bindDailyFlow();
+      bindGalgameToggle();
       render(PREVIEW_STATE);
       void readBridge();
       window.addEventListener("kinggame:state", event => { if (event.detail) render(event.detail); });
