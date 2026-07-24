@@ -788,6 +788,25 @@
     .rule-state.is-pending { border-color: rgba(174,83,83,.52); color: #d69b92; }
     .rule-state.is-ongoing { border-color: rgba(198,163,91,.62); color: #e2c57e; }
     .rule-state.is-complete { border-color: rgba(95,148,112,.58); color: #a9d4b5; }
+    .rules-sheet-body { display: grid; min-width: 0; gap: 14px; }
+    .rules-sheet-body.has-items { grid-template-columns: minmax(0, 1.6fr) minmax(220px, .8fr); }
+    .rules-sheet .surface-rules { max-height: none; overflow: visible; }
+    .decree-items { min-width: 0; padding-left: 14px; border-left: 1px solid rgba(198,163,91,.2); }
+    .decree-items h3 { margin: 0 0 4px; color: #dfca9d; font: 700 14px/1.35 ui-sans-serif, system-ui, sans-serif; letter-spacing: .08em; }
+    .decree-items-note { margin: 0 0 10px; color: #817a6d; font: 10px/1.45 ui-sans-serif, system-ui, sans-serif; }
+    .decree-item-list { display: grid; gap: 8px; }
+    .decree-item {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid rgba(198,163,91,.24);
+      background: linear-gradient(135deg, rgba(198,163,91,.09), rgba(255,255,255,.018));
+    }
+    .decree-item-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: #ead7a7; font: 700 11px/1.35 ui-sans-serif, system-ui, sans-serif; }
+    .decree-item-quantity { color: #aaa18f; text-align: right; font-size: 10px; font-weight: 500; overflow-wrap: anywhere; }
+    .decree-item-source { margin: 5px 0 8px; color: #817a6d; font: 9px/1.4 ui-sans-serif, system-ui, sans-serif; overflow-wrap: anywhere; }
+    .decree-item-detail { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 7px; margin: 0; font: 10px/1.45 ui-sans-serif, system-ui, sans-serif; }
+    .decree-item-detail dt { color: #837a68; }
+    .decree-item-detail dd { margin: 0; color: #c7bdab; overflow-wrap: anywhere; }
 
     .empty { padding: 10px; border: 1px dashed rgba(198,163,91,.22); color: #817a6d; font: 11px/1.5 ui-sans-serif, system-ui, sans-serif; }
 
@@ -1483,6 +1502,8 @@
       .room-toilet { min-height: 18px; font-size: 8px; }
       .surface-overlay { inset: 3% 4%; }
       .surface-overlay .surface-sheet { padding: 15px 14px 15px 25px; }
+      .rules-sheet-body.has-items { grid-template-columns: 1fr; }
+      .decree-items { padding: 13px 0 0; border-top: 1px solid rgba(198,163,91,.2); border-left: 0; }
       .portrait-backdrop { padding: 8px; }
       .portrait-viewer { height: min(90dvh, 760px); }
       .portrait-full-stage { padding: 8px; }
@@ -1816,6 +1837,35 @@
     return output;
   }
 
+  function normalizeRuleItems(value) {
+    var list = Array.isArray(value) ? value : [];
+    var output = [];
+    list.forEach(function (entry) {
+      if (output.length >= 12 || !entry || typeof entry !== 'object' || Array.isArray(entry)) return;
+      var name = typeof entry['名称'] === 'string' ? entry['名称'].trim().slice(0, 80) : '';
+      if (!name) return;
+      var authorization = [];
+      var seen = Object.create(null);
+      (Array.isArray(entry['授权使用者']) ? entry['授权使用者'] : []).forEach(function (participant) {
+        if (!PARTICIPANT_SET[participant] || seen[participant] || authorization.length >= PARTICIPANTS.length) return;
+        seen[participant] = true;
+        authorization.push(participant);
+      });
+      if (!authorization.length) return;
+      output.push({
+        '名称': name,
+        '数量说明': typeof entry['数量说明'] === 'string' && entry['数量说明'].trim()
+          ? entry['数量说明'].trim().slice(0, 80)
+          : '未注明',
+        '投放地点': typeof entry['投放地点'] === 'string' && entry['投放地点'].trim()
+          ? entry['投放地点'].trim().slice(0, 120)
+          : '未注明',
+        '授权使用者': authorization
+      });
+    });
+    return output;
+  }
+
   function normalizeDailyRuleFulfillment(value, day, obligationDefinition) {
     var normalizedDay = normalizeDay(day);
     var source = value && typeof value === 'object' ? value : {};
@@ -1950,6 +2000,7 @@
       '颁布日': day,
       '状态': '待填充',
       '义务定义': {},
+      '物品定义': [],
       '本日履行': { '日期': day, '义务人': {} }
     });
     return output;
@@ -2002,6 +2053,7 @@
         Object.keys(rule).forEach(function (key) { nextRule[key] = rule[key]; });
         var definition = normalizeObligationDefinition(rule['义务定义']);
         if (definition) nextRule['义务定义'] = definition;
+        nextRule['物品定义'] = normalizeRuleItems(rule['物品定义']);
         nextRule['状态'] = rule['状态'];
         nextRule['本日履行'] = normalizeDailyRuleFulfillment(rule['本日履行'], day, definition);
         return nextRule;
@@ -2107,6 +2159,7 @@
         var nextRule = {};
         Object.keys(previous).forEach(function (key) { nextRule[key] = previous[key]; });
         var definition = normalizeObligationDefinition(rule['义务定义'] || (previous && previous['义务定义']));
+        var itemDefinition = normalizeRuleItems(rule['物品定义'] || (previous && previous['物品定义']));
         if (previous) {
           var previousStatus = previous['状态'];
           var requestedStatus = rule['状态'];
@@ -2119,11 +2172,13 @@
               && Number(rule['颁布日']) === Number(previous['颁布日'])
               && String(rule['标题'] || '').trim().length > 0
               && String(rule['全文'] || '').trim().length > 0
-              && definition && Object.keys(definition).length > 0;
+              && definition
+              && (Object.keys(definition).length > 0 || itemDefinition.length > 0);
             if (canCommitDraft) {
               nextRule['标题'] = String(rule['标题']);
               nextRule['全文'] = String(rule['全文']);
               nextRule['义务定义'] = definition;
+              nextRule['物品定义'] = itemDefinition;
               nextRule['状态'] = '生效';
             } else {
               nextRule['状态'] = '待填充';
@@ -2190,12 +2245,16 @@
       ? candidateHolder['颁布规则']
       : [];
     var committedRule = candidateRules[draft.index];
+    var committedItems = normalizeRuleItems(committedRule && committedRule['物品定义']);
     var committed = isCurrentRule(committedRule)
       && String(committedRule.id) === draft.id
       && committedRule['状态'] === '生效'
       && String(committedRule['标题'] || '').trim().length > 0
       && String(committedRule['全文'] || '').trim().length > 0
-      && Object.keys(normalizeObligationDefinition(committedRule['义务定义']) || {}).length > 0;
+      && (
+        Object.keys(normalizeObligationDefinition(committedRule['义务定义']) || {}).length > 0
+        || committedItems.length > 0
+      );
     if (committed) return true;
 
     var revoked = 0;
@@ -2236,6 +2295,7 @@
           '全文': typeof rule['全文'] === 'string' ? rule['全文'] : '',
           '颁布日': Number.isFinite(Number(rule['颁布日'])) ? Math.floor(Number(rule['颁布日'])) : 0,
           '义务定义': normalizeObligationDefinition(rule['义务定义']),
+          '物品定义': normalizeRuleItems(rule['物品定义']),
           '本日履行': normalizeDailyRuleFulfillment(rule['本日履行'], day, rule['义务定义'])
         });
       });
@@ -2253,10 +2313,10 @@
     var payload = activeDecrees(source).map(function (rule) {
       return [
         rule['颁布者'], rule['规则ID'], rule['标题'], rule['全文'],
-        rule['颁布日'], rule['义务定义']
+        rule['颁布日'], rule['义务定义'], rule['物品定义']
       ];
     });
-    return ('00000000' + fnv1a('decree-v3\u0000' + JSON.stringify(payload)).toString(16)).slice(-8);
+    return ('00000000' + fnv1a('decree-v4\u0000' + JSON.stringify(payload)).toString(16)).slice(-8);
   }
 
   function syncComplianceState(existingVariables) {
@@ -5880,9 +5940,70 @@
       return face;
     }
 
+    function collectDecreeItems(nextState) {
+      const items = [];
+      const player = asObject(nextState.玩家);
+      const roles = asObject(nextState.角色);
+      [["玩家", player], ...NAMES.map(name => [name, asObject(roles[name])])].forEach(([owner, data]) => {
+        asArray(data.颁布规则).forEach(rawRule => {
+          const rule = asObject(rawRule);
+          if (rule.状态 !== "生效") return;
+          asArray(rule.物品定义).forEach((rawItem, itemIndex) => {
+            const item = asObject(rawItem);
+            const name = String(item.名称 || "").trim();
+            if (!name) return;
+            const authorized = asArray(item.授权使用者)
+              .filter(person => person === "玩家" || NAMES.includes(person));
+            items.push({
+              owner,
+              ruleId: String(rule.id || "—"),
+              ruleTitle: String(rule.标题 || "未命名法令"),
+              day: num(rule.颁布日, 1, 15, 1),
+              itemIndex,
+              name,
+              quantity: String(item.数量说明 || "未注明"),
+              location: String(item.投放地点 || "未注明"),
+              authorized
+            });
+          });
+        });
+      });
+      return items.sort((left, right) => {
+        const dayDelta = left.day - right.day;
+        if (dayDelta) return dayDelta;
+        const ruleDelta = left.ruleId.localeCompare(right.ruleId, "zh-CN", { numeric: true });
+        return ruleDelta || left.itemIndex - right.itemIndex;
+      });
+    }
+
+    function renderDecreeItems(root, items) {
+      root.replaceChildren();
+      items.forEach(item => {
+        const card = el("article", "decree-item");
+        const head = el("div", "decree-item-head");
+        head.append(el("span", "", item.name), el("span", "decree-item-quantity", item.quantity));
+        const detail = el("dl", "decree-item-detail");
+        detail.append(
+          el("dt", "", "投放地点"),
+          el("dd", "", item.location),
+          el("dt", "", "授权使用"),
+          el("dd", "", item.authorized.length
+            ? item.authorized.map(name => displayPerson(name, userName)).join("、")
+            : "未注明")
+        );
+        card.append(
+          head,
+          el("p", "decree-item-source", `第${Math.round(item.day)}日 · ${displayPerson(item.owner, userName)} · ${item.ruleId} ${item.ruleTitle}`),
+          detail
+        );
+        root.append(card);
+      });
+    }
+
     function buildRulesSheet(nextState) {
       const sheet = el("section", "surface-sheet rules-sheet");
       sheet.append(el("h2", "", "当前生效法令"), el("p", "surface-kicker", "Lower surface / 向下查看 · 横转时自动保持正向"));
+      const body = el("div", "rules-sheet-body");
       const rulesRoot = el("div", "rules surface-rules");
       const allRules = [];
       const player = asObject(nextState.玩家);
@@ -5895,7 +6016,21 @@
         });
       });
       renderRules(rulesRoot, allRules);
-      sheet.append(rulesRoot);
+      body.append(rulesRoot);
+      const items = collectDecreeItems(nextState);
+      if (items.length) {
+        body.classList.add("has-items");
+        const itemSection = el("section", "decree-items");
+        itemSection.append(
+          el("h3", "", "法令物品"),
+          el("p", "decree-items-note", "按生效法令投放 · 数量为法令约定，不代表实时余量")
+        );
+        const itemRoot = el("div", "decree-item-list");
+        renderDecreeItems(itemRoot, items);
+        itemSection.append(itemRoot);
+        body.append(itemSection);
+      }
+      sheet.append(body);
       return sheet;
     }
 
