@@ -2486,6 +2486,17 @@
     return variables;
   }
 
+  function shouldPrestageDayTenExtremePersona(system) {
+    var hidden = system && system.internal && typeof system.internal === 'object' ? system.internal : {};
+    var ending = hidden.q && typeof hidden.q === 'object' ? hidden.q : {};
+    if (ending.h === true) return false;
+    var n4 = hidden.n4 && typeof hidden.n4 === 'object' ? hidden.n4 : {};
+    var relations = n4.r && typeof n4.r === 'object' ? n4.r : {};
+    return !['n1', 'n2', 'n3', 'u'].some(function (target) {
+      return Number(relations[target]) >= 50;
+    });
+  }
+
   function repairEndingCache(system, relationshipDecreeFound) {
     var sourceCache = system.internal && typeof system.internal === 'object' ? system.internal : {};
     var cache = {};
@@ -3466,6 +3477,17 @@
       next['_每日阶段'] = '终局';
       return finalizeEnding(next);
     }
+
+    // 第10日法令分支会在过夜请求发送前按本快照注入。若第9日结束时
+    // 韩璇关系法令门仍未开启，王可可将直接进入固定极端法令，因此要
+    // 在该次过夜事务内先锁存嫉妒阶段；恰好达到50同样保留温柔教师层。
+    // beginDecree 中的首次实际颁布切换继续作为其他日期与旧存档的兜底。
+    if (normalizeDay(current['_当前天数']) === FIXED_KEKE_DAY - 1) {
+      repairEndingCache(next, false);
+      if (next.$event_stages.n4.k < 1 && shouldPrestageDayTenExtremePersona(next)) {
+        next.$event_stages.n4.k = 1;
+      }
+    }
     next['_每日阶段'] = '夜间';
     return repairEndingPresentation(next);
   }
@@ -4421,10 +4443,11 @@
     }
   }
 
-  function beginGenerationTransaction(baseline) {
+  function beginGenerationTransaction(baseline, kind) {
     var host = hostWindow();
     var transaction = {
       active: true,
+      kind: String(kind || ''),
       baseline: clone(baseline),
       startedAt: Date.now(),
       lastReconciled: null
@@ -4669,7 +4692,7 @@
         await syncStageEntriesForState(after, true);
         publish(after);
         var command = typeof commandFactory === 'function' ? commandFactory(after, before) : commandFactory;
-        transaction = beginGenerationTransaction(after);
+        transaction = beginGenerationTransaction(after, apiName);
         // 剧情 generate() 结束不等于 MVU 额外变量解析已落盘。
         // 发送前就注册屏障，避免错过快速更新，也避免立即读到
         // 仍为“待填充”的预建槽并误回滚。
