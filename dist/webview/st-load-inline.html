@@ -772,10 +772,32 @@
     .chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .chip { padding: 4px 7px; border: 1px solid rgba(198,163,91,.28); color: #c8b78e; background: #171817; font: 10px/1 ui-sans-serif, system-ui, sans-serif; }
 
-    .relation { display: grid; grid-template-columns: 4.5em 1fr 2.5em; align-items: center; gap: 7px; margin-top: 7px; color: #bab09d; font: 10px/1 ui-sans-serif, system-ui, sans-serif; }
-    .relation-track { position: relative; height: 3px; background: linear-gradient(90deg, #6d3434 0 50%, #2f302e 50% 100%); }
-    .relation-track::after { content: ""; position: absolute; left: 50%; top: -2px; width: 1px; height: 7px; background: #aaa18f; }
-    .relation-fill { position: absolute; top: 0; left: 50%; height: 100%; background: var(--gold); }
+    .relation { display: grid; grid-template-columns: 4.5em minmax(76px, 1fr) 3em; align-items: center; gap: 7px; margin-top: 6px; color: #bab09d; font: 10px/1 ui-sans-serif, system-ui, sans-serif; }
+    .relation-wave { display: block; width: 100%; min-width: 0; height: 28px; overflow: visible; }
+    .relation-wave-grid { fill: none; stroke: rgba(170,161,143,.2); stroke-width: 1; }
+    .relation-wave-zero { fill: none; stroke: rgba(170,161,143,.56); stroke-width: 1; }
+    .relation-wave-base { fill: none; stroke: rgba(170,161,143,.23); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    .relation-wave-active {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 3.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 3px rgba(198,163,91,.42));
+    }
+    .relation-wave.is-negative .relation-wave-active {
+      stroke: #69bcec;
+      filter: drop-shadow(0 0 4px rgba(105,188,236,.68));
+    }
+    .relation-wave.is-romance .relation-wave-active {
+      stroke: #ff315b;
+      stroke-width: var(--heart-stroke, 3.8);
+      filter: drop-shadow(0 0 var(--heart-glow, 5px) rgba(255,49,91,.9));
+    }
+    .relation-score { text-align: right; font-variant-numeric: tabular-nums; }
+    .relation.is-negative .relation-score { color: #8bcdf0; }
+    .relation.is-positive .relation-score { color: #d8be82; }
+    .relation.is-romance .relation-score { color: #ff7891; }
 
     .rules { display: grid; gap: 7px; }
     .rule { padding: 9px 10px; border-left: 2px solid var(--gold); background: rgba(198,163,91,.055); }
@@ -5468,11 +5490,89 @@
       if (text !== undefined && text !== null) node.textContent = String(text);
       return node;
     };
+    const SVG_NS = ["http:", "//www.w3.org/2000/svg"].join("");
+    const svgEl = (tag, attributes = {}) => {
+      const node = document.createElementNS(SVG_NS, tag);
+      Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
+      return node;
+    };
     const asObject = value => value && typeof value === "object" && !Array.isArray(value) ? value : {};
     const asArray = value => Array.isArray(value) ? value : [];
     const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(asObject(value), key);
     const num = (value, min, max, fallback = 0) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : fallback));
     const displayPerson = (name, userName) => name === "玩家" ? userName : (name || "—");
+    const affectionWavePath = score => {
+      const centerX = 120;
+      const centerY = 17;
+      if (score >= 80) {
+        return [
+          `M${centerX} ${centerY}`,
+          "L148 17 L154 12 L161 23 L169 5 L178 29 L186 17",
+          "C186 8 199 7 205 15",
+          "C211 7 224 8 224 17",
+          "C224 27 205 32 205 32",
+          "C205 32 186 27 186 17"
+        ].join(" ");
+      }
+
+      const magnitude = Math.abs(score);
+      if (magnitude === 0) return `M${centerX - 2} ${centerY} L${centerX + 2} ${centerY}`;
+
+      const direction = score < 0 ? -1 : 1;
+      const distance = magnitude * 1.08;
+      const steps = Math.max(5, Math.ceil(magnitude / 7));
+      const negativePattern = [0, -.65, .8, -1, .92, -.5, .35, -.82, .62, 0];
+      const positivePattern = [0, -.2, .22, -.78, 1, -.32, .1, -.46, .38, 0];
+      const pattern = score < 0 ? negativePattern : positivePattern;
+      const amplitude = score < 0 ? 4 + magnitude * .075 : 3 + magnitude * .045;
+      const points = [];
+      for (let index = 0; index <= steps; index += 1) {
+        const progress = index / steps;
+        const x = centerX + direction * distance * progress;
+        const wave = pattern[index % pattern.length];
+        const y = centerY + wave * amplitude;
+        points.push(`${index === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`);
+      }
+      return points.join(" ");
+    };
+    const buildAffectionWave = (score, personName) => {
+      const romance = score >= 80;
+      const mode = score < 0 ? "negative" : romance ? "romance" : score > 0 ? "positive" : "neutral";
+      const label = score > 0 ? `+${score}` : String(score);
+      const stateLabel = score < 0 ? "戒备干扰" : romance ? "热恋" : score > 0 ? "好感" : "中立";
+      const wave = svgEl("svg", {
+        class: `relation-wave is-${mode}`,
+        viewBox: "0 0 240 34",
+        preserveAspectRatio: "none",
+        role: "img",
+        "aria-label": `${personName}好感度${label}，${stateLabel}`
+      });
+      const title = svgEl("title");
+      title.textContent = `${personName}好感度 ${label} · ${stateLabel}`;
+      const grid = svgEl("path", {
+        class: "relation-wave-grid",
+        d: "M4 8.5H236 M4 17H236 M4 25.5H236"
+      });
+      const zero = svgEl("path", {
+        class: "relation-wave-zero",
+        d: "M120 3V31"
+      });
+      const base = svgEl("path", {
+        class: "relation-wave-base",
+        d: "M4 17 L18 17 L25 10 L32 25 L40 5 L49 29 L58 17 L74 17 L82 11 L90 24 L98 7 L107 28 L116 17 L124 17 L132 14 L140 21 L148 9 L157 26 L166 17 L181 17 L189 14 L197 21 L205 11 L214 24 L223 17 L236 17"
+      });
+      const active = svgEl("path", {
+        class: "relation-wave-active",
+        d: affectionWavePath(score)
+      });
+      if (romance) {
+        const romanceRatio = (score - 80) / 20;
+        wave.style.setProperty("--heart-stroke", `${(3.8 + romanceRatio * 1.2).toFixed(2)}px`);
+        wave.style.setProperty("--heart-glow", `${(5 + romanceRatio * 4).toFixed(2)}px`);
+      }
+      wave.append(title, grid, zero, base, active);
+      return wave;
+    };
     const portraitSource = name => (
       asObject(state.系统)._特殊档案已解锁 === true && HAN_XUAN_REACTION_PORTRAITS[name]
         ? HAN_XUAN_REACTION_PORTRAITS[name]
@@ -5806,14 +5906,10 @@
       [...NAMES.filter(other => other !== name), "玩家"].forEach(other => {
         const score = Math.round(num(asObject(relations[other]).好感度, -100, 100));
         const row = el("div", "relation");
-        const track = el("span", "relation-track");
-        const fill = el("i", "relation-fill");
-        const width = Math.abs(score) / 2;
-        fill.style.width = `${width}%`;
-        fill.style.left = score < 0 ? `${50 - width}%` : "50%";
-        fill.style.background = score < 0 ? "#8b4545" : "var(--gold)";
-        track.append(fill);
-        row.append(el("span", "", displayPerson(other, userName)), track, el("span", "", score > 0 ? `+${score}` : score));
+        row.classList.add(score < 0 ? "is-negative" : score >= 80 ? "is-romance" : score > 0 ? "is-positive" : "is-neutral");
+        const personName = displayPerson(other, userName);
+        const value = el("span", "relation-score", score > 0 ? `+${score}` : score);
+        row.append(el("span", "", personName), buildAffectionWave(score, personName), value);
         relationField.append(row);
       });
       dossier.append(relationField);
