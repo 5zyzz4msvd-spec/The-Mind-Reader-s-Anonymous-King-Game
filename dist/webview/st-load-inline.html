@@ -1740,6 +1740,19 @@
     return result;
   }
 
+  function mergeEventStagesMonotonic(previous, proposed) {
+    var baseline = normalizeEventStages(previous);
+    var candidate = normalizeEventStages(proposed);
+    ['n1', 'n2', 'n3'].forEach(function (alias) {
+      candidate[alias].b = Math.max(baseline[alias].b, candidate[alias].b);
+      candidate[alias].c = Math.max(baseline[alias].c, candidate[alias].c);
+    });
+    ['b', 'x', 't', 'k'].forEach(function (track) {
+      candidate.n4[track] = Math.max(baseline.n4[track], candidate.n4[track]);
+    });
+    return candidate;
+  }
+
   function normalizeEventGate(value) {
     var source = value && typeof value === 'object' ? value : {};
     var actions = { none: true, archive: true, insight: true, photo: true, testament: true };
@@ -2464,6 +2477,7 @@
   }
 
   function latchStages(cache, stages, day) {
+    var previousStages = normalizeEventStages(stages);
     var nextStages = normalizeEventStages(stages);
     ['n1', 'n2', 'n3'].forEach(function (alias) {
       var character = cache[alias];
@@ -2477,7 +2491,7 @@
     if (nextStages.n4.b === 0 && n4Affection >= 50 && normalizedDay < 10) nextStages.n4.b = 1;
     if (normalizedDay >= 10 && nextStages.n4.b < 2) nextStages.n4.x = 1;
     if (cache.q.h === true && normalizedDay > 10 && nextStages.n4.t === 0) nextStages.n4.t = 1;
-    return nextStages;
+    return mergeEventStagesMonotonic(previousStages, nextStages);
   }
 
   function hasKekeIssuedDecree(variables) {
@@ -2489,6 +2503,7 @@
         && /^R\d+$/.test(String(rule.id || ''))
         && Number(rule['颁布日']) >= 1
         && Number(rule['颁布日']) <= DAYS
+        && String(rule['全文'] || '').trim() !== RELATIONSHIP_DECREE_TEXT
         && (rule['状态'] === '生效' || rule['状态'] === '失效');
     });
   }
@@ -2519,6 +2534,12 @@
     });
   }
 
+  function shouldUseDayTenRelationshipDecree(system) {
+    return normalizeDay(system && system['_当前天数']) === FIXED_KEKE_DAY
+      && String(system && system['_当前国王'] || '') === '王可可'
+      && !shouldPrestageDayTenExtremePersona(system);
+  }
+
   function repairEndingCache(system, relationshipDecreeFound) {
     var sourceCache = system.internal && typeof system.internal === 'object' ? system.internal : {};
     var cache = {};
@@ -2544,12 +2565,13 @@
     cache.q = normalizeEndingState(sourceCache.q, relationshipDecreeFound);
 
     cache.p = normalizeInsightProjection(sourceCache.p);
-    var hostStages = latchStages(cache, system.$event_stages, system['_当前天数']);
+    var previousStages = normalizeEventStages(system.$event_stages);
+    var hostStages = latchStages(cache, previousStages, system['_当前天数']);
     // 完整遗书与私下坦白已经改变玩家掌握的证据，因此即使尚未向
     // 其余三人公开（q.v=false），玩家侧王可可人设也立即进入真相阶段。
     if (hostStages.n4.t >= 2 || cache.q.v === true) hostStages.n4.k = 2;
     system.internal = cache;
-    system.$event_stages = hostStages;
+    system.$event_stages = mergeEventStagesMonotonic(previousStages, hostStages);
     system.$event_gate = normalizeEventGate(system.$event_gate);
     return system;
   }
@@ -3309,12 +3331,15 @@
     next['_最近互动请求'] = cloneInteractionRequest(current['_最近互动请求']);
     next['_可过夜'] = false;
 
-    // 只有“王可可已经被宿主确定为本日国王，且玩家实际提交了
-    // 颁布动作”才允许在生成前预置她的嫉妒误读阶段。单纯抽中国王不触发。
+    // 只有“王可可已经被宿主确定为本日国王，且玩家实际提交了会形成
+    // 反差证据的颁布动作”才允许在生成前预置她的嫉妒误读阶段。
+    // 第10日韩璇关系法令只解禁人物记忆，绝不改变王可可人设阶段。
     // 若发送或生成未开始，前端事务会将这个预置与世界书一起回滚。
     if (next['_当前国王'] === '王可可') {
       repairEndingCache(next, false);
-      if (next.$event_stages.n4.k < 1) next.$event_stages.n4.k = 1;
+      if (next.$event_stages.n4.k < 1 && !shouldUseDayTenRelationshipDecree(next)) {
+        next.$event_stages.n4.k = 1;
+      }
     }
     return next;
   }
@@ -3678,6 +3703,8 @@
     PARTICIPANTS: PARTICIPANTS.slice(),
     WOMEN: WOMEN.slice(),
     RELATIONSHIP_DECREE_TEXT: RELATIONSHIP_DECREE_TEXT,
+    normalizeEventStages: normalizeEventStages,
+    mergeEventStagesMonotonic: mergeEventStagesMonotonic,
     normalizeChatName: normalizeChatName,
     hashSeed: fnv1a,
     createSchedule: createSchedule,
