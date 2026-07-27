@@ -776,7 +776,13 @@
     .relation-wave { display: block; width: 100%; min-width: 0; height: 28px; overflow: visible; }
     .relation-wave-grid { fill: none; stroke: rgba(170,161,143,.2); stroke-width: 1; }
     .relation-wave-zero { fill: none; stroke: rgba(170,161,143,.56); stroke-width: 1; }
-    .relation-wave-base { fill: none; stroke: rgba(170,161,143,.23); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    .relation-wave-base {
+      fill: none;
+      stroke: rgba(170,161,143,.42);
+      stroke-width: 1.2;
+      stroke-dasharray: 4 4;
+      stroke-linecap: butt;
+    }
     .relation-wave-active {
       fill: none;
       stroke: var(--gold);
@@ -2463,6 +2469,13 @@
     return text;
   }
 
+  function isRelationshipDecreeText(value) {
+    return String(value == null ? '' : value)
+      .trim()
+      .replace(/[。．.]+$/u, '')
+      .trim() === RELATIONSHIP_DECREE_TEXT;
+  }
+
   function normalizeInsightProjection(value) {
     var source = value && typeof value === 'object' ? value : {};
     var result = {};
@@ -2503,7 +2516,7 @@
         && /^R\d+$/.test(String(rule.id || ''))
         && Number(rule['颁布日']) >= 1
         && Number(rule['颁布日']) <= DAYS
-        && String(rule['全文'] || '').trim() !== RELATIONSHIP_DECREE_TEXT
+        && !isRelationshipDecreeText(rule['全文'])
         && (rule['状态'] === '生效' || rule['状态'] === '失效');
     });
   }
@@ -2828,7 +2841,7 @@
     });
     return holders.some(function (rules) {
       return Array.isArray(rules) && rules.some(function (rule) {
-        return rule && typeof rule === 'object' && rule['全文'] === RELATIONSHIP_DECREE_TEXT;
+        return rule && typeof rule === 'object' && isRelationshipDecreeText(rule['全文']);
       });
     });
   }
@@ -5586,7 +5599,7 @@
       });
       const base = svgEl("path", {
         class: "relation-wave-base",
-        d: "M4 17 L18 17 L25 10 L32 25 L40 5 L49 29 L58 17 L74 17 L82 11 L90 24 L98 7 L107 28 L116 17 L124 17 L132 14 L140 21 L148 9 L157 26 L166 17 L181 17 L189 14 L197 21 L205 11 L214 24 L223 17 L236 17"
+        d: "M4 17H236"
       });
       const active = svgEl("path", {
         class: "relation-wave-active",
