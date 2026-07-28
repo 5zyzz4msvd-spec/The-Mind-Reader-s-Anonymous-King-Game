@@ -773,32 +773,85 @@
     .chip { padding: 4px 7px; border: 1px solid rgba(198,163,91,.28); color: #c8b78e; background: #171817; font: 10px/1 ui-sans-serif, system-ui, sans-serif; }
 
     .relation { display: grid; grid-template-columns: 4.5em minmax(76px, 1fr) 3em; align-items: center; gap: 7px; margin-top: 6px; color: #bab09d; font: 10px/1 ui-sans-serif, system-ui, sans-serif; }
-    .relation-wave { display: block; width: 100%; min-width: 0; height: 28px; overflow: visible; }
-    .relation-wave-grid { fill: none; stroke: rgba(170,161,143,.2); stroke-width: 1; }
-    .relation-wave-zero { fill: none; stroke: rgba(170,161,143,.56); stroke-width: 1; }
-    .relation-wave-base {
-      fill: none;
-      stroke: rgba(170,161,143,.42);
-      stroke-width: 1.2;
-      stroke-dasharray: 4 4;
-      stroke-linecap: butt;
+    .affection-meter {
+      --meter-position: 50%;
+      --meter-span: 0%;
+      --meter-color: #aaa18f;
+      position: relative;
+      display: block;
+      width: 100%;
+      min-width: 0;
+      height: 26px;
     }
-    .relation-wave-active {
-      fill: none;
-      stroke: var(--gold);
-      stroke-width: 3.2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      filter: drop-shadow(0 0 3px rgba(198,163,91,.42));
+    .affection-meter-track {
+      position: absolute;
+      inset: 8px 0;
+      overflow: hidden;
+      border: 1px solid rgba(198,163,91,.3);
+      border-radius: 999px;
+      background:
+        repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgba(229,218,195,.18) calc(10% - 1px) 10%),
+        linear-gradient(180deg, #252621 0%, #111311 52%, #20211d 100%);
+      box-shadow:
+        inset 0 1px 2px rgba(0,0,0,.92),
+        0 1px 0 rgba(255,255,255,.045);
     }
-    .relation-wave.is-negative .relation-wave-active {
-      stroke: #69bcec;
-      filter: drop-shadow(0 0 4px rgba(105,188,236,.68));
+    .affection-meter-fill {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      width: var(--meter-span);
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--meter-color) 66%, #5d4822), var(--meter-color));
+      box-shadow: 0 0 6px color-mix(in srgb, var(--meter-color) 58%, transparent);
     }
-    .relation-wave.is-romance .relation-wave-active {
-      stroke: #ff315b;
-      stroke-width: var(--heart-stroke, 3.8);
-      filter: drop-shadow(0 0 var(--heart-glow, 5px) rgba(255,49,91,.9));
+    .affection-meter.is-negative { --meter-color: #55bdf3; }
+    .affection-meter.is-negative .affection-meter-fill {
+      right: 50%;
+      left: auto;
+      background: linear-gradient(90deg, #55bdf3, #276d99);
+    }
+    .affection-meter.is-positive { --meter-color: #d4ad5d; }
+    .affection-meter.is-romance { --meter-color: #ff4f88; }
+    .affection-meter.is-romance .affection-meter-fill {
+      background: linear-gradient(90deg, #b91e51, #ff4f88);
+      box-shadow: 0 0 8px rgba(255,79,136,.72);
+    }
+    .affection-meter-zero {
+      position: absolute;
+      top: 5px;
+      bottom: 5px;
+      left: 50%;
+      width: 1px;
+      background: rgba(232,220,194,.66);
+      transform: translateX(-.5px);
+      box-shadow: 0 0 3px rgba(232,220,194,.18);
+    }
+    .affection-meter-zero::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      border: 1px solid rgba(232,220,194,.66);
+      background: #171816;
+      transform: translate(-50%, -50%) rotate(45deg);
+    }
+    .affection-meter-marker {
+      position: absolute;
+      top: 5px;
+      left: var(--meter-position);
+      width: 4px;
+      height: 16px;
+      border: 1px solid rgba(255,255,255,.72);
+      border-radius: 999px;
+      background: var(--meter-color);
+      box-shadow:
+        0 0 0 2px rgba(15,16,15,.86),
+        0 0 7px color-mix(in srgb, var(--meter-color) 72%, transparent);
+      transform: translateX(-50%);
     }
     .relation-score { text-align: right; font-variant-numeric: tabular-nums; }
     .relation.is-negative .relation-score { color: #8bcdf0; }
@@ -5530,88 +5583,34 @@
       if (text !== undefined && text !== null) node.textContent = String(text);
       return node;
     };
-    const SVG_NS = ["http:", "//www.w3.org/2000/svg"].join("");
-    const svgEl = (tag, attributes = {}) => {
-      const node = document.createElementNS(SVG_NS, tag);
-      Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
-      return node;
-    };
     const asObject = value => value && typeof value === "object" && !Array.isArray(value) ? value : {};
     const asArray = value => Array.isArray(value) ? value : [];
     const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(asObject(value), key);
     const num = (value, min, max, fallback = 0) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : fallback));
     const displayPerson = (name, userName) => name === "玩家" ? userName : (name || "—");
-    const affectionWavePath = score => {
-      const centerX = 120;
-      const centerY = 17;
-      if (score >= 80) {
-        return [
-          `M${centerX} ${centerY}`,
-          "L148 17 L154 12 L161 23 L169 5 L178 29 L186 17",
-          "C186 8 199 7 205 15",
-          "C211 7 224 8 224 17",
-          "C224 27 205 32 205 32",
-          "C205 32 186 27 186 17"
-        ].join(" ");
-      }
-
-      const magnitude = Math.abs(score);
-      if (magnitude === 0) return `M${centerX - 2} ${centerY} L${centerX + 2} ${centerY}`;
-
-      const direction = score < 0 ? -1 : 1;
-      const distance = magnitude * 1.08;
-      const steps = Math.max(5, Math.ceil(magnitude / 7));
-      const negativePattern = [0, -.65, .8, -1, .92, -.5, .35, -.82, .62, 0];
-      const positivePattern = [0, -.2, .22, -.78, 1, -.32, .1, -.46, .38, 0];
-      const pattern = score < 0 ? negativePattern : positivePattern;
-      const amplitude = score < 0 ? 4 + magnitude * .075 : 3 + magnitude * .045;
-      const points = [];
-      for (let index = 0; index <= steps; index += 1) {
-        const progress = index / steps;
-        const x = centerX + direction * distance * progress;
-        const wave = pattern[index % pattern.length];
-        const y = centerY + wave * amplitude;
-        points.push(`${index === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`);
-      }
-      return points.join(" ");
-    };
-    const buildAffectionWave = (score, personName) => {
+    const buildAffectionMeter = (score, personName) => {
       const romance = score >= 80;
       const mode = score < 0 ? "negative" : romance ? "romance" : score > 0 ? "positive" : "neutral";
       const label = score > 0 ? `+${score}` : String(score);
-      const stateLabel = score < 0 ? "戒备干扰" : romance ? "热恋" : score > 0 ? "好感" : "中立";
-      const wave = svgEl("svg", {
-        class: `relation-wave is-${mode}`,
-        viewBox: "0 0 240 34",
-        preserveAspectRatio: "none",
-        role: "img",
-        "aria-label": `${personName}好感度${label}，${stateLabel}`
-      });
-      const title = svgEl("title");
-      title.textContent = `${personName}好感度 ${label} · ${stateLabel}`;
-      const grid = svgEl("path", {
-        class: "relation-wave-grid",
-        d: "M4 8.5H236 M4 17H236 M4 25.5H236"
-      });
-      const zero = svgEl("path", {
-        class: "relation-wave-zero",
-        d: "M120 3V31"
-      });
-      const base = svgEl("path", {
-        class: "relation-wave-base",
-        d: "M4 17H236"
-      });
-      const active = svgEl("path", {
-        class: "relation-wave-active",
-        d: affectionWavePath(score)
-      });
-      if (romance) {
-        const romanceRatio = (score - 80) / 20;
-        wave.style.setProperty("--heart-stroke", `${(3.8 + romanceRatio * 1.2).toFixed(2)}px`);
-        wave.style.setProperty("--heart-glow", `${(5 + romanceRatio * 4).toFixed(2)}px`);
-      }
-      wave.append(title, grid, zero, base, active);
-      return wave;
+      const stateLabel = score < 0 ? "戒备" : romance ? "热恋" : score > 0 ? "好感" : "中立";
+      const meter = el("span", `affection-meter is-${mode}`);
+      const description = `${personName}好感度 ${label} · ${stateLabel}`;
+      meter.setAttribute("role", "progressbar");
+      meter.setAttribute("aria-label", description);
+      meter.setAttribute("aria-valuemin", "-100");
+      meter.setAttribute("aria-valuemax", "100");
+      meter.setAttribute("aria-valuenow", String(score));
+      meter.setAttribute("aria-valuetext", description);
+      meter.setAttribute("title", description);
+      meter.style.setProperty("--meter-position", `${((score + 100) / 2).toFixed(2)}%`);
+      meter.style.setProperty("--meter-span", `${(Math.abs(score) / 2).toFixed(2)}%`);
+      meter.append(
+        el("span", "affection-meter-track"),
+        el("span", "affection-meter-fill"),
+        el("span", "affection-meter-zero"),
+        el("span", "affection-meter-marker")
+      );
+      return meter;
     };
     const portraitSource = name => (
       asObject(state.系统)._特殊档案已解锁 === true && HAN_XUAN_REACTION_PORTRAITS[name]
@@ -5949,7 +5948,7 @@
         row.classList.add(score < 0 ? "is-negative" : score >= 80 ? "is-romance" : score > 0 ? "is-positive" : "is-neutral");
         const personName = displayPerson(other, userName);
         const value = el("span", "relation-score", score > 0 ? `+${score}` : score);
-        row.append(el("span", "", personName), buildAffectionWave(score, personName), value);
+        row.append(el("span", "", personName), buildAffectionMeter(score, personName), value);
         relationField.append(row);
       });
       dossier.append(relationField);
