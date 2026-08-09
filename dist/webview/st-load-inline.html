@@ -7242,14 +7242,12 @@
       $("#chooseNormalSchedule").addEventListener("click", () => chooseScheduleMode("正常"));
       $("#chooseCustomSchedule").addEventListener("click", () => chooseScheduleMode("自定"));
       $("#openScheduleEditor").addEventListener("click", openScheduleEditor);
-      $("#closeScheduleEditor").addEventListener("click", closeScheduleMode);
+      $("#closeScheduleEditor").addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeScheduleMode();
+      }, { capture: true });
       backdrop.addEventListener("pointerdown", event => {
-        const closeButton = event.target instanceof Element ? event.target.closest("#closeScheduleEditor") : null;
-        if (closeButton) {
-          event.preventDefault();
-          closeScheduleMode();
-          return;
-        }
         if (event.target === backdrop) closeScheduleMode();
       });
       backdrop.addEventListener("keydown", event => {
