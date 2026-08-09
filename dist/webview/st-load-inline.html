@@ -1039,6 +1039,28 @@
 
     .schedule-mode-backdrop { z-index: 58; background: rgba(0,0,0,.9); }
     .schedule-mode-modal { width: min(880px, 100%); max-height: min(760px, calc(100dvh - 32px)); }
+    /*
+      Tavern Helper renders the card inside a tall message iframe while
+      SillyTavern usually keeps the chat scrolled to that iframe's bottom.
+      A fixed, vertically-centred first-run dialog can therefore exist outside
+      the clipped part of the iframe.  While this dialog is open, collapse the
+      dashboard and let the dialog participate in document flow so the iframe
+      resizer makes the choice itself visible.
+    */
+    html[data-schedule-mode-overlay] body { min-height: 0; }
+    html[data-schedule-mode-overlay] .app { display: none; }
+    html[data-schedule-mode-overlay] .schedule-mode-backdrop {
+      position: relative;
+      inset: auto;
+      display: block;
+      min-height: 0;
+      padding: 12px;
+    }
+    html[data-schedule-mode-overlay] .schedule-mode-modal {
+      width: min(880px, 100%);
+      max-height: none;
+      margin: 0 auto;
+    }
     .schedule-mode-kicker { margin: 0 0 7px; color: #7eb7c5; font: 800 9px/1.4 ui-sans-serif, system-ui, sans-serif; letter-spacing: .24em; text-transform: uppercase; }
     .schedule-mode-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
     .schedule-choice {
@@ -7002,6 +7024,7 @@
       const backdrop = $("#scheduleModeBackdrop");
       backdrop.classList.remove("is-open");
       backdrop.setAttribute("aria-hidden", "true");
+      syncScheduleModeFrameLayout("");
       scheduleSelectedParticipant = "";
       if (scheduleLastFocused && typeof scheduleLastFocused.focus === "function") scheduleLastFocused.focus();
       scheduleLastFocused = null;
@@ -7018,6 +7041,7 @@
       const backdrop = $("#scheduleModeBackdrop");
       backdrop.classList.add("is-open");
       backdrop.setAttribute("aria-hidden", "false");
+      syncScheduleModeFrameLayout("editor");
       renderCustomSchedule(system);
       requestAnimationFrame(() => $("#closeScheduleEditor").focus());
     }
@@ -7116,6 +7140,19 @@
       }));
     }
 
+    function syncScheduleModeFrameLayout(mode) {
+      if (mode) document.documentElement.dataset.scheduleModeOverlay = mode;
+      else delete document.documentElement.dataset.scheduleModeOverlay;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        try {
+          window.parent?.postMessage({
+            type: "resizeIframe",
+            height: Math.ceil(document.documentElement.scrollHeight)
+          }, "*");
+        } catch (error) {}
+      }));
+    }
+
     function syncScheduleModeUi(system) {
       const custom = system._日程模式 === "自定";
       $("#openScheduleEditor").hidden = !custom;
@@ -7127,11 +7164,13 @@
         $("#scheduleEditor").hidden = true;
         backdrop.classList.add("is-open");
         backdrop.setAttribute("aria-hidden", "false");
+        syncScheduleModeFrameLayout("choice");
         return;
       }
       if (custom && backdrop.classList.contains("is-open")) {
         $("#scheduleModeChoices").hidden = true;
         $("#scheduleEditor").hidden = false;
+        syncScheduleModeFrameLayout("editor");
         renderCustomSchedule(system);
         return;
       }
