@@ -7259,6 +7259,13 @@
       $("#chooseCustomSchedule").addEventListener("click", () => chooseScheduleMode("自定"));
       $("#openScheduleEditor").addEventListener("click", openScheduleEditor);
       armScheduleEditorClose();
+      backdrop.addEventListener("click", event => {
+        const closeButton = event.target instanceof Element ? event.target.closest("#closeScheduleEditor") : null;
+        if (!closeButton) return;
+        event.preventDefault();
+        event.stopPropagation();
+        closeScheduleMode();
+      }, { capture: true });
       backdrop.addEventListener("pointerdown", event => {
         if (event.target === backdrop) closeScheduleMode();
       });
