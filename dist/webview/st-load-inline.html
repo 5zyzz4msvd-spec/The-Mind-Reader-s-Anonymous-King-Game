@@ -140,6 +140,18 @@
     }
 
     .galgame-toggle:disabled { cursor: wait; opacity: .58; }
+    .status-tools { display: flex; align-items: center; gap: 6px; }
+    .schedule-toggle {
+      min-height: 27px;
+      padding: 5px 9px;
+      border: 1px solid rgba(117,163,180,.5);
+      color: #bfe5ef;
+      background: linear-gradient(145deg, rgba(29,58,67,.82), rgba(12,18,20,.96));
+      font: 800 9px/1 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .09em;
+      cursor: pointer;
+    }
+    .schedule-toggle[hidden] { display: none; }
 
     .king-line {
       display: flex;
@@ -1023,6 +1035,76 @@
       margin: 0 0 16px;
       color: #bcb4a5;
       font: 12px/1.75 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .schedule-mode-backdrop { z-index: 58; background: rgba(0,0,0,.9); }
+    .schedule-mode-modal { width: min(880px, 100%); max-height: min(760px, calc(100dvh - 32px)); }
+    .schedule-mode-kicker { margin: 0 0 7px; color: #7eb7c5; font: 800 9px/1.4 ui-sans-serif, system-ui, sans-serif; letter-spacing: .24em; text-transform: uppercase; }
+    .schedule-mode-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+    .schedule-choice {
+      min-height: 132px;
+      padding: 18px;
+      border: 1px solid rgba(198,163,91,.35);
+      color: #e8dcc6;
+      background: linear-gradient(145deg, rgba(42,39,31,.8), rgba(12,13,13,.96));
+      text-align: left;
+      cursor: pointer;
+    }
+    .schedule-choice:hover, .schedule-choice:focus-visible { border-color: var(--gold); outline: none; }
+    .schedule-choice b { display: block; margin-bottom: 10px; color: #f0dba8; font-size: 17px; }
+    .schedule-choice span { color: #aaa293; font: 12px/1.7 ui-sans-serif, system-ui, sans-serif; }
+    .schedule-editor[hidden], .schedule-mode-choices[hidden] { display: none; }
+    .schedule-editor-layout { display: grid; grid-template-columns: minmax(0, 1fr) 148px; gap: 16px; margin-top: 16px; }
+    .schedule-days { display: grid; grid-template-columns: repeat(5, minmax(86px, 1fr)); gap: 8px; }
+    .schedule-day {
+      min-height: 116px;
+      padding: 8px;
+      display: grid;
+      justify-items: center;
+      align-content: start;
+      gap: 5px;
+      border: 1px solid rgba(198,163,91,.25);
+      background: rgba(5,7,7,.72);
+      transition: border-color .16s, background .16s, transform .16s;
+    }
+    .schedule-day.is-drop-target { border-color: #8cd5e7; background: rgba(45,103,118,.2); transform: translateY(-2px); }
+    .schedule-day.is-locked { filter: grayscale(1); opacity: .48; }
+    .schedule-day.is-mystery { border-style: dashed; border-color: rgba(189,181,159,.48); }
+    .schedule-day.is-mystery:not(.is-elapsed) { filter: none; opacity: 1; }
+    .schedule-day-label { color: #8c877d; font: 800 9px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .12em; }
+    .schedule-day-name { max-width: 100%; overflow: hidden; color: #d7cdb9; font: 700 10px/1.2 ui-sans-serif, system-ui, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .schedule-day-lock { min-height: 1em; color: #77746d; font: 8px/1.2 ui-sans-serif, system-ui, sans-serif; }
+    .schedule-pool { padding: 12px; border: 1px solid rgba(117,163,180,.28); background: rgba(15,24,27,.68); }
+    .schedule-pool h3 { margin: 0 0 5px; color: #bfe5ef; font: 800 10px/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: .12em; }
+    .schedule-pool p { margin: 0 0 10px; color: #7e898b; font: 9px/1.45 ui-sans-serif, system-ui, sans-serif; }
+    .schedule-avatar-list { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .schedule-avatar-wrap { display: grid; justify-items: center; gap: 4px; color: #bdb7ab; font: 9px/1.2 ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+    .schedule-avatar-wrap.is-selected { color: #8de2f4; }
+    .schedule-avatar {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid rgba(198,163,91,.44);
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #4f554f, #171919 68%);
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,.35);
+      user-select: none;
+    }
+    .schedule-avatar-wrap.is-selected .schedule-avatar { border-color: #8de2f4; box-shadow: 0 0 16px rgba(89,200,224,.35); }
+    .schedule-avatar img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+    .schedule-avatar.is-player::before { content: "♟"; color: #e9d49d; font: 34px/1 serif; transform: translateY(3px); }
+    .schedule-avatar.is-mystery { border-style: dashed; color: #e8dfc9; background: radial-gradient(circle, #353838, #101212 72%); font: 800 30px/1 ui-serif, serif; }
+    .schedule-editor-note { margin: 13px 0 0; color: #8f887b; font: 10px/1.65 ui-sans-serif, system-ui, sans-serif; }
+
+    @media (max-width: 700px) {
+      .schedule-mode-choices { grid-template-columns: 1fr; }
+      .schedule-editor-layout { grid-template-columns: 1fr; }
+      .schedule-days { grid-template-columns: repeat(3, minmax(82px, 1fr)); }
+      .schedule-pool { order: -1; }
+      .schedule-avatar-list { grid-template-columns: repeat(5, 1fr); }
+      .schedule-avatar { width: 46px; height: 46px; }
     }
 
     .diary-backdrop { z-index: 46; background: rgba(3,4,4,.9); }
@@ -2036,26 +2118,39 @@
     });
   }
 
-  function getPendingDecreeDraft(existingVariables) {
+  function collectPendingDecreeDrafts(existingVariables) {
     var variables = existingVariables && typeof existingVariables === 'object' ? existingVariables : {};
+    var pending = [];
     for (var ownerIndex = 0; ownerIndex < PARTICIPANTS.length; ownerIndex += 1) {
       var owner = PARTICIPANTS[ownerIndex];
       var holder = getRuleHolder(variables, owner);
       var rules = holder && Array.isArray(holder['颁布规则']) ? holder['颁布规则'] : [];
       for (var ruleIndex = 0; ruleIndex < rules.length; ruleIndex += 1) {
         var rule = rules[ruleIndex];
-        if (!isCurrentRule(rule) || rule['状态'] !== '待填充') continue;
-        return {
+        if (!rule || typeof rule !== 'object' || rule['状态'] !== '待填充') continue;
+        pending.push({
           owner: owner,
           index: ruleIndex,
           id: String(rule.id),
           path: owner === '玩家'
             ? '/玩家/颁布规则/' + String(ruleIndex)
-            : '/角色/' + owner + '/颁布规则/' + String(ruleIndex)
-        };
+            : '/角色/' + owner + '/颁布规则/' + String(ruleIndex),
+          rule: rule
+        });
       }
     }
-    return null;
+    return pending;
+  }
+
+  function getPendingDecreeDraft(existingVariables) {
+    var pending = collectPendingDecreeDrafts(existingVariables);
+    if (pending.length !== 1 || !isCurrentRule(pending[0].rule)) return null;
+    return {
+      owner: pending[0].owner,
+      index: pending[0].index,
+      id: pending[0].id,
+      path: pending[0].path
+    };
   }
 
   function stageDecreeDraft(existingVariables) {
@@ -2070,10 +2165,24 @@
       var holder = getRuleHolder(current, participant);
       var rules = holder && Array.isArray(holder['颁布规则']) ? holder['颁布规则'] : [];
       rules.forEach(function (rule) {
+        // 待填充项不是已经占用的法令编号。重复点击或多个消息楼层并发时，
+        // 不能让临时草稿把下一编号从 R01 推成 R02。
+        if (rule && rule['状态'] === '待填充') return;
         var match = /^R(\d+)$/.exec(String(rule && rule.id || ''));
         if (match) maxRuleNumber = Math.max(maxRuleNumber, Number(match[1]) || 0);
       });
     });
+    var nextId = 'R' + String(maxRuleNumber + 1).padStart(2, '0');
+    var pendingDrafts = collectPendingDecreeDrafts(current);
+    if (pendingDrafts.length === 1) {
+      var reusable = pendingDrafts[0];
+      if (reusable.owner === owner
+        && reusable.id === nextId
+        && isCurrentRule(reusable.rule)
+        && Math.floor(Number(reusable.rule['颁布日'])) === day) {
+        return current;
+      }
+    }
 
     var output = {};
     Object.keys(current).forEach(function (key) { output[key] = current[key]; });
@@ -2100,7 +2209,6 @@
     output['角色'] = nextRoles;
 
     var target = owner === '玩家' ? nextPlayer : nextRoles[owner];
-    var nextId = 'R' + String(maxRuleNumber + 1).padStart(2, '0');
     target['颁布规则'].push({
       id: nextId,
       '标题': '',
@@ -3188,6 +3296,46 @@
     return { valid: errors.length === 0, errors: errors, warnings: warnings, counts: counts };
   }
 
+  function validateCustomSchedule(schedule) {
+    var errors = [];
+    var warnings = [];
+
+    if (!Array.isArray(schedule)) {
+      return { valid: false, errors: ['日程必须是数组'], warnings: [] };
+    }
+    if (schedule.length !== DAYS) errors.push('日程必须恰好包含15天');
+    for (var index = 0; index < schedule.length; index += 1) {
+      if (!SCHEDULE_CODE_SET[schedule[index]]) {
+        errors.push('日程包含未知参与者');
+        break;
+      }
+      if (index > 0 && schedule[index] === schedule[index - 1]) {
+        warnings.push('日程存在同一人连续担任国王');
+      }
+    }
+    // 第10日承载固定隐藏事件。自定模式只允许修改其余日期，且前端不得
+    // 提前展示这里实际保存的王可可身份。
+    if (schedule.length >= FIXED_KEKE_DAY && schedule[FIXED_KEKE_DAY - 1] !== NAME_TO_CODE['王可可']) {
+      errors.push('第10日为不可更改的神秘日程');
+    }
+    return {
+      valid: errors.length === 0,
+      errors: errors,
+      warnings: warnings,
+      counts: countKings(schedule, schedule.length)
+    };
+  }
+
+  function normalizeScheduleMode(value) {
+    if (value === '正常' || value === '自定' || value === '未选择') return value;
+    // 旧存档没有模式字段，按原有正常剧情继续，不弹出首楼选择。
+    return '正常';
+  }
+
+  function validateScheduleForMode(schedule, mode) {
+    return mode === '自定' ? validateCustomSchedule(schedule) : validateSchedule(schedule);
+  }
+
   function checksumSchedule(schedule, seedSource) {
     var seed = normalizeChatName(seedSource);
     var normalized = normalizeSchedule(schedule);
@@ -3225,6 +3373,19 @@
     };
   }
 
+  function deriveDayStateForMode(schedule, day, mode) {
+    var validation = validateScheduleForMode(schedule, mode);
+    if (!validation.valid) {
+      throw new Error('无法从无效日程派生当天状态：' + validation.errors.join('；'));
+    }
+    var normalizedDay = normalizeDay(day);
+    return {
+      '_当前天数': normalizedDay,
+      '_当前国王': CODE_TO_NAME[schedule[normalizedDay - 1]] || '',
+      '$国王次数': countKings(schedule, normalizedDay)
+    };
+  }
+
   function readCurrentSystem(existingSystem) {
     var source = existingSystem && typeof existingSystem === 'object' ? existingSystem : {};
     if (Object.keys(source).length > 0 && source['$版本'] !== VERSION) {
@@ -3243,14 +3404,19 @@
 
   function initializeSystem(existingSystem, chatName) {
     var current = removeRetiredHostTestKeys(readCurrentSystem(existingSystem));
+    var mode = normalizeScheduleMode(current['$日程模式']);
+    if (mode === '未选择' && (normalizeDay(current['_当前天数']) > 1 || current['$日程已锁定'] === true)) {
+      mode = '正常';
+    }
     var storedSchedule = normalizeSchedule(current['$国王日程']);
-    var storedValidation = validateSchedule(storedSchedule);
+    var storedValidation = validateScheduleForMode(storedSchedule, mode);
     var storedSeed = typeof current['$国王种子源'] === 'string' && current['$国王种子源'].trim()
       ? normalizeChatName(current['$国王种子源'])
       : '';
     var next = copySystem(current);
 
     next['$版本'] = VERSION;
+    next['$日程模式'] = mode;
     next['_当前天数'] = normalizeDay(current['_当前天数']);
     next['$protocol_strikes'] = normalizeProtocolStrikes(current['$protocol_strikes']);
 
@@ -3273,7 +3439,7 @@
     // 当前版本的已锁定局以保存种子和合法日程为准；损坏日程可由同一种子重建。
     var seed = storedSeed || normalizeChatName(chatName);
     var schedule = storedValidation.valid ? storedSchedule.slice() : createSchedule(seed);
-    var derived = deriveDayState(schedule, next['_当前天数']);
+    var derived = deriveDayStateForMode(schedule, next['_当前天数'], mode);
     next['$日程已锁定'] = true;
     next['$国王种子源'] = seed;
     next['$国王日程'] = schedule;
@@ -3297,6 +3463,7 @@
     var derived = deriveDayState(schedule, current['_当前天数']);
     var next = copySystem(current);
     next['$版本'] = VERSION;
+    if (next['$日程模式'] === '未选择') next['$日程模式'] = '正常';
     next['$日程已锁定'] = true;
     next['$国王种子源'] = seed;
     next['$国王日程'] = schedule;
@@ -3305,6 +3472,60 @@
     next['$国王次数'] = derived['$国王次数'];
     next['$日程校验码'] = checksumSchedule(schedule, seed);
     return repairDailyState(current, next);
+  }
+
+  function chooseScheduleMode(existingSystem, mode, chatName) {
+    var requested = mode === '自定' ? '自定' : (mode === '正常' ? '正常' : '');
+    if (!requested) throw new Error('请选择正常剧情模式或自定模式');
+    var current = initializeSystem(existingSystem, chatName);
+    if (current['$日程模式'] !== '未选择') {
+      if (current['$日程模式'] !== requested) throw new Error('本局日程模式已经确定，不能中途切换');
+      return current;
+    }
+    if (current['_当前天数'] !== 1 || current['_每日阶段'] !== '待颁布法令') {
+      throw new Error('只有首日法令颁布前可以选择日程模式');
+    }
+    var next = copySystem(current);
+    next['$日程模式'] = requested;
+    if (requested === '正常') return next;
+
+    var seed = normalizeChatName(chatName);
+    var schedule = createSchedule(seed);
+    var derived = deriveDayStateForMode(schedule, next['_当前天数'], '自定');
+    next['$日程已锁定'] = true;
+    next['$国王种子源'] = seed;
+    next['$国王日程'] = schedule;
+    next['_当前国王'] = derived['_当前国王'];
+    next['$国王次数'] = derived['$国王次数'];
+    next['$日程校验码'] = checksumSchedule(schedule, seed);
+    return repairDailyState(current, next);
+  }
+
+  function replaceCustomScheduleDay(existingSystem, day, participant, chatName) {
+    var current = initializeSystem(existingSystem, chatName);
+    if (current['$日程模式'] !== '自定' || current['$日程已锁定'] !== true) {
+      throw new Error('只有自定模式可以编辑国王日程');
+    }
+    var targetDay = normalizeDay(day);
+    var currentDay = normalizeDay(current['_当前天数']);
+    if (targetDay <= currentDay) throw new Error('当天及已经过去的国王日程不能更改');
+    if (targetDay === FIXED_KEKE_DAY) throw new Error('第10日为神秘固定日程，不能更改');
+    var code = NAME_TO_CODE[participant] || (SCHEDULE_CODE_SET[participant] ? participant : '');
+    if (!code) throw new Error('未知的国王候选人');
+
+    var schedule = normalizeSchedule(current['$国王日程']);
+    var validation = validateCustomSchedule(schedule);
+    if (!validation.valid) throw new Error('当前自定日程已损坏：' + validation.errors.join('；'));
+    schedule[targetDay - 1] = code;
+    validation = validateCustomSchedule(schedule);
+    if (!validation.valid) throw new Error('无法保存自定日程：' + validation.errors.join('；'));
+    var derived = deriveDayStateForMode(schedule, currentDay, '自定');
+    var next = copySystem(current);
+    next['$国王日程'] = schedule;
+    next['_当前国王'] = derived['_当前国王'];
+    next['$国王次数'] = derived['$国王次数'];
+    next['$日程校验码'] = checksumSchedule(schedule, next['$国王种子源'] || chatName);
+    return next;
   }
 
   function initializeVariables(existingVariables, chatName) {
@@ -3349,14 +3570,15 @@
   function setCurrentDay(existingSystem, day) {
     var current = readCurrentSystem(existingSystem);
     var schedule = normalizeSchedule(current['$国王日程']);
-    var validation = validateSchedule(schedule);
+    var mode = normalizeScheduleMode(current['$日程模式']);
+    var validation = validateScheduleForMode(schedule, mode);
     if (!validation.valid) {
       throw new Error('设置天数前必须先初始化有效日程');
     }
 
     var next = copySystem(current);
 
-    var derived = deriveDayState(schedule, day);
+    var derived = deriveDayStateForMode(schedule, day, mode);
     next['$国王日程'] = schedule;
     next['_当前天数'] = derived['_当前天数'];
     next['_当前国王'] = derived['_当前国王'];
@@ -3369,7 +3591,8 @@
   function requireInitializedSystem(existingSystem) {
     var current = readCurrentSystem(existingSystem);
     var schedule = normalizeSchedule(current['$国王日程']);
-    var validation = validateSchedule(schedule);
+    var mode = normalizeScheduleMode(current['$日程模式']);
+    var validation = validateScheduleForMode(schedule, mode);
     if (!validation.valid) {
       throw new Error('执行每日流程前必须先初始化有效日程');
     }
@@ -3637,10 +3860,11 @@
   function getSnapshot(source) {
     var system = getSystem(source);
     var roles = source && source['角色'] && typeof source['角色'] === 'object' ? source['角色'] : {};
+    var mode = normalizeScheduleMode(system['$日程模式']);
     var schedule = normalizeSchedule(system['$国王日程']);
-    var validation = validateSchedule(schedule);
+    var validation = validateScheduleForMode(schedule, mode);
     var derived = validation.valid
-      ? deriveDayState(schedule, system['_当前天数'])
+      ? deriveDayStateForMode(schedule, system['_当前天数'], mode)
       : null;
     var rules = activeDecrees(source);
     var canOpenMeeting = system['_每日阶段'] === '自由互动'
@@ -3659,6 +3883,22 @@
       '_可召开法令会议': canOpenMeeting,
       '_可过夜': system['_可过夜'] === true
     };
+    snapshot['_日程模式'] = mode;
+    snapshot['_需要选择日程模式'] = mode === '未选择'
+      && snapshot['_当前天数'] === 1
+      && system['$日程已锁定'] !== true;
+    if (mode === '自定' && validation.valid) {
+      snapshot['_自定国王日程'] = schedule.map(function (code, index) {
+        var day = index + 1;
+        var mystery = day === FIXED_KEKE_DAY;
+        return {
+          '日期': day,
+          '国王': mystery ? '' : (CODE_TO_NAME[code] || ''),
+          '神秘': mystery,
+          '锁定': day <= snapshot['_当前天数'] || mystery
+        };
+      });
+    }
     var endingDisplay = getEndingDisplay(system);
     if (endingDisplay) {
       snapshot['结局展示'] = endingDisplay;
@@ -3775,6 +4015,7 @@
     hashSeed: fnv1a,
     createSchedule: createSchedule,
     validateSchedule: validateSchedule,
+    validateCustomSchedule: validateCustomSchedule,
     checksumSchedule: checksumSchedule,
     deriveDayState: deriveDayState,
     getActiveDecrees: activeDecrees,
@@ -3792,6 +4033,8 @@
     syncComplianceState: syncComplianceState,
     getEndingDisplay: getEndingDisplay,
     prepareDecree: prepareDecree,
+    chooseScheduleMode: chooseScheduleMode,
+    replaceCustomScheduleDay: replaceCustomScheduleDay,
     setCurrentDay: setCurrentDay,
     beginDecree: beginDecree,
     resolveDecree: resolveDecree,
@@ -3823,6 +4066,9 @@
   var previewGalgameMode = true;
   var galgameRequestSequence = 0;
   var galgameStateEventsBound = false;
+  var HOST_ACTION_LOCK_KEY = '__KING_GAME_HOST_ACTION_LOCK_V1__';
+  var HOST_ACTION_LOCK_TTL = 180000;
+  var hostActionSequence = 0;
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -3854,6 +4100,38 @@
       } catch (error) {}
     }
     return window;
+  }
+
+  function acquireHostActionLock(actionName) {
+    var host = hostWindow();
+    var now = Date.now();
+    var existing = null;
+    try { existing = host[HOST_ACTION_LOCK_KEY]; } catch (error) {}
+    if (existing && Number(existing.expiresAt) > now) {
+      throw new Error('上一项操作仍在提交，请稍候');
+    }
+    hostActionSequence += 1;
+    var lock = {
+      token: String(now) + ':' + String(hostActionSequence) + ':' + String(actionName || ''),
+      action: String(actionName || ''),
+      expiresAt: now + HOST_ACTION_LOCK_TTL
+    };
+    try {
+      host[HOST_ACTION_LOCK_KEY] = lock;
+    } catch (error) {
+      // 无法访问顶层窗口时退回当前 iframe；法令草稿幂等仍是最终防线。
+      host = window;
+      host[HOST_ACTION_LOCK_KEY] = lock;
+    }
+    return { host: host, token: lock.token };
+  }
+
+  function releaseHostActionLock(handle) {
+    if (!handle || !handle.host) return;
+    try {
+      var current = handle.host[HOST_ACTION_LOCK_KEY];
+      if (current && current.token === handle.token) delete handle.host[HOST_ACTION_LOCK_KEY];
+    } catch (error) {}
   }
 
   function context() {
@@ -4218,6 +4496,13 @@
         system['_生效法令数量'] = safeSnapshot['_生效法令数量'];
         system['_可召开法令会议'] = safeSnapshot['_可召开法令会议'] === true;
         system['_可过夜'] = safeSnapshot['_可过夜'] === true;
+        system['_日程模式'] = safeSnapshot['_日程模式'];
+        system['_需要选择日程模式'] = safeSnapshot['_需要选择日程模式'] === true;
+        if (Array.isArray(safeSnapshot['_自定国王日程'])) {
+          system['_自定国王日程'] = clone(safeSnapshot['_自定国王日程']);
+        } else {
+          delete system['_自定国王日程'];
+        }
       }
       if (safeSnapshot && safeSnapshot['_特殊档案已解锁'] === true) {
         system['_特殊档案已解锁'] = true;
@@ -4779,6 +5064,7 @@
 
   async function commitAction(apiName, args, commandFactory) {
     if (actionPending) throw new Error('上一项操作仍在提交，请稍候');
+    var hostActionLock = acquireHostActionLock(apiName);
     actionPending = true;
     try {
       await requireReady();
@@ -4891,6 +5177,7 @@
       return clone(cachedState);
     } finally {
       actionPending = false;
+      releaseHostActionLock(hostActionLock);
     }
   }
 
@@ -4944,6 +5231,7 @@
 
   async function prepareDecree() {
     if (actionPending) throw new Error('上一项操作仍在提交，请稍候');
+    var hostActionLock = acquireHostActionLock('prepareDecree');
     actionPending = true;
     try {
       await requireReady();
@@ -4960,7 +5248,43 @@
       return clone(cachedState);
     } finally {
       actionPending = false;
+      releaseHostActionLock(hostActionLock);
     }
+  }
+
+  async function updateScheduleConfiguration(actionName, updater) {
+    if (actionPending) throw new Error('上一项操作仍在提交，请稍候');
+    var hostActionLock = acquireHostActionLock(actionName);
+    actionPending = true;
+    try {
+      await requireReady();
+      var api = window.KingGameState;
+      var record = await readHostRecord();
+      var before = fillDefaults(record.state, INITIAL_STATE);
+      before = api.initializeVariables(before, chatName());
+      var after = clone(before);
+      after['系统'] = updater(api, before['系统']);
+      if (!await writeHostRecord(record, after)) throw new Error('聊天变量写入失败，日程设置未保存');
+      publish(after);
+      return clone(cachedState);
+    } finally {
+      actionPending = false;
+      releaseHostActionLock(hostActionLock);
+    }
+  }
+
+  function chooseScheduleMode(mode) {
+    return updateScheduleConfiguration('chooseScheduleMode', function (api, system) {
+      if (!api || typeof api.chooseScheduleMode !== 'function') throw new Error('状态引擎缺少日程模式选择能力');
+      return api.chooseScheduleMode(system, mode, chatName());
+    });
+  }
+
+  function replaceCustomScheduleDay(day, participant) {
+    return updateScheduleConfiguration('replaceCustomScheduleDay', function (api, system) {
+      if (!api || typeof api.replaceCustomScheduleDay !== 'function') throw new Error('状态引擎缺少自定日程编辑能力');
+      return api.replaceCustomScheduleDay(system, day, participant, chatName());
+    });
   }
 
   function containsUnprotected(value, pattern) {
@@ -5060,6 +5384,8 @@
     getGalgameMode: getGalgameMode,
     setGalgameMode: setGalgameMode,
     toggleGalgameMode: async function () { return setGalgameMode(!(await getGalgameMode())); },
+    chooseScheduleMode: chooseScheduleMode,
+    replaceCustomScheduleDay: replaceCustomScheduleDay,
     subscribe: function (listener) {
       if (typeof listener !== 'function') return function () {};
       listeners.push(listener);
@@ -5111,7 +5437,7 @@
         var playerSubmission = system['_当前国王'] === '玩家'
           ? '玩家提交：“' + submitted + '”。按其原意正式新增或撤销。'
           : '只由“' + system['_当前国王'] + '”依人设与当前关系决定新增或撤销。';
-        return '【每日流程·房间平板颁布法令】今日国王为“' + system['_当前国王'] + '”（仅玩家平板私知；不得重抽、改人或泄露来源）。五人仍锁在各自房间。' + playerSubmission + draftContract + '旧法令只读【当前公开局势】的唯一生效投影；新增、撤销、真冲突失效、义务冻结、广播开门与即时履行均按本轮隐藏注入合同执行，不在此重复正文或台账。叙事留在{{user}}房内直到广播开门；有效广播后在同一回复完成规定的圆桌短会，正文原地包在唯一一组<DecreeRoundtableImpl>与</DecreeRoundtableImpl>之间；闭标签后下一行只输出<StatusPlaceHolderImpl/>。短会不计互动，不得输出<InteractionPairImpl>或抢占后续个人互动。';
+        return '【每日流程·房间平板颁布法令】今日国王为“' + system['_当前国王'] + '”（仅玩家平板私知；不得重抽、改人或泄露来源）。五人仍锁在各自房间。' + playerSubmission + draftContract + '旧法令只读【当前公开局势】的唯一生效投影；新增、撤销、真冲突失效、义务冻结、广播开门与即时履行均按本轮隐藏注入合同执行，不在此重复正文或台账。叙事留在{{user}}房内直到广播开门；有效广播后在同一回复依次完成规定的圆桌短会与一次自动法令履行修正：正文先原地包在唯一一组<DecreeRoundtableImpl>与</DecreeRoundtableImpl>之间，再输出唯一一组非空<DecreeComplianceMeetingImpl>与</DecreeComplianceMeetingImpl>；没有到期缺漏时修正块只简短确认无需补做，不得虚构执行。修正闭标签后下一行只输出<StatusPlaceHolderImpl/>。两块均不计互动，不得输出<InteractionPairImpl>或抢占后续个人互动。';
       });
     },
     submitInteraction: function (roleName, method) {
@@ -5176,7 +5502,10 @@
       <section class="status-card">
         <div class="status-head">
           <p class="eyebrow">Private backdoor</p>
-          <button class="galgame-toggle" id="galgameModeToggle" type="button" data-enabled="true" aria-pressed="true" title="关闭 Galgame 模式脚本">Galgame On</button>
+          <div class="status-tools">
+            <button class="schedule-toggle" id="openScheduleEditor" type="button" hidden>国王日程</button>
+            <button class="galgame-toggle" id="galgameModeToggle" type="button" data-enabled="true" aria-pressed="true" title="关闭 Galgame 模式脚本">Galgame On</button>
+          </div>
         </div>
         <div class="king-line"><span class="king-name" id="currentKing">—</span><span class="day-seal" id="currentDay">第 1 / 15 日</span></div>
         <div class="scene-line"><span id="sceneInfo">第1日 08:10 · 个人房间 · 等待法令</span><br>玩家平板后门 · 仅你可见 · 请勿泄露</div>
@@ -5226,6 +5555,31 @@
       <p class="drawer-note">这里只展示由你正式颁布或撤销的法令记录；其他人的法令分别保存在她们各自的档案面。</p>
       <div class="rules" id="playerRules"></div>
     </aside>
+  </div>
+
+  <div class="modal-backdrop schedule-mode-backdrop" id="scheduleModeBackdrop" aria-hidden="true">
+    <section class="interaction-modal schedule-mode-modal" role="dialog" aria-modal="true" aria-labelledby="scheduleModeTitle" aria-describedby="scheduleModeNote">
+      <p class="schedule-mode-kicker">Day allocation protocol</p>
+      <h2 id="scheduleModeTitle">选择本局国王日程模式</h2>
+      <p class="modal-note" id="scheduleModeNote">模式仅能在首日开始时选择一次。正常剧情不会公开未来日程；自定模式允许调整未来日期，第10日始终保持神秘且不可更改。</p>
+      <div class="schedule-mode-choices" id="scheduleModeChoices">
+        <button class="schedule-choice" id="chooseNormalSchedule" type="button"><b>正常剧情模式</b><span>由系统按剧情约束生成国王日程，未来人选保持隐藏。</span></button>
+        <button class="schedule-choice" id="chooseCustomSchedule" type="button"><b>自定模式</b><span>显示十五日头像日程。可把右侧候选头像拖到未来日期进行替换。</span></button>
+      </div>
+      <div class="schedule-editor" id="scheduleEditor" hidden>
+        <div class="schedule-editor-layout">
+          <div class="schedule-days" id="scheduleDayList" aria-label="十五日国王日程"></div>
+          <aside class="schedule-pool">
+            <h3>候选国王</h3>
+            <p>拖至未来日期；触屏可先点头像，再点日期。</p>
+            <div class="schedule-avatar-list" id="scheduleAvatarPool"></div>
+          </aside>
+        </div>
+        <p class="schedule-editor-note">当天、已经过去的日期以及第10日均为锁定状态。第10日只显示问号，不会提前揭示实际身份。</p>
+        <div class="modal-error" id="scheduleModeError" role="alert"></div>
+        <div class="modal-actions"><button class="modal-btn" id="closeScheduleEditor" type="button">完成</button></div>
+      </div>
+    </section>
   </div>
 
   <div class="modal-backdrop" id="interactionBackdrop" aria-hidden="true">
@@ -5522,6 +5876,7 @@
     const PREVIEW_STATE = {
       "系统": {
         "$版本": 17, "$日程已锁定": false,
+        "_日程模式": "未选择", "_需要选择日程模式": true,
         "_当前天数": 1, "_当前国王": "",
         "$国王次数": { "玩家": 0, "林安": 0, "穆裳希": 0, "张曲溪": 0, "王可可": 0 },
         "_每日阶段": "待颁布法令", "_今日法令已广播": false,
@@ -5670,6 +6025,10 @@
     let galgameModeEnabled = true;
     let galgameToggleBusy = false;
     let galgameWarningLastFocused = null;
+    let scheduleModeBusy = false;
+    let scheduleModeForced = false;
+    let scheduleSelectedParticipant = "";
+    let scheduleLastFocused = null;
     let roomMoving = false;
     let hitSyncTimer = 0;
     let portraitLastFocused = null;
@@ -6623,6 +6982,206 @@
       }
     }
 
+    const SCHEDULE_PARTICIPANTS = ["玩家", ...NAMES];
+
+    function buildScheduleAvatar(name, mystery = false) {
+      const avatar = el("span", `schedule-avatar${name === "玩家" ? " is-player" : ""}${mystery ? " is-mystery" : ""}`);
+      if (mystery) {
+        avatar.textContent = "?";
+      } else if (name !== "玩家" && PORTRAITS[name]) {
+        const image = document.createElement("img");
+        image.src = PORTRAITS[name];
+        image.alt = "";
+        avatar.append(image);
+      }
+      return avatar;
+    }
+
+    function closeScheduleMode() {
+      if (scheduleModeForced || scheduleModeBusy) return;
+      const backdrop = $("#scheduleModeBackdrop");
+      backdrop.classList.remove("is-open");
+      backdrop.setAttribute("aria-hidden", "true");
+      scheduleSelectedParticipant = "";
+      if (scheduleLastFocused && typeof scheduleLastFocused.focus === "function") scheduleLastFocused.focus();
+      scheduleLastFocused = null;
+    }
+
+    function openScheduleEditor() {
+      const system = asObject(state.系统);
+      if (system._日程模式 !== "自定") return;
+      scheduleModeForced = false;
+      scheduleLastFocused = document.activeElement;
+      $("#scheduleModeChoices").hidden = true;
+      $("#scheduleEditor").hidden = false;
+      $("#scheduleModeError").textContent = "";
+      const backdrop = $("#scheduleModeBackdrop");
+      backdrop.classList.add("is-open");
+      backdrop.setAttribute("aria-hidden", "false");
+      renderCustomSchedule(system);
+      requestAnimationFrame(() => $("#closeScheduleEditor").focus());
+    }
+
+    async function replaceScheduleDay(day, participant) {
+      if (scheduleModeBusy || !participant) return;
+      const bridge = window.KingGameBridge;
+      if (!bridge || typeof bridge.replaceCustomScheduleDay !== "function") {
+        $("#scheduleModeError").textContent = "宿主桥接尚未就绪，无法保存自定日程。";
+        return;
+      }
+      scheduleModeBusy = true;
+      $("#scheduleModeError").textContent = "正在保存……";
+      try {
+        const nextState = await bridge.replaceCustomScheduleDay(day, participant);
+        scheduleSelectedParticipant = "";
+        if (nextState) render(nextState);
+        $("#scheduleModeError").textContent = "";
+      } catch (error) {
+        $("#scheduleModeError").textContent = error?.message || "日程保存失败，请稍后重试。";
+      } finally {
+        scheduleModeBusy = false;
+      }
+    }
+
+    function renderCustomSchedule(system) {
+      const schedule = asArray(system._自定国王日程);
+      const pool = $("#scheduleAvatarPool");
+      const list = $("#scheduleDayList");
+      pool.replaceChildren(...SCHEDULE_PARTICIPANTS.map(name => {
+        const item = el("div", `schedule-avatar-wrap${scheduleSelectedParticipant === name ? " is-selected" : ""}`);
+        item.dataset.participant = name;
+        item.draggable = true;
+        item.setAttribute("role", "button");
+        item.tabIndex = 0;
+        item.setAttribute("aria-label", `选择${displayPerson(name, userName)}作为国王`);
+        item.append(buildScheduleAvatar(name), el("span", "", displayPerson(name, userName)));
+        item.addEventListener("dragstart", event => {
+          scheduleSelectedParticipant = name;
+          event.dataTransfer?.setData("text/plain", name);
+          if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
+        });
+        const select = () => {
+          scheduleSelectedParticipant = scheduleSelectedParticipant === name ? "" : name;
+          renderCustomSchedule(asObject(state.系统));
+        };
+        item.addEventListener("click", select);
+        item.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(); }
+        });
+        return item;
+      }));
+
+      list.replaceChildren(...schedule.map(entryValue => {
+        const entry = asObject(entryValue);
+        const day = Math.round(num(entry.日期, 1, 15, 1));
+        const mystery = entry.神秘 === true || day === 10;
+        const elapsed = day <= Math.round(num(system._当前天数, 1, 15, 1));
+        const locked = entry.锁定 === true || mystery;
+        const name = mystery ? "" : String(entry.国王 || "");
+        const card = el("div", `schedule-day${locked ? " is-locked" : ""}${mystery ? " is-mystery" : ""}${elapsed ? " is-elapsed" : ""}`);
+        card.dataset.day = String(day);
+        card.append(
+          el("span", "schedule-day-label", `DAY ${String(day).padStart(2, "0")}`),
+          buildScheduleAvatar(name, mystery),
+          el("span", "schedule-day-name", mystery ? "神秘国王" : displayPerson(name, userName)),
+          el("span", "schedule-day-lock", locked ? (mystery ? "固定 · 不可更改" : "已锁定") : "可替换")
+        );
+        if (!locked) {
+          card.tabIndex = 0;
+          card.setAttribute("role", "button");
+          card.setAttribute("aria-label", `替换第${day}日国王`);
+          card.addEventListener("dragover", event => {
+            event.preventDefault();
+            if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+            card.classList.add("is-drop-target");
+          });
+          card.addEventListener("dragleave", () => card.classList.remove("is-drop-target"));
+          card.addEventListener("drop", event => {
+            event.preventDefault();
+            card.classList.remove("is-drop-target");
+            replaceScheduleDay(day, event.dataTransfer?.getData("text/plain") || scheduleSelectedParticipant);
+          });
+          const applySelected = () => {
+            if (scheduleSelectedParticipant) replaceScheduleDay(day, scheduleSelectedParticipant);
+          };
+          card.addEventListener("click", applySelected);
+          card.addEventListener("keydown", event => {
+            if ((event.key === "Enter" || event.key === " ") && scheduleSelectedParticipant) {
+              event.preventDefault();
+              applySelected();
+            }
+          });
+        }
+        return card;
+      }));
+    }
+
+    function syncScheduleModeUi(system) {
+      const custom = system._日程模式 === "自定";
+      $("#openScheduleEditor").hidden = !custom;
+      const needsChoice = system._需要选择日程模式 === true;
+      const backdrop = $("#scheduleModeBackdrop");
+      if (needsChoice) {
+        scheduleModeForced = true;
+        $("#scheduleModeChoices").hidden = false;
+        $("#scheduleEditor").hidden = true;
+        backdrop.classList.add("is-open");
+        backdrop.setAttribute("aria-hidden", "false");
+        return;
+      }
+      if (custom && backdrop.classList.contains("is-open")) {
+        $("#scheduleModeChoices").hidden = true;
+        $("#scheduleEditor").hidden = false;
+        renderCustomSchedule(system);
+        return;
+      }
+      if (!custom && backdrop.classList.contains("is-open")) {
+        scheduleModeForced = false;
+        closeScheduleMode();
+      }
+    }
+
+    async function chooseScheduleMode(mode) {
+      if (scheduleModeBusy) return;
+      const bridge = window.KingGameBridge;
+      if (!bridge || typeof bridge.chooseScheduleMode !== "function") {
+        showActionError("日程模式桥接尚未就绪，请刷新页面后重试。");
+        return;
+      }
+      scheduleModeBusy = true;
+      $("#chooseNormalSchedule").disabled = true;
+      $("#chooseCustomSchedule").disabled = true;
+      try {
+        const nextState = await bridge.chooseScheduleMode(mode);
+        scheduleModeForced = false;
+        if (nextState) render(nextState);
+      } catch (error) {
+        showActionError(error?.message || "日程模式保存失败，请稍后重试。");
+      } finally {
+        scheduleModeBusy = false;
+        $("#chooseNormalSchedule").disabled = false;
+        $("#chooseCustomSchedule").disabled = false;
+        if (mode === "正常" && asObject(state.系统)._日程模式 === "正常") closeScheduleMode();
+      }
+    }
+
+    function bindScheduleMode() {
+      const backdrop = $("#scheduleModeBackdrop");
+      $("#chooseNormalSchedule").addEventListener("click", () => chooseScheduleMode("正常"));
+      $("#chooseCustomSchedule").addEventListener("click", () => chooseScheduleMode("自定"));
+      $("#openScheduleEditor").addEventListener("click", openScheduleEditor);
+      $("#closeScheduleEditor").addEventListener("click", closeScheduleMode);
+      backdrop.addEventListener("pointerdown", event => {
+        if (event.target === backdrop) closeScheduleMode();
+      });
+      backdrop.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeScheduleMode();
+        }
+      });
+    }
+
     function render(nextState = state) {
       state = asObject(nextState);
       const system = asObject(state.系统);
@@ -6666,6 +7225,7 @@
       renderSurfaceOverlay(state);
       renderRules($("#playerRules"), player.颁布规则);
       renderDailyFlow(system);
+      syncScheduleModeUi(system);
       renderEnding(system);
       updateNavigation();
       requestAnimationFrame(() => {
@@ -6960,7 +7520,7 @@
     function interfaceOverlayOpen() {
       return [
         "playerRulesBackdrop", "interactionBackdrop", "portraitBackdrop", "diaryBackdrop",
-        "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "testamentBackdrop", "endingBackdrop"
+        "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "testamentBackdrop", "endingBackdrop", "scheduleModeBackdrop", "galgameWarningBackdrop"
       ].some(id => $(`#${id}`)?.classList.contains("is-open"));
     }
 
@@ -7458,6 +8018,7 @@
       bindMediaModals();
       bindDailyFlow();
       bindGalgameToggle();
+      bindScheduleMode();
       render(PREVIEW_STATE);
       void readBridge();
       window.addEventListener("kinggame:state", event => { if (event.detail) render(event.detail); });
