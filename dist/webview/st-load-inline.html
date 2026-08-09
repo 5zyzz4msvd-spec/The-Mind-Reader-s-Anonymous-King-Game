@@ -7043,7 +7043,8 @@
     function closeScheduleMode() {
       if (scheduleModeBusy) return;
       const stillNeedsChoice = asObject(state.系统)._需要选择日程模式 === true;
-      if (stillNeedsChoice) {
+      const editorIsOpen = !$("#scheduleEditor").hidden;
+      if (stillNeedsChoice && !editorIsOpen) {
         scheduleModeForced = true;
         return;
       }
