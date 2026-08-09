@@ -1038,6 +1038,7 @@
     }
 
     .schedule-mode-backdrop { z-index: 58; background: rgba(0,0,0,.9); }
+    .schedule-mode-backdrop:not([open]) { display: none !important; }
     .schedule-mode-modal { width: min(880px, 100%); max-height: min(760px, calc(100dvh - 32px)); }
     /*
       Tavern Helper renders the card inside a tall message iframe while
@@ -1049,6 +1050,7 @@
     */
     html[data-schedule-mode-overlay] body { min-height: 0; }
     html[data-schedule-mode-overlay] .app { display: none; }
+    html[data-schedule-mode-overlay]:has(.schedule-mode-backdrop:not([open])) .app { display: block; }
     html[data-schedule-mode-overlay] .schedule-mode-backdrop {
       position: relative;
       inset: auto;
@@ -5600,7 +5602,7 @@
     </aside>
   </div>
 
-  <div class="modal-backdrop schedule-mode-backdrop" id="scheduleModeBackdrop" aria-hidden="true">
+  <dialog class="modal-backdrop schedule-mode-backdrop" id="scheduleModeBackdrop" aria-hidden="true">
     <section class="interaction-modal schedule-mode-modal" role="dialog" aria-modal="true" aria-labelledby="scheduleModeTitle" aria-describedby="scheduleModeNote">
       <p class="schedule-mode-kicker">Day allocation protocol</p>
       <h2 id="scheduleModeTitle">选择本局国王日程模式</h2>
@@ -5620,10 +5622,10 @@
         </div>
         <p class="schedule-editor-note">首楼可调整第1日；进入后续楼层后，当天与过去日期锁定，只能修改未来日期。</p>
         <div class="modal-error" id="scheduleModeError" role="alert"></div>
-        <div class="modal-actions"><button class="modal-btn" id="closeScheduleEditor" type="button" onclick="event.preventDefault();event.stopPropagation();const b=this.closest('#scheduleModeBackdrop');b.classList.remove('is-open');b.setAttribute('aria-hidden','true');delete document.documentElement.dataset.scheduleModeOverlay;requestAnimationFrame(()=>window.parent?.postMessage({type:'resizeIframe',height:Math.ceil(document.documentElement.scrollHeight)},'*'))">完成</button></div>
+        <form class="modal-actions" method="dialog"><button class="modal-btn" id="closeScheduleEditor" type="submit" value="close">完成</button></form>
       </div>
     </section>
-  </div>
+  </dialog>
 
   <div class="modal-backdrop" id="interactionBackdrop" aria-hidden="true">
     <section class="interaction-modal" role="dialog" aria-modal="true" aria-labelledby="interactionTitle" aria-describedby="interactionNote">
@@ -7051,6 +7053,8 @@
       const backdrop = $("#scheduleModeBackdrop");
       backdrop.classList.remove("is-open");
       backdrop.setAttribute("aria-hidden", "true");
+      if (backdrop.open && typeof backdrop.close === "function") backdrop.close();
+      else backdrop.removeAttribute("open");
       syncScheduleModeFrameLayout("");
       scheduleSelectedParticipant = "";
       if (scheduleLastFocused && typeof scheduleLastFocused.focus === "function") scheduleLastFocused.focus();
@@ -7077,6 +7081,7 @@
       $("#scheduleEditor").hidden = false;
       $("#scheduleModeError").textContent = "";
       const backdrop = $("#scheduleModeBackdrop");
+      backdrop.setAttribute("open", "");
       backdrop.classList.add("is-open");
       backdrop.setAttribute("aria-hidden", "false");
       syncScheduleModeFrameLayout("editor");
@@ -7202,6 +7207,7 @@
         $("#scheduleModeNote").textContent = "模式仅能在首楼选择一次。正常剧情不会公开未来日程；自定模式可随时调整尚未锁定的日期。";
         $("#scheduleModeChoices").hidden = false;
         $("#scheduleEditor").hidden = true;
+        backdrop.setAttribute("open", "");
         backdrop.classList.add("is-open");
         backdrop.setAttribute("aria-hidden", "false");
         syncScheduleModeFrameLayout("choice");
@@ -7259,6 +7265,7 @@
       $("#chooseCustomSchedule").addEventListener("click", () => chooseScheduleMode("自定"));
       $("#openScheduleEditor").addEventListener("click", openScheduleEditor);
       armScheduleEditorClose();
+      backdrop.addEventListener("close", closeScheduleMode);
       backdrop.addEventListener("click", event => {
         const closeButton = event.target instanceof Element ? event.target.closest("#closeScheduleEditor") : null;
         if (!closeButton) return;
