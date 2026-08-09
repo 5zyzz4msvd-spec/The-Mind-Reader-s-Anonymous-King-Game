@@ -7057,6 +7057,15 @@
       scheduleLastFocused = null;
     }
 
+    function armScheduleEditorClose() {
+      const button = $("#closeScheduleEditor");
+      button.onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeScheduleMode();
+      };
+    }
+
     function openScheduleEditor() {
       const system = asObject(state.系统);
       if (system._日程模式 !== "自定") return;
@@ -7072,6 +7081,7 @@
       backdrop.setAttribute("aria-hidden", "false");
       syncScheduleModeFrameLayout("editor");
       renderCustomSchedule(system);
+      armScheduleEditorClose();
       requestAnimationFrame(() => $("#closeScheduleEditor").focus());
     }
 
@@ -7205,6 +7215,7 @@
         $("#scheduleEditor").hidden = false;
         syncScheduleModeFrameLayout("editor");
         renderCustomSchedule(system);
+        armScheduleEditorClose();
         return;
       }
       if (!custom && backdrop.classList.contains("is-open")) {
@@ -7242,11 +7253,7 @@
       $("#chooseNormalSchedule").addEventListener("click", () => chooseScheduleMode("正常"));
       $("#chooseCustomSchedule").addEventListener("click", () => chooseScheduleMode("自定"));
       $("#openScheduleEditor").addEventListener("click", openScheduleEditor);
-      $("#closeScheduleEditor").addEventListener("click", event => {
-        event.preventDefault();
-        event.stopPropagation();
-        closeScheduleMode();
-      }, { capture: true });
+      armScheduleEditorClose();
       backdrop.addEventListener("pointerdown", event => {
         if (event.target === backdrop) closeScheduleMode();
       });
