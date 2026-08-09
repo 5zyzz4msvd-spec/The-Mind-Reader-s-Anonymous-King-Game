@@ -5620,7 +5620,7 @@
         </div>
         <p class="schedule-editor-note">首楼可调整第1日；进入后续楼层后，当天与过去日期锁定，只能修改未来日期。</p>
         <div class="modal-error" id="scheduleModeError" role="alert"></div>
-        <div class="modal-actions"><button class="modal-btn" id="closeScheduleEditor" type="button" onclick="event.preventDefault();event.stopPropagation();window.__KingGameCloseScheduleEditor?.()">完成</button></div>
+        <div class="modal-actions"><button class="modal-btn" id="closeScheduleEditor" type="button" onclick="event.preventDefault();event.stopPropagation();const b=this.closest('#scheduleModeBackdrop');b.classList.remove('is-open');b.setAttribute('aria-hidden','true');delete document.documentElement.dataset.scheduleModeOverlay;requestAnimationFrame(()=>window.parent?.postMessage({type:'resizeIframe',height:Math.ceil(document.documentElement.scrollHeight)},'*'))">完成</button></div>
       </div>
     </section>
   </div>
@@ -7056,8 +7056,6 @@
       if (scheduleLastFocused && typeof scheduleLastFocused.focus === "function") scheduleLastFocused.focus();
       scheduleLastFocused = null;
     }
-
-    window.__KingGameCloseScheduleEditor = closeScheduleMode;
 
     function armScheduleEditorClose() {
       const button = $("#closeScheduleEditor");
