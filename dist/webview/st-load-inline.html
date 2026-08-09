@@ -7041,7 +7041,6 @@
     }
 
     function closeScheduleMode() {
-      if (scheduleModeBusy) return;
       const stillNeedsChoice = asObject(state.系统)._需要选择日程模式 === true;
       const editorIsOpen = !$("#scheduleEditor").hidden;
       if (stillNeedsChoice && !editorIsOpen) {
@@ -7245,6 +7244,12 @@
       $("#openScheduleEditor").addEventListener("click", openScheduleEditor);
       $("#closeScheduleEditor").addEventListener("click", closeScheduleMode);
       backdrop.addEventListener("pointerdown", event => {
+        const closeButton = event.target instanceof Element ? event.target.closest("#closeScheduleEditor") : null;
+        if (closeButton) {
+          event.preventDefault();
+          closeScheduleMode();
+          return;
+        }
         if (event.target === backdrop) closeScheduleMode();
       });
       backdrop.addEventListener("keydown", event => {
