@@ -3523,14 +3523,19 @@
     return repairDailyState(current, next);
   }
 
-  function replaceCustomScheduleDay(existingSystem, day, participant, chatName) {
+  function replaceCustomScheduleDay(existingSystem, day, participant, chatName, allowCurrentDayEdit) {
     var current = initializeSystem(existingSystem, chatName);
     if (current['$日程模式'] !== '自定' || current['$日程已锁定'] !== true) {
       throw new Error('只有自定模式可以编辑国王日程');
     }
     var targetDay = normalizeDay(day);
     var currentDay = normalizeDay(current['_当前天数']);
-    if (targetDay <= currentDay) throw new Error('当天及已经过去的国王日程不能更改');
+    var openingDayEdit = allowCurrentDayEdit === true
+      && targetDay === 1
+      && currentDay === 1;
+    if (targetDay < currentDay || (targetDay === currentDay && !openingDayEdit)) {
+      throw new Error('当天及已经过去的国王日程不能更改');
+    }
     if (targetDay === FIXED_KEKE_DAY) throw new Error('第10日为神秘固定日程，不能更改');
     var code = NAME_TO_CODE[participant] || (SCHEDULE_CODE_SET[participant] ? participant : '');
     if (!code) throw new Error('未知的国王候选人');
@@ -3879,7 +3884,8 @@
     return source && typeof source === 'object' ? source : {};
   }
 
-  function getSnapshot(source) {
+  function getSnapshot(source, options) {
+    options = options && typeof options === 'object' ? options : {};
     var system = getSystem(source);
     var roles = source && source['角色'] && typeof source['角色'] === 'object' ? source['角色'] : {};
     var mode = normalizeScheduleMode(system['$日程模式']);
@@ -3910,6 +3916,8 @@
       && snapshot['_当前天数'] === 1
       && system['$日程已锁定'] !== true;
     if (mode === '自定' && validation.valid) {
+      var openingDayEdit = options.allowCurrentDayEdit === true
+        && snapshot['_当前天数'] === 1;
       snapshot['_自定国王日程'] = schedule.map(function (code, index) {
         var day = index + 1;
         var mystery = day === FIXED_KEKE_DAY;
@@ -3917,7 +3925,9 @@
           '日期': day,
           '国王': mystery ? '' : (CODE_TO_NAME[code] || ''),
           '神秘': mystery,
-          '锁定': day <= snapshot['_当前天数'] || mystery
+          '锁定': day < snapshot['_当前天数']
+            || (day === snapshot['_当前天数'] && !openingDayEdit)
+            || mystery
         };
       });
     }
@@ -4174,6 +4184,16 @@
   function chatName() {
     var ctx = context();
     return ctx.chatId || (ctx.chatMetadata && (ctx.chatMetadata.name || ctx.chatMetadata.file_name)) || document.title || '未命名聊天';
+  }
+
+  function isOpeningFloor() {
+    var ctx = context();
+    var host = hostWindow();
+    var chat = Array.isArray(ctx && ctx.chat) ? ctx.chat : (Array.isArray(host && host.chat) ? host.chat : null);
+    if (!chat) return host === window;
+    if (chat.length !== 1) return false;
+    var opening = chat[0] && typeof chat[0] === 'object' ? chat[0] : {};
+    return opening.is_user === false || opening.role === 'assistant';
   }
 
   function latestAssistantText() {
@@ -4501,7 +4521,7 @@
     if (system && typeof system === 'object') {
       var api = window.KingGameState;
       var safeSnapshot = api && typeof api.getSnapshot === 'function'
-        ? api.getSnapshot(output)
+        ? api.getSnapshot(output, { allowCurrentDayEdit: isOpeningFloor() })
         : null;
       var endingDisplay = api && typeof api.getEndingDisplay === 'function'
         ? api.getEndingDisplay(system)
@@ -4519,7 +4539,7 @@
         system['_可召开法令会议'] = safeSnapshot['_可召开法令会议'] === true;
         system['_可过夜'] = safeSnapshot['_可过夜'] === true;
         system['_日程模式'] = safeSnapshot['_日程模式'];
-        system['_需要选择日程模式'] = safeSnapshot['_需要选择日程模式'] === true;
+        system['_需要选择日程模式'] = safeSnapshot['_需要选择日程模式'] === true && isOpeningFloor();
         if (Array.isArray(safeSnapshot['_自定国王日程'])) {
           system['_自定国王日程'] = clone(safeSnapshot['_自定国王日程']);
         } else {
@@ -5296,6 +5316,7 @@
   }
 
   function chooseScheduleMode(mode) {
+    if (!isOpeningFloor()) return Promise.reject(new Error('日程模式只能在首楼选择'));
     return updateScheduleConfiguration('chooseScheduleMode', function (api, system) {
       if (!api || typeof api.chooseScheduleMode !== 'function') throw new Error('状态引擎缺少日程模式选择能力');
       return api.chooseScheduleMode(system, mode, chatName());
@@ -5305,7 +5326,7 @@
   function replaceCustomScheduleDay(day, participant) {
     return updateScheduleConfiguration('replaceCustomScheduleDay', function (api, system) {
       if (!api || typeof api.replaceCustomScheduleDay !== 'function') throw new Error('状态引擎缺少自定日程编辑能力');
-      return api.replaceCustomScheduleDay(system, day, participant, chatName());
+      return api.replaceCustomScheduleDay(system, day, participant, chatName(), isOpeningFloor());
     });
   }
 
@@ -5583,21 +5604,21 @@
     <section class="interaction-modal schedule-mode-modal" role="dialog" aria-modal="true" aria-labelledby="scheduleModeTitle" aria-describedby="scheduleModeNote">
       <p class="schedule-mode-kicker">Day allocation protocol</p>
       <h2 id="scheduleModeTitle">选择本局国王日程模式</h2>
-      <p class="modal-note" id="scheduleModeNote">模式仅能在首日开始时选择一次。正常剧情不会公开未来日程；自定模式允许调整未来日期，第10日始终保持神秘且不可更改。</p>
+      <p class="modal-note" id="scheduleModeNote">模式仅能在首楼选择一次。正常剧情不会公开未来日程；自定模式可随时调整尚未锁定的日期。</p>
       <div class="schedule-mode-choices" id="scheduleModeChoices">
         <button class="schedule-choice" id="chooseNormalSchedule" type="button"><b>正常剧情模式</b><span>由系统按剧情约束生成国王日程，未来人选保持隐藏。</span></button>
-        <button class="schedule-choice" id="chooseCustomSchedule" type="button"><b>自定模式</b><span>显示十五日头像日程。可把右侧候选头像拖到未来日期进行替换。</span></button>
+        <button class="schedule-choice" id="chooseCustomSchedule" type="button"><b>自定模式</b><span>显示可编辑的头像日程。可把右侧候选头像拖到尚未锁定的日期进行替换。</span></button>
       </div>
       <div class="schedule-editor" id="scheduleEditor" hidden>
         <div class="schedule-editor-layout">
-          <div class="schedule-days" id="scheduleDayList" aria-label="十五日国王日程"></div>
+          <div class="schedule-days" id="scheduleDayList" aria-label="可编辑国王日程"></div>
           <aside class="schedule-pool">
             <h3>候选国王</h3>
-            <p>拖至未来日期；触屏可先点头像，再点日期。</p>
+            <p>拖至可编辑日期；触屏可先点头像，再点日期。</p>
             <div class="schedule-avatar-list" id="scheduleAvatarPool"></div>
           </aside>
         </div>
-        <p class="schedule-editor-note">当天、已经过去的日期以及第10日均为锁定状态。第10日只显示问号，不会提前揭示实际身份。</p>
+        <p class="schedule-editor-note">首楼可调整第1日；进入后续楼层后，当天与过去日期锁定，只能修改未来日期。</p>
         <div class="modal-error" id="scheduleModeError" role="alert"></div>
         <div class="modal-actions"><button class="modal-btn" id="closeScheduleEditor" type="button">完成</button></div>
       </div>
@@ -7035,6 +7056,8 @@
       if (system._日程模式 !== "自定") return;
       scheduleModeForced = false;
       scheduleLastFocused = document.activeElement;
+      $("#scheduleModeTitle").textContent = "调整国王日程";
+      $("#scheduleModeNote").textContent = "可随时调整尚未锁定的日期；当天与过去日期会按当前楼层自动锁定。";
       $("#scheduleModeChoices").hidden = true;
       $("#scheduleEditor").hidden = false;
       $("#scheduleModeError").textContent = "";
@@ -7095,20 +7118,19 @@
         return item;
       }));
 
-      list.replaceChildren(...schedule.map(entryValue => {
+      list.replaceChildren(...schedule.filter(entryValue => Math.round(num(asObject(entryValue).日期, 1, 15, 1)) !== 10).map(entryValue => {
         const entry = asObject(entryValue);
         const day = Math.round(num(entry.日期, 1, 15, 1));
-        const mystery = entry.神秘 === true || day === 10;
-        const elapsed = day <= Math.round(num(system._当前天数, 1, 15, 1));
-        const locked = entry.锁定 === true || mystery;
-        const name = mystery ? "" : String(entry.国王 || "");
-        const card = el("div", `schedule-day${locked ? " is-locked" : ""}${mystery ? " is-mystery" : ""}${elapsed ? " is-elapsed" : ""}`);
+        const locked = entry.锁定 === true;
+        const elapsed = day < Math.round(num(system._当前天数, 1, 15, 1)) || locked;
+        const name = String(entry.国王 || "");
+        const card = el("div", `schedule-day${locked ? " is-locked" : ""}${elapsed ? " is-elapsed" : ""}`);
         card.dataset.day = String(day);
         card.append(
           el("span", "schedule-day-label", `DAY ${String(day).padStart(2, "0")}`),
-          buildScheduleAvatar(name, mystery),
-          el("span", "schedule-day-name", mystery ? "神秘国王" : displayPerson(name, userName)),
-          el("span", "schedule-day-lock", locked ? (mystery ? "固定 · 不可更改" : "已锁定") : "可替换")
+          buildScheduleAvatar(name),
+          el("span", "schedule-day-name", displayPerson(name, userName)),
+          el("span", "schedule-day-lock", locked ? "已锁定" : "可替换")
         );
         if (!locked) {
           card.tabIndex = 0;
@@ -7160,6 +7182,8 @@
       const backdrop = $("#scheduleModeBackdrop");
       if (needsChoice) {
         scheduleModeForced = true;
+        $("#scheduleModeTitle").textContent = "选择本局国王日程模式";
+        $("#scheduleModeNote").textContent = "模式仅能在首楼选择一次。正常剧情不会公开未来日程；自定模式可随时调整尚未锁定的日期。";
         $("#scheduleModeChoices").hidden = false;
         $("#scheduleEditor").hidden = true;
         backdrop.classList.add("is-open");
@@ -7168,6 +7192,8 @@
         return;
       }
       if (custom && backdrop.classList.contains("is-open")) {
+        $("#scheduleModeTitle").textContent = "调整国王日程";
+        $("#scheduleModeNote").textContent = "可随时调整尚未锁定的日期；当天与过去日期会按当前楼层自动锁定。";
         $("#scheduleModeChoices").hidden = true;
         $("#scheduleEditor").hidden = false;
         syncScheduleModeFrameLayout("editor");
