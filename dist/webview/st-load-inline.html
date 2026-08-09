@@ -7208,7 +7208,12 @@
         return;
       }
       if (custom && backdrop.classList.contains("is-open")) {
+        const stalePreviewChoice = scheduleModeForced && !scheduleModeBusy;
         scheduleModeForced = false;
+        if (stalePreviewChoice) {
+          closeScheduleMode();
+          return;
+        }
         $("#scheduleModeTitle").textContent = "调整国王日程";
         $("#scheduleModeNote").textContent = "可随时调整尚未锁定的日期；当天与过去日期会按当前楼层自动锁定。";
         $("#scheduleModeChoices").hidden = true;
