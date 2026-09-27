@@ -1864,6 +1864,39 @@
       .identity p { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     }
 
+    .complex-game-frame { display: none; width: 100%; height: 100%; border: 0; background: #050608; }
+    .complex-panel-scrim { display: none; position: fixed; inset: 0; z-index: 24; background: rgba(0,0,0,.43); }
+    .complex-info-panel { position: fixed; z-index: 26; top: 0; bottom: 0; right: 0; width: min(470px,94vw); padding: 18px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; border-left: 1px solid var(--gold-dim); background: #111313; box-shadow: -25px 0 70px #0009; transform: translateX(104%); transition: transform .3s cubic-bezier(.22,.78,.2,1); }
+    .complex-info-panel[data-side="left"] { right: auto; left: 0; border-left: 0; border-right: 1px solid var(--gold-dim); transform: translateX(-104%); }
+    .complex-info-panel.is-open { transform: translateX(0); }
+    .complex-info-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #f1e3c3; }
+    .complex-info-head h2 { margin: 0; font-size: 20px; }
+    .complex-info-body { min-height: 0; flex: 1; overflow: auto; }
+    .complex-info-panel .face { position: relative; top: auto; left: auto; width: 100%; height: min(72dvh,680px); margin: 0; transform: none !important; backface-visibility: visible; pointer-events: auto; }
+    .complex-info-panel .face-actions button { pointer-events: auto !important; cursor: pointer; }
+    .complex-info-panel .face-body { grid-template-columns: minmax(110px,32%) minmax(0,1fr); }
+    .complex-info-panel .surface-sheet { position: relative; width: 100%; height: auto; transform: none; }
+    .complex-info-panel .rules-sheet-body { display: block; }
+    .complex-info-panel .decree-items { margin-top: 14px; }
+    .complex-party-button { display: block; width: 100%; margin: 6px 0; padding: 10px; border: 1px solid var(--line); color: var(--ink); background: #22201c; text-align: left; cursor: pointer; }
+    html[data-interface-mode="detailed"] .app { height: 100dvh; min-height: 0; padding: 0; display: block; }
+    html[data-interface-mode="detailed"] .topbar { position: fixed; z-index: 19; top: max(26px,env(safe-area-inset-top)); right: 12px; width: auto; display: block; }
+    html[data-interface-mode="detailed"] .topbar .status-card { min-height: 0; padding: 6px 9px; }
+    html[data-interface-mode="detailed"] .topbar .eyebrow, html[data-interface-mode="detailed"] .topbar .scene-line, html[data-interface-mode="detailed"] .topbar .map-card, html[data-interface-mode="detailed"] .topbar .view-nav { display: none; }
+    html[data-interface-mode="detailed"] .topbar .status-head { margin: 0; }
+    html[data-interface-mode="detailed"] .topbar .king-line { font-size: 10px; }
+    html[data-interface-mode="detailed"] .viewport { height: 100dvh; min-height: 0; perspective: none; display: block; touch-action: auto; }
+    html[data-interface-mode="detailed"] .complex-game-frame { display: block; }
+    html[data-interface-mode="detailed"] .prism, html[data-interface-mode="detailed"] .surface-overlay, html[data-interface-mode="detailed"] .provenance-roommark, html[data-interface-mode="detailed"] .portrait-hit-target, html[data-interface-mode="detailed"] .interaction-hit-target, html[data-interface-mode="detailed"] .insight-hit-target { display: none !important; }
+    html[data-interface-mode="detailed"] .face-dots, html[data-interface-mode="detailed"] #openPlayerRules, html[data-interface-mode="detailed"] .provenance-footer { display: none; }
+    html[data-interface-mode="detailed"] .controls { position: fixed; z-index: 27; top: 0; right: 0; bottom: 0; width: min(450px,94vw); height: 100dvh; margin: 0; padding: 18px; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; overflow-y: auto; border-left: 1px solid var(--gold-dim); background: #111313; transform: translateX(104%); transition: transform .3s cubic-bezier(.22,.78,.2,1); }
+    html[data-interface-mode="detailed"][data-complex-panel="actions"] .controls { transform: translateX(0); }
+    html[data-interface-mode="detailed"][data-complex-panel] .complex-panel-scrim { display: block; }
+    html[data-interface-mode="detailed"] .modal-backdrop.interaction-modal-backdrop { justify-items: end; padding: 0; }
+    html[data-interface-mode="detailed"] .interaction-modal { width: min(480px,94vw); height: 100dvh; max-height: none; transform: translateX(104%); transition: transform .3s cubic-bezier(.22,.78,.2,1); }
+    html[data-interface-mode="detailed"] .modal-backdrop.is-open .interaction-modal { transform: translateX(0); }
+    @media (max-width: 700px) { .complex-info-panel .face-body { grid-template-columns: 105px minmax(0,1fr); } html[data-interface-mode="detailed"] .topbar .king-line { display: none; } }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
     }
@@ -4658,12 +4691,14 @@
     var ctx = context();
     var canGenerate = typeof ctx.generate === 'function' || typeof host.generate === 'function';
     return canGenerate && (typeof ctx.sendMessageAsUser === 'function' || typeof host.sendMessageAsUser === 'function')
-      || !!(host.TavernHelper && typeof host.TavernHelper.sendMessage === 'function' && typeof host.TavernHelper.generate === 'function');
+      || !!(host.TavernHelper && (
+        typeof host.TavernHelper.sendMessage === 'function' && typeof host.TavernHelper.generate === 'function'
+        || typeof host.TavernHelper.triggerSlash === 'function'
+      ));
   }
 
   function setNativeComposerHidden(enabled) {
     if (LOCAL_PREVIEW === true && !hasHostRuntime()) return false;
-    if (enabled && !programmaticSendAvailable()) return false;
     var host = hostWindow();
     try {
       var doc = host.document;
@@ -4672,6 +4707,22 @@
       if (!shared || !shared.owners || typeof shared.owners.add !== 'function' || typeof shared.owners.delete !== 'function') {
         shared = { owners: new Set() };
         host.__KING_GAME_NATIVE_COMPOSER__ = shared;
+      }
+      if (enabled && !shared.chatCleanupBound) {
+        var chatEvent = host.tavern_events && host.tavern_events.CHAT_CHANGED || 'chat_id_changed';
+        var onChatChanged = function () {
+          shared.owners.clear();
+          delete doc.documentElement.dataset.kingGameNativeComposer;
+          var oldStyle = doc.getElementById('king-game-native-composer-style');
+          if (oldStyle) oldStyle.remove();
+        };
+        if (typeof host.eventOn === 'function') {
+          host.eventOn(chatEvent, onChatChanged);
+          shared.chatCleanupBound = true;
+        } else if (host.eventSource && typeof host.eventSource.on === 'function') {
+          host.eventSource.on(chatEvent, onChatChanged);
+          shared.chatCleanupBound = true;
+        }
       }
       if (enabled) shared.owners.add(nativeComposerOwner);
       else shared.owners.delete(nativeComposerOwner);
@@ -4687,7 +4738,7 @@
         delete doc.documentElement.dataset.kingGameNativeComposer;
         if (style) style.remove();
       }
-      return true;
+      return !enabled || programmaticSendAvailable();
     } catch (error) { return false; }
   }
 
@@ -5881,7 +5932,7 @@
         <div class="status-head">
           <p class="eyebrow">Private backdoor</p>
           <div class="status-tools">
-            <button class="interface-toggle" id="interfaceModeToggle" type="button" aria-label="切换简洁或繁琐前端">切换到简洁</button>
+            <button class="interface-toggle" id="interfaceModeToggle" type="button" aria-label="切换简洁立方体或复杂3D空间">切换到简洁</button>
             <button class="schedule-toggle" id="openScheduleEditor" type="button" hidden>国王日程</button>
             <button class="galgame-toggle" id="galgameModeToggle" type="button" data-enabled="true" aria-pressed="true" title="关闭 Galgame 模式脚本">Galgame On</button>
           </div>
@@ -5901,6 +5952,7 @@
     
 
     <main class="viewport" id="viewport" aria-label="六面密室档案，使用WASD切换视角">
+      <iframe class="complex-game-frame" id="complexGameFrame" title="国王游戏可行走的3D空间" loading="eager" referrerpolicy="no-referrer"></iframe>
       <span class="provenance-roommark" id="playerRoomProvenance" data-early="lo·u / is·HM — 类·脑 / 完全·免费" data-late="l/o/u — i·s/HM — 类/脑 · 完·全/免·费" hidden></span>
       <div class="prism" id="prism" data-view="side"></div>
       <div class="surface-overlay" id="surfaceOverlay" data-view="side" aria-live="polite"></div>
@@ -5909,6 +5961,11 @@
       <button class="interaction-hit-target special-archive-hit-target" id="specialArchiveHitTarget" type="button" hidden aria-label="查看角色特别档案"></button>
       <button class="insight-hit-target" id="insightModeHitTarget" type="button" hidden aria-label="切换角色洞察模式" aria-pressed="false"></button>
     </main>
+    <div class="complex-panel-scrim" id="complexPanelScrim" aria-hidden="true"></div>
+    <aside class="complex-info-panel" id="complexInfoPanel" aria-hidden="true" data-side="right">
+      <h2 id="complexInfoTitle">人物信息</h2><button class="modal-btn" id="closeComplexInfo" type="button" aria-label="收回面板">×</button>
+      <div class="complex-info-body" id="complexInfoBody"></div>
+    </aside>
     <script>
       (function () {
         function randomizeVisibleProvenance() {
@@ -5937,6 +5994,7 @@
     </script>
 
     <footer class="controls" aria-label="人物切换">
+      <button class="modal-btn" id="closeComplexActions" type="button" hidden>收回操作面板</button>
       <div class="face-dots" id="faceDots"></div>
       <button class="rules-btn" id="openPlayerRules" type="button">你的法令</button>
       <section class="day-flow" aria-label="每日行动流程">
@@ -6011,7 +6069,7 @@
     </section>
   </dialog>
 
-  <div class="modal-backdrop" id="interactionBackdrop" aria-hidden="true">
+  <div class="modal-backdrop interaction-modal-backdrop" id="interactionBackdrop" aria-hidden="true">
     <section class="interaction-modal" role="dialog" aria-modal="true" aria-labelledby="interactionTitle" aria-describedby="interactionNote">
       <h2 id="interactionTitle">与角色互动</h2>
       <p class="modal-note" id="interactionNote">这里只提交互动方式，不会把你的请求冒充成你已经说过的具体台词。按 Ctrl/⌘ + Enter 可提交。</p>
@@ -6519,13 +6577,214 @@
     let careerPageIndex = 0;
     let albumPageIndex = 0;
     const activeInsightModes = new Set();
+    let threeFrameReady = false;
+    let complexCharacterName = "";
+    let complexInteractionAllowed = false;
+
+    function threeGameUrl() {
+      if (window.__KING_GAME_3D_URL__) return new URL(window.__KING_GAME_3D_URL__);
+      const local = location.pathname.includes("/dist/")
+        ? "../src/frontend-game-demo/index.html"
+        : "../frontend-game-demo/index.html";
+      return new URL(local, location.href);
+    }
+
+    function ensureThreeFrame() {
+      const frame = $("#complexGameFrame");
+      if (frame.dataset.loaded === "true") return;
+      const url = threeGameUrl();
+      url.searchParams.set("embedded", "1");
+      frame.dataset.loaded = "true";
+      frame.src = url.href;
+    }
+
+    function postThreeSnapshot() {
+      const frame = $("#complexGameFrame");
+      if (!threeFrameReady || !frame.contentWindow) return;
+      const origin = new URL(frame.src).origin;
+      frame.contentWindow.postMessage({ type: "king-game-3d:snapshot", state }, origin === "null" ? "*" : origin);
+    }
+
+    function postThreeOverlayState() {
+      const frame = $("#complexGameFrame");
+      if (!threeFrameReady || !frame.contentWindow) return;
+      const origin = new URL(frame.src).origin;
+      const blocked = document.documentElement.hasAttribute("data-complex-panel") || interfaceOverlayOpen();
+      frame.contentWindow.postMessage({ type: "king-game-3d:overlay", blocked }, origin === "null" ? "*" : origin);
+    }
+
+    function postThreeActivity() {
+      const frame = $("#complexGameFrame");
+      if (!threeFrameReady || !frame.contentWindow) return;
+      const origin = new URL(frame.src).origin;
+      frame.contentWindow.postMessage({ type: "king-game-3d:active", active: interfaceMode === "detailed" }, origin === "null" ? "*" : origin);
+    }
+
+    function closeComplexPanel() {
+      delete document.documentElement.dataset.complexPanel;
+      $("#complexInfoPanel").classList.remove("is-open");
+      $("#complexInfoPanel").setAttribute("aria-hidden", "true");
+      $("#complexPanelScrim").setAttribute("aria-hidden", "true");
+      postThreeOverlayState();
+    }
+
+    function showComplexInfo(title, content, side = "right") {
+      closeComplexPanel();
+      const panel = $("#complexInfoPanel");
+      panel.dataset.side = side;
+      $("#complexInfoTitle").textContent = title;
+      $("#complexInfoBody").replaceChildren(content);
+      panel.classList.add("is-open");
+      panel.setAttribute("aria-hidden", "false");
+      document.documentElement.dataset.complexPanel = "info";
+      $("#complexPanelScrim").setAttribute("aria-hidden", "false");
+      $("#closeComplexInfo").focus();
+      postThreeOverlayState();
+    }
+
+    function showComplexCharacter(name, allowInteraction = false) {
+      if (!NAMES.includes(name)) return;
+      complexCharacterName = name;
+      complexInteractionAllowed = allowInteraction === true;
+      const face = buildFace(name, asObject(asObject(state.角色)[name]));
+      face.classList.add("is-active");
+      face.setAttribute("aria-hidden", "false");
+      face.querySelectorAll("button[aria-hidden='true']").forEach(button => {
+        button.removeAttribute("aria-hidden");
+        button.tabIndex = 0;
+      });
+      if (!complexInteractionAllowed) face.querySelectorAll(".face-interact-btn").forEach(button => { button.hidden = true; });
+      showComplexInfo(`${name} · 人物信息`, face);
+    }
+
+    function showComplexParty() {
+      const list = el("div");
+      NAMES.forEach(name => {
+        const button = el("button", "complex-party-button", name);
+        button.type = "button";
+        button.dataset.complexCharacter = name;
+        list.append(button);
+      });
+      if (asObject(state.系统)._特殊档案已解锁 === true) {
+        const button = el("button", "complex-party-button", "韩璇 · 稻草人档案");
+        button.type = "button";
+        button.dataset.complexCharacter = STRAW_NAME;
+        list.append(button);
+      }
+      showComplexInfo("在场人物", list);
+    }
+
+    function showComplexRecords(kind) {
+      if (kind === "items") {
+        const root = el("section");
+        root.append(el("h3", "", "法令物品"));
+        renderDecreeItems(root, collectDecreeItems(state));
+        showComplexInfo("法令物品", root, "left");
+      } else {
+        showComplexInfo("已有法令", buildRulesSheet(state), "left");
+      }
+    }
+
+    function showComplexActions() {
+      closeComplexPanel();
+      document.documentElement.dataset.complexPanel = "actions";
+      $("#closeComplexActions").hidden = false;
+      $("#complexPanelScrim").setAttribute("aria-hidden", "false");
+      $("#closeComplexActions").focus();
+      postThreeOverlayState();
+    }
+
+    function handleThreeIntent(message) {
+      const action = String(message.action || "");
+      if (action === "switch-simple") setInterfaceMode("simple");
+      else if (action === "character") showComplexCharacter(String(message.name || ""), message.nearby === true);
+      else if (action === "party") showComplexParty();
+      else if (action === "rules" || action === "items") showComplexRecords(action);
+      else if (action === "actions") showComplexActions();
+      else if (action === "decree") {
+        closeComplexPanel();
+        const system = asObject(state.系统);
+        if (system._每日阶段 !== "待颁布法令") return;
+        if (system._当前国王 === "玩家") openDecree();
+        else if (system._许知夏可接管 === true) openDecree("许知夏");
+        else void runDailyAction();
+      }
+      else if (action === "daily") { closeComplexPanel(); void runDailyAction(); }
+      else if (action === "inspect") {
+        const body = el("p", "", String(message.body || "这是当前空间中的可交互对象。"));
+        showComplexInfo(String(message.title || "对象"), body);
+      } else if (action === "3d-error") {
+        setInterfaceMode("simple");
+        showActionError("3D 场景暂不可用，已切回简洁立方体；前端按钮仍可继续使用。");
+      }
+    }
+
+    function bindThreeFrameBridge() {
+      $("#complexGameFrame").addEventListener("error", () => handleThreeIntent({ action: "3d-error" }));
+      window.addEventListener("message", event => {
+        const frame = $("#complexGameFrame");
+        if (!frame.contentWindow || event.source !== frame.contentWindow) return;
+        const expectedOrigin = new URL(frame.src).origin;
+        if (expectedOrigin !== "null" && event.origin !== expectedOrigin) return;
+        const message = event.data;
+        if (!message || typeof message !== "object") return;
+        if (message.type === "king-game-3d:ready") {
+          threeFrameReady = true;
+          postThreeSnapshot();
+          postThreeOverlayState();
+          postThreeActivity();
+        } else if (message.type === "king-game-3d:intent" && interfaceMode === "detailed") {
+          handleThreeIntent(message);
+        }
+      });
+      $("#complexPanelScrim").addEventListener("click", closeComplexPanel);
+      $("#closeComplexInfo").addEventListener("click", closeComplexPanel);
+      $("#closeComplexActions").addEventListener("click", closeComplexPanel);
+      $("#complexInfoBody").addEventListener("click", event => {
+        const button = event.target.closest("button");
+        if (!button) return;
+        if (button.dataset.complexCharacter) {
+          if (button.dataset.complexCharacter === STRAW_NAME) showComplexInfo(STRAW_NAME, buildStrawFace());
+          else showComplexCharacter(button.dataset.complexCharacter, false);
+          return;
+        }
+        if (button.dataset.interactionName) { closeComplexPanel(); openInteraction(button.dataset.interactionName); return; }
+        if (button.dataset.insightMode) {
+          const mode = button.dataset.insightMode;
+          if (activeInsightModes.has(mode)) activeInsightModes.delete(mode);
+          else activeInsightModes.add(mode);
+          render(state);
+          showComplexCharacter(complexCharacterName, complexInteractionAllowed);
+          return;
+        }
+        const archive = button.dataset.archiveType;
+        if (archive === "diary") openDiary(button);
+        else if (archive === "career") openCareer(button);
+        else if (archive === "album") openAlbum(button);
+        else if (archive === "sister") openSisterPhoto(button);
+        else if (archive === "testament") openTestament(button);
+        else if (archive === "weakness") openWeaknessArchive(complexCharacterName, button);
+        else if (archive === "followers" || archive === "girlfriends") openRelationshipList(archive, button);
+      });
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && document.documentElement.hasAttribute("data-complex-panel")) closeComplexPanel();
+      });
+      const observer = new MutationObserver(() => postThreeOverlayState());
+      ["interactionBackdrop", "portraitBackdrop", "diaryBackdrop", "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "testamentBackdrop", "endingBackdrop", "scheduleModeBackdrop", "galgameWarningBackdrop"].forEach(id => {
+        observer.observe($("#" + id), { attributes: true, attributeFilter: ["class"] });
+      });
+    }
 
     function setInterfaceMode(mode, persist = true) {
       interfaceMode = mode === "simple" ? "simple" : "detailed";
+      closeComplexPanel();
       document.documentElement.dataset.interfaceMode = interfaceMode;
       const toggle = $("#interfaceModeToggle");
-      toggle.textContent = interfaceMode === "simple" ? "切换到繁琐" : "切换到简洁";
+      toggle.textContent = interfaceMode === "simple" ? "切换到复杂3D" : "切换到简洁";
       toggle.setAttribute("aria-pressed", interfaceMode === "simple" ? "true" : "false");
+      $("#closeComplexActions").hidden = interfaceMode !== "detailed";
+      if (interfaceMode === "detailed") ensureThreeFrame();
+      postThreeActivity();
       if (persist) {
         try { localStorage.setItem("king-game-interface-mode", interfaceMode); } catch (error) {}
       }
@@ -7832,6 +8091,10 @@
       syncScheduleModeUi(system);
       renderEnding(system);
       updateNavigation();
+      if (interfaceMode === "detailed") {
+        ensureThreeFrame();
+        postThreeSnapshot();
+      }
       requestAnimationFrame(() => {
         prism.querySelectorAll(".face[data-name]").forEach(face => {
           const dossier = face.querySelector(".dossier-scroll");
@@ -8796,14 +9059,18 @@
       bindMediaModals();
       bindDailyFlow();
       bindPlayerCommandComposer();
+      bindThreeFrameBridge();
       bindGalgameToggle();
       bindScheduleMode();
-      if (bridge && typeof bridge.setNativeComposerHidden === "function") bridge.setNativeComposerHidden(true);
+      if (bridge && typeof bridge.setNativeComposerHidden === "function" && !bridge.setNativeComposerHidden(true) && !sourcePreview) {
+        showActionError("当前宿主缺少可用的程序化发送 API；酒馆原生输入仍已隐藏，请检查 Tavern Helper 后再使用前端按钮。");
+      }
       $("#interfaceModeToggle").addEventListener("click", () => setInterfaceMode(interfaceMode === "simple" ? "detailed" : "simple"));
       try { interfaceMode = localStorage.getItem("king-game-interface-mode") === "simple" ? "simple" : "detailed"; } catch (error) {}
       document.documentElement.dataset.interfaceMode = interfaceMode;
-      $("#interfaceModeToggle").textContent = interfaceMode === "simple" ? "切换到繁琐" : "切换到简洁";
+      $("#interfaceModeToggle").textContent = interfaceMode === "simple" ? "切换到复杂3D" : "切换到简洁";
       $("#interfaceModeToggle").setAttribute("aria-pressed", interfaceMode === "simple" ? "true" : "false");
+      $("#closeComplexActions").hidden = interfaceMode !== "detailed";
       render(PREVIEW_STATE);
       void readBridge();
       window.addEventListener("kinggame:state", event => { if (event.detail) render(event.detail); });

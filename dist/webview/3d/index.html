@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>国王游戏 · 伪3D前端 Demo</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="kg-game" class="kg-game" data-project-id="king-game" data-demo-version="0.6.5">
+    <main class="scene-shell" aria-label="国王游戏移动场景">
+      <div id="viewport" class="viewport scene-viewport" tabindex="0" aria-label="三维场景，WASD移动，Q和E水平转向，鼠标滚轮上下查看；触屏使用双摇杆">
+        <div class="loading" id="loadingState"><span></span>正在建立密室空间…</div>
+        <div class="crosshair" aria-hidden="true"></div>
+        <header class="scene-hud">
+          <div><p class="eyebrow">KING GAME // SEALED CHAMBER</p><strong id="zoneLabel">中央大厅</strong><span id="locationTag">中央大厅 · 南侧</span></div>
+          <div class="scene-clock"><span>第 1 日</span><b>08:25</b></div>
+        </header>
+        <nav class="scene-rail is-left" aria-label="法令与物品">
+          <button type="button" data-kg-action="open-rules"><span>律</span><small>已有法令</small></button>
+          <button type="button" data-kg-action="open-items"><span>物</span><small>法令物品</small></button>
+          <button type="button" data-kg-action="zone-hall"><span>厅</span><small>大厅</small></button>
+          <button type="button" data-kg-action="zone-room"><span>室</span><small>个人房</small></button>
+        </nav>
+        <nav class="scene-rail is-right" aria-label="人物与操作">
+          <button type="button" data-kg-action="open-character-list"><span>人</span><small>人物</small></button>
+          <button type="button" data-kg-action="open-decree"><span>令</span><small>颁布法令</small></button>
+          <button type="button" data-kg-action="open-actions" class="host-only"><span>入</span><small>玩家输入</small></button>
+          <button type="button" data-kg-action="daily" class="host-only"><span>→</span><small>推进流程</small></button>
+          <button type="button" data-kg-action="switch-simple" class="host-only"><span>◈</span><small>简洁前端</small></button>
+          <button type="button" data-kg-action="toggle-standees"><span>绘</span><small>阶段立绘</small></button>
+          <button type="button" data-kg-action="toggle-ruler"><span>尺</span><small>身高标尺</small></button>
+        </nav>
+        <canvas id="miniMap" class="mini-map" width="220" height="220" aria-label="俯视小地图"></canvas>
+        <div class="hintbar scene-hintbar"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 连续移动</span><span><kbd>Q</kbd><kbd>E</kbd> 水平转向</span><span>滚轮上下查看 · 各限 60°</span><span>靠近后点击人物或物品</span></div>
+        <div class="dual-joysticks" aria-label="触屏双摇杆">
+          <div class="joystick" data-stick="move" role="application" aria-label="左侧移动摇杆">
+            <span class="joystick-ring"><i class="joystick-thumb"></i></span><small>移动</small>
+          </div>
+          <div class="joystick" data-stick="look" role="application" aria-label="右侧视角摇杆">
+            <span class="joystick-ring"><i class="joystick-thumb"></i></span><small>视角</small>
+          </div>
+        </div>
+        <footer class="controls scene-controls" aria-label="移动控制">
+          <button type="button" data-kg-action="turn-left" aria-label="Q 向左转"><span>Q</span><small>左转</small></button>
+          <button type="button" data-kg-action="move-left" aria-label="A 向左移动"><span>A</span><small>左移</small></button>
+          <button type="button" data-kg-action="move-forward" class="primary" aria-label="W 向前移动"><span>W</span><small>前进</small></button>
+          <button type="button" data-kg-action="move-back" aria-label="S 向后移动"><span>S</span><small>后退</small></button>
+          <button type="button" data-kg-action="move-right" aria-label="D 向右移动"><span>D</span><small>右移</small></button>
+          <button type="button" data-kg-action="turn-right" aria-label="E 向右转"><span>E</span><small>右转</small></button>
+          <button type="button" data-kg-action="toggle-map"><span>⌗</span><small>地图</small></button>
+        </footer>
+      </div>
+    </main>
+    <div class="drawer-scrim" id="drawerScrim" data-kg-action="close-drawers" aria-hidden="true"></div>
+    <aside id="leftDrawer" class="scene-drawer is-left" aria-hidden="true" aria-labelledby="leftDrawerTitle">
+      <header class="drawer-head"><div><p class="eyebrow">PLAYER RECORDS</p><h2 id="leftDrawerTitle">已有法令</h2></div><button type="button" data-kg-action="close-left-drawer" aria-label="关闭左侧面板">×</button></header>
+      <div id="leftDrawerBody" class="drawer-body"></div>
+    </aside>
+    <aside id="dialogLayer" class="scene-drawer is-right" aria-hidden="true" aria-labelledby="dialogTitle">
+      <header class="drawer-head"><div><p class="eyebrow" id="dialogKicker">CHARACTER</p><h2 id="dialogTitle">人物</h2></div><button type="button" class="dialog-close" data-kg-action="close-dialog" aria-label="关闭右侧面板">×</button></header>
+      <div id="partyList" class="party-list drawer-party-list"></div>
+      <div id="dialogBody" class="dialog-body drawer-body"></div>
+      <div class="dialog-actions drawer-actions"><button type="button" class="secondary" data-kg-action="close-dialog">收回面板</button><button type="button" class="primary" id="dialogPrimary" data-kg-action="dialog-primary">选择互动</button></div>
+    </aside>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+  <script type="module" src="./game.js"></script>
+</body>
+</html>
