@@ -1,7 +1,7 @@
 import * as THREE from './vendor/three.module.min.js';
 
 const DEMO_CANARY = 'king-game:pseudo3d:0.6.5';
-const EMBEDDED = new URLSearchParams(location.search).get('embedded') === '1';
+const EMBEDDED = window.__KING_GAME_3D_EMBEDDED__ === true || new URLSearchParams(location.search).get('embedded') === '1';
 const root = document.querySelector('#kg-game');
 root.dataset.runtimeCanary = DEMO_CANARY;
 root.dataset.embedded = EMBEDDED ? 'true' : 'false';

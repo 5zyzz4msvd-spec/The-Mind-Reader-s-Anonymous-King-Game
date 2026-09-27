@@ -6589,35 +6589,66 @@
       return new URL(local, location.href);
     }
 
-    function ensureThreeFrame() {
+    async function ensureThreeFrame() {
       const frame = $("#complexGameFrame");
-      if (frame.dataset.loaded === "true") return;
+      if (frame.dataset.loaded === "true" || frame.dataset.loaded === "loading") return;
       const url = threeGameUrl();
       url.searchParams.set("embedded", "1");
-      frame.dataset.loaded = "true";
-      frame.src = url.href;
+      frame.dataset.loaded = "loading";
+      threeFrameReady = false;
+      try {
+        if (url.protocol === "http:" || url.protocol === "https:") {
+          const response = await fetch(url.href, { mode: "cors", cache: "force-cache" });
+          if (!response.ok) throw new Error(`3D 页面 HTTP ${response.status}`);
+          const source = await response.text();
+          const headOpen = '<he' + 'ad>';
+          if (!source.includes(headOpen)) throw new Error("3D 页面缺少 head");
+          const base = new URL("./", url.href).href;
+          frame.setAttribute("sandbox", "allow-scripts");
+          frame.dataset.srcdoc = "true";
+          frame.srcdoc = source.replace(headOpen, headOpen + `<base href="${base}">` + '<scr' + 'ipt>window.__KING_GAME_3D_EMBEDDED__=true;</scr' + 'ipt>');
+        } else {
+          frame.removeAttribute("sandbox");
+          frame.dataset.srcdoc = "false";
+          frame.src = url.href;
+        }
+        frame.dataset.loaded = "true";
+        setTimeout(() => {
+          if (frame.dataset.loaded === "true" && !threeFrameReady && interfaceMode === "detailed") handleThreeIntent({ action: "3d-error" });
+        }, 20000);
+      } catch (error) {
+        frame.dataset.loaded = "false";
+        console.warn("[KingGame] 3D 场景加载失败", error);
+        if (interfaceMode === "detailed") handleThreeIntent({ action: "3d-error" });
+      }
+    }
+
+    function threeFrameTargetOrigin() {
+      const frame = $("#complexGameFrame");
+      if (frame.dataset.srcdoc === "true") return "*";
+      const source = frame.getAttribute("src");
+      if (!source) return "*";
+      const origin = new URL(source, location.href).origin;
+      return origin === "null" ? "*" : origin;
     }
 
     function postThreeSnapshot() {
       const frame = $("#complexGameFrame");
       if (!threeFrameReady || !frame.contentWindow) return;
-      const origin = new URL(frame.src).origin;
-      frame.contentWindow.postMessage({ type: "king-game-3d:snapshot", state }, origin === "null" ? "*" : origin);
+      frame.contentWindow.postMessage({ type: "king-game-3d:snapshot", state }, threeFrameTargetOrigin());
     }
 
     function postThreeOverlayState() {
       const frame = $("#complexGameFrame");
       if (!threeFrameReady || !frame.contentWindow) return;
-      const origin = new URL(frame.src).origin;
       const blocked = document.documentElement.hasAttribute("data-complex-panel") || interfaceOverlayOpen();
-      frame.contentWindow.postMessage({ type: "king-game-3d:overlay", blocked }, origin === "null" ? "*" : origin);
+      frame.contentWindow.postMessage({ type: "king-game-3d:overlay", blocked }, threeFrameTargetOrigin());
     }
 
     function postThreeActivity() {
       const frame = $("#complexGameFrame");
       if (!threeFrameReady || !frame.contentWindow) return;
-      const origin = new URL(frame.src).origin;
-      frame.contentWindow.postMessage({ type: "king-game-3d:active", active: interfaceMode === "detailed" }, origin === "null" ? "*" : origin);
+      frame.contentWindow.postMessage({ type: "king-game-3d:active", active: interfaceMode === "detailed" }, threeFrameTargetOrigin());
     }
 
     function closeComplexPanel() {
@@ -6724,7 +6755,7 @@
       window.addEventListener("message", event => {
         const frame = $("#complexGameFrame");
         if (!frame.contentWindow || event.source !== frame.contentWindow) return;
-        const expectedOrigin = new URL(frame.src).origin;
+        const expectedOrigin = frame.dataset.srcdoc === "true" ? "null" : new URL(frame.src).origin;
         if (expectedOrigin !== "null" && event.origin !== expectedOrigin) return;
         const message = event.data;
         if (!message || typeof message !== "object") return;
