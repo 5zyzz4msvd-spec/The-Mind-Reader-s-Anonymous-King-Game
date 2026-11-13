@@ -1162,7 +1162,7 @@
     .decree-item-card input, .decree-revoke-card input { position: absolute; opacity: 0; pointer-events: none; }
     .decree-item-card strong, .decree-revoke-card strong { font-size: 12px; }
     .decree-item-card small, .decree-revoke-card small { color: #a8a08d; font: 10px/1.35 ui-sans-serif,system-ui,sans-serif; }
-    .decree-item-panel input[type="number"] { width: 100%; min-height: 38px; padding: 8px; border: 1px solid rgba(198,163,91,.38); color: #eee4d1; background: #090a0a; }
+    .decree-item-panel select { width: 100%; min-height: 38px; padding: 8px; border: 1px solid rgba(198,163,91,.38); color: #eee4d1; background: #090a0a; }
     .decree-revoke-list { display: grid; gap: 6px; max-height: 250px; overflow: auto; }
     @media (max-width: 390px) { .decree-item-grid { grid-template-columns: 1fr; } .decree-segment { font-size: 11px; } }
     #interactionRoleOptions { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -6017,7 +6017,7 @@
       var itemQuantity = String(request.quantity == null ? '' : request.quantity).trim();
       if (mode === 'item') {
         if (!selectedItem) throw new Error('请从物品页选择一件预备物品');
-        if (!/^[1-9][0-9]*$/.test(itemQuantity)) throw new Error('物品数量必须是正整数');
+        if (!/^(?:[1-9]|10)$/.test(itemQuantity)) throw new Error('物品数量必须为 1 到 10 的整数');
         if (!submitted) throw new Error('请填写这件物品的法令内容');
         submitted = '设施投放' + String(itemQuantity) + '件「' + selectedItem.name + '」；' + submitted;
       }
@@ -6312,7 +6312,18 @@
         <p class="decree-panel-kicker">设施预备库存 · 每次仅选一种</p>
         <div class="decree-item-grid" id="decreeItemGrid" role="radiogroup" aria-label="可选物品"></div>
         <label for="decreeItemQuantity">投放数量</label>
-        <input id="decreeItemQuantity" type="number" min="1" step="1" value="1" inputmode="numeric">
+        <select id="decreeItemQuantity">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+        </select>
       </div>
       <div class="decree-revoke-panel" id="decreeRevokePanel" hidden>
         <p class="decree-panel-kicker">选择一条仍生效的法令 · 撤销后仅保留历史记录</p>
