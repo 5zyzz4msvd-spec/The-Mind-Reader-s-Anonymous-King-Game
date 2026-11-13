@@ -6103,7 +6103,7 @@
     <span class="p-gap" aria-hidden="true">·</span><span>完全</span><span class="p-gap" aria-hidden="true">/</span><span>免费</span>
   </div>
   <div class="app">
-    
+    <header class="topbar" hidden>
       <nav class="map-card" id="mapCard" aria-label="密室档案地图"></nav>
 
       <nav class="view-nav" aria-label="视角切换">
@@ -6112,7 +6112,7 @@
         <button class="nav-btn" id="lookDown" type="button" aria-label="S：向下转">S</button>
         <button class="nav-btn" id="nextFace" type="button" aria-label="D：下一面">D</button>
       </nav>
-    
+    </header>
 
     <main class="viewport" id="viewport" aria-label="3D 密室">
       <iframe class="complex-game-frame" id="complexGameFrame" title="国王游戏可行走的3D空间" loading="eager" referrerpolicy="no-referrer"></iframe>
@@ -6137,7 +6137,7 @@
       <footer class="scene-setting-footer"><button class="modal-btn" type="button" id="resetSceneSettings">恢复默认</button><button class="modal-btn" type="button" id="closeSceneSettings">完成</button></footer>
     </dialog>
     <section id="tableChat" aria-label="圆桌聊天" hidden>
-      <strong id="tableChatFloor">聊天楼层</strong><button class="modal-btn" id="tableChatOlder" type="button" hidden>更早</button><button class="modal-btn" id="tableChatExplore" type="button">收起</button>
+      <header class="table-chat-head"><strong id="tableChatFloor">聊天楼层</strong><button class="modal-btn" id="tableChatOlder" type="button" hidden>更早</button><button class="modal-btn" id="tableChatExplore" type="button">收起</button></header>
       <div id="tableChatHistory" tabindex="0" aria-label="聊天历史"></div>
       <form class="table-chat-compose" id="tableChatForm">
         <textarea id="tableChatInput" rows="2" maxlength="1200" aria-label="自定义行动" placeholder="输入自定义行动…"></textarea>
@@ -6147,7 +6147,7 @@
     </section>
     <div class="complex-panel-scrim" id="complexPanelScrim" aria-hidden="true"></div>
     <aside class="complex-info-panel" id="complexInfoPanel" aria-hidden="true" data-side="right">
-      <h2 id="complexInfoTitle">人物信息</h2><button class="modal-btn" id="closeComplexInfo" type="button" aria-label="收回面板">×</button>
+      <header class="complex-info-head"><h2 id="complexInfoTitle">人物信息</h2><button class="modal-btn" id="closeComplexInfo" type="button" aria-label="收回面板">×</button></header>
       <div class="complex-info-body" id="complexInfoBody"></div>
     </aside>
     <script>
@@ -6311,10 +6311,10 @@
 
   <div class="modal-backdrop portrait-backdrop" id="portraitBackdrop" aria-hidden="true">
     <section class="portrait-viewer" role="dialog" aria-modal="true" aria-labelledby="portraitViewerTitle">
-      
+      <header class="portrait-viewer-head">
         <h2 id="portraitViewerTitle">人物证件照</h2>
         <button class="modal-btn portrait-close" id="closePortrait" type="button" aria-label="关闭证件照全图">×</button>
-      
+      </header>
       <div class="portrait-full-stage" id="portraitFullStage">
         <img id="portraitFullImage" alt="">
         <span class="portrait-full-fallback" id="portraitFullFallback">证件照加载失败，请检查网络后重新打开。</span>
@@ -6325,10 +6325,10 @@
 
   <div class="modal-backdrop diary-backdrop" id="diaryBackdrop" aria-hidden="true">
     <section class="diary-viewer" role="dialog" aria-modal="true" aria-labelledby="diaryTitle">
-      
+      <header class="diary-head">
         <h2 id="diaryTitle">林安的侦探日记</h2>
         <button class="modal-btn portrait-close" id="closeDiary" type="button" aria-label="关闭侦探日记">×</button>
-      
+      </header>
       <article class="diary-paper" id="diaryPaper">
         <h3 class="diary-page-title" id="diaryPageTitle"></h3>
         <p class="diary-page-body" id="diaryPageBody"></p>
@@ -6343,10 +6343,10 @@
 
   <div class="modal-backdrop career-backdrop" id="careerBackdrop" aria-hidden="true">
     <section class="career-viewer" role="dialog" aria-modal="true" aria-labelledby="careerTitle">
-      
+      <header class="career-head">
         <h2 id="careerTitle">穆裳希的创业事迹</h2>
         <button class="modal-btn portrait-close" id="closeCareer" type="button" aria-label="关闭创业事迹">×</button>
-      
+      </header>
       <article class="career-sheet" id="careerSheet">
         <p class="career-year" id="careerYear"></p>
         <h3 class="career-page-title" id="careerPageTitle"></h3>
@@ -6362,10 +6362,10 @@
 
   <div class="modal-backdrop album-backdrop" id="albumBackdrop" aria-hidden="true">
     <section class="album-viewer" role="dialog" aria-modal="true" aria-labelledby="albumTitle">
-      
+      <header class="album-head">
         <h2 id="albumTitle">张曲溪的风流相册</h2>
         <button class="modal-btn portrait-close" id="closeAlbum" type="button" aria-label="关闭风流相册">×</button>
-      
+      </header>
       <article class="album-page" id="albumPage">
         <div class="album-photo-frame"><img class="album-photo" id="albumPhoto" alt=""></div>
         <h3 class="album-page-title" id="albumPageTitle"></h3>
@@ -6382,10 +6382,10 @@
 
   <div class="modal-backdrop sister-backdrop" id="sisterBackdrop" aria-hidden="true">
     <section class="sister-viewer" role="dialog" aria-modal="true" aria-labelledby="sisterTitle">
-      
+      <header class="sister-head">
         <h2 id="sisterTitle">王可可的姐妹童年合照</h2>
         <button class="modal-btn portrait-close" id="closeSister" type="button" aria-label="关闭姐妹合照">×</button>
-      
+      </header>
       <div class="sister-photo-stage">
         <img id="sisterPhoto" alt="童年王可可与未透露姓名的妹妹合照">
       </div>
@@ -6394,20 +6394,20 @@
 
   <div class="modal-backdrop relationship-backdrop" id="relationshipBackdrop" aria-hidden="true">
     <section class="relationship-viewer" role="dialog" aria-modal="true" aria-labelledby="relationshipTitle">
-      
+      <header class="relationship-head">
         <h2 id="relationshipTitle">关系名单</h2>
         <button class="modal-btn portrait-close" id="closeRelationshipList" type="button" aria-label="关闭关系名单">×</button>
-      
+      </header>
       <ul class="relationship-list" id="relationshipList"></ul>
     </section>
   </div>
 
   <div class="modal-backdrop weakness-backdrop" id="weaknessBackdrop" aria-hidden="true">
     <section class="weakness-viewer" role="dialog" aria-modal="true" aria-labelledby="weaknessTitle">
-      
+      <header class="weakness-head">
         <h2 id="weaknessTitle">性弱点</h2>
         <button class="modal-btn portrait-close" id="closeWeakness" type="button" aria-label="关闭性弱点档案">×</button>
-      
+      </header>
       <div class="weakness-scroll">
         <p class="weakness-source">可可信任 · 王可可的女性经验观察</p>
         <div class="weakness-grid" id="weaknessGrid"></div>
