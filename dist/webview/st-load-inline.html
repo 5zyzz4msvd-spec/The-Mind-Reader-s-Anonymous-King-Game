@@ -1141,11 +1141,31 @@
     .interaction-role-picker { margin: 0 0 13px; padding: 10px; border: 1px solid rgba(198,163,91,.28); }
     .interaction-role-picker[hidden] { display: none; }
     .interaction-role-picker legend { padding: 0 6px; color: #ceb77f; font: 700 11px/1.3 ui-sans-serif, system-ui, sans-serif; }
-    .decree-segments { display: flex; gap: 6px; margin: 0 0 13px; }
-    .decree-segments[hidden], .decree-target[hidden] { display: none; }
-    .decree-segment { flex: 1; min-height: 38px; border: 1px solid rgba(198,163,91,.3); color: #aaa18f; background: #0b0c0c; }
-    .decree-segment.is-active { border-color: #d5b96e; color: #f1dfb7; background: rgba(198,163,91,.14); }
+    .decree-segments { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; margin: 0 0 16px; }
+    .decree-segments[hidden], .decree-target[hidden], .decree-item-panel[hidden], .decree-revoke-panel[hidden] { display: none; }
+    .decree-segment { min-height: 56px; display: grid; place-content: center; gap: 3px; border: 1px solid rgba(198,163,91,.3); color: #aaa18f; background: linear-gradient(140deg,#151615,#090a0a); cursor: pointer; }
+    .decree-segment b { color: #80745d; font: 700 9px/1 ui-sans-serif,system-ui,sans-serif; letter-spacing: .18em; }
+    .decree-segment.is-active { border-color: #d5b96e; color: #f1dfb7; background: linear-gradient(140deg,rgba(198,163,91,.23),rgba(198,163,91,.04)); box-shadow: inset 0 0 16px rgba(198,163,91,.08); }
+    .decree-segment.is-active b { color: #d5b96e; }
     .decree-target { width: 100%; margin: 0 0 12px; padding: 9px; border: 1px solid rgba(198,163,91,.38); color: #eee4d1; background: #090a0a; }
+    .decree-panel-kicker { margin: 0 0 10px; color: #b8a779; font: 700 10px/1.5 ui-sans-serif,system-ui,sans-serif; letter-spacing: .1em; }
+    .decree-issue-panel { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; margin: 0 0 14px; padding: 13px; border: 1px solid rgba(198,163,91,.22); background: linear-gradient(90deg,rgba(198,163,91,.12),transparent),#0c0d0d; }
+    .decree-issue-panel[hidden] { display: none; }
+    .decree-issue-seal { display: grid; place-items: center; width: 42px; height: 42px; border: 1px double #b59759; border-radius: 50%; color: #e6c885; font: 700 18px/1 ui-serif,"Songti SC",serif; box-shadow: 0 0 0 3px rgba(181,151,89,.08), inset 0 0 12px rgba(181,151,89,.15); }
+    .decree-issue-copy strong { display: block; color: #ead9ac; font-size: 12px; }
+    .decree-issue-copy small { display: block; margin-top: 3px; color: #a59b86; font-size: 10px; }
+    .decree-draft-count { color: #b8a779; font: 700 11px/1 ui-sans-serif,system-ui,sans-serif; }
+    .decree-item-panel, .decree-revoke-panel { margin: 0 0 15px; padding: 12px; border: 1px solid rgba(198,163,91,.22); background: radial-gradient(circle at top right,rgba(198,163,91,.09),transparent 45%),#0c0d0d; }
+    .decree-item-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; max-height: 215px; overflow: auto; margin-bottom: 13px; }
+    .decree-item-card, .decree-revoke-card { display: grid !important; gap: 3px; margin: 0 !important; padding: 9px !important; border: 1px solid rgba(198,163,91,.2); color: #d9cfbb !important; background: #101211; cursor: pointer; }
+    .decree-item-card:has(input:checked), .decree-revoke-card:has(input:checked) { border-color: #e0c078; background: rgba(169,128,45,.17); box-shadow: inset 3px 0 #e0c078; }
+    .decree-item-card:focus-within, .decree-revoke-card:focus-within, .decree-segment:focus-visible { outline: 2px solid #f3d892; outline-offset: 2px; }
+    .decree-item-card input, .decree-revoke-card input { position: absolute; opacity: 0; pointer-events: none; }
+    .decree-item-card strong, .decree-revoke-card strong { font-size: 12px; }
+    .decree-item-card small, .decree-revoke-card small { color: #a8a08d; font: 10px/1.35 ui-sans-serif,system-ui,sans-serif; }
+    .decree-item-panel input[type="number"] { width: 100%; min-height: 38px; padding: 8px; border: 1px solid rgba(198,163,91,.38); color: #eee4d1; background: #090a0a; }
+    .decree-revoke-list { display: grid; gap: 6px; max-height: 250px; overflow: auto; }
+    @media (max-width: 390px) { .decree-item-grid { grid-template-columns: 1fr; } .decree-segment { font-size: 11px; } }
     #interactionRoleOptions { display: flex; flex-wrap: wrap; gap: 7px; }
     .interaction-role-option { display: inline-flex !important; align-items: center; gap: 5px; margin: 0 !important; padding: 7px 9px; border: 1px solid rgba(198,163,91,.24); color: #c9c2b5 !important; background: #0b0c0c; cursor: pointer; }
     .interaction-role-option:has(input:checked) { border-color: #d5b96e; color: #f1dfb7 !important; background: rgba(198,163,91,.12); }
@@ -1881,6 +1901,7 @@
     .complex-party-button { display: block; width: 100%; margin: 6px 0; padding: 10px; border: 1px solid var(--line); color: var(--ink); background: #22201c; text-align: left; cursor: pointer; }
     html[data-interface-mode="detailed"] .app { height: 100dvh; min-height: 0; padding: 0; display: block; }
     html[data-interface-mode="detailed"] .topbar { position: fixed; z-index: 19; top: max(26px,env(safe-area-inset-top)); right: 12px; width: auto; display: block; }
+    html[data-interface-mode="detailed"][data-scene-map-hidden="true"] .topbar { top: max(49px,calc(env(safe-area-inset-top) + 42px)); }
     html[data-interface-mode="detailed"] .topbar .status-card { min-height: 0; padding: 6px 9px; }
     html[data-interface-mode="detailed"] .topbar .eyebrow, html[data-interface-mode="detailed"] .topbar .scene-line, html[data-interface-mode="detailed"] .topbar .map-card, html[data-interface-mode="detailed"] .topbar .view-nav { display: none; }
     html[data-interface-mode="detailed"] .topbar .status-head { margin: 0; }
@@ -1900,6 +1921,49 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
     }
+    #tableChat[hidden] { display:none !important; }
+    html[data-table-reading] .topbar { visibility:hidden; }
+    html[data-table-mode], html[data-table-mode] body { overflow:hidden; }
+    #tableChat { position:fixed; z-index:21; display:flex; flex-direction:column;
+      box-sizing:border-box; overflow:hidden; background:transparent; color-scheme:light;
+      color:#30251a; padding:max(62px,env(safe-area-inset-top)) max(16px,calc((100vw - 860px)/2)) max(12px,env(safe-area-inset-bottom)); font:14px/1.55 system-ui,sans-serif; }
+    .table-chat-head, .table-chat-compose { display:flex; align-items:center; gap:10px; }
+    .table-chat-head { border-bottom:1px solid #72563764; padding-bottom:4px; }
+    .table-chat-head strong { flex:1; color:#4c3320; font:700 clamp(14px,2.1vw,20px)/1.3 Georgia,"Songti SC",serif; letter-spacing:.1em; }
+    .table-chat-head .modal-btn { border-color:#785c41; background:transparent; color:#402c1e; min-height:24px; padding:3px 6px; }
+    #tableChatHistory { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; touch-action:pan-y; overflow-anchor:none; scrollbar-width:thin; scrollbar-color:#8c704d transparent; padding:6px 0; }
+    .table-chat-line { white-space:pre-wrap; overflow-wrap:anywhere; margin:6px 0; }
+    .table-chat-user { color:#6d3f22; }
+    .table-chat-narrator { color:#382b20; padding:2px 4px; }
+    .table-chat-role { display:grid; grid-template-columns:46px minmax(0,1fr); gap:9px; border-left:2px solid #826548; padding:5px 7px; background:#fff7d54d; margin:6px 0; }
+    .table-chat-role[data-speaker="林安"] { border-color:#6eb2dc; }
+    .table-chat-role[data-speaker="穆裳希"] { border-color:#dc8ba5; }
+    .table-chat-role[data-speaker="张曲溪"] { border-color:#75baa0; }
+    .table-chat-role[data-speaker="王可可"] { border-color:#bd99d6; }
+    .table-chat-role[data-speaker="许知夏"] { border-color:#d9b06c; }
+    .table-chat-role[data-side="right"] { grid-template-columns:minmax(0,1fr) 46px; border-left:0; border-right:2px solid #826548; }
+    .table-chat-role[data-side="right"] > span { grid-column:2; grid-row:1; }
+    .table-chat-role[data-side="right"] > div { grid-column:1; grid-row:1; }
+    @media(max-width:600px) { .table-chat-role[data-side="right"] { grid-template-columns:minmax(0,1fr) 35px; } }
+    .table-chat-role .table-bust { width:46px; height:66px; object-fit:cover; object-position:center 20%; border-radius:4px; }
+    .table-chat-role .table-avatar { width:28px; height:28px; object-fit:contain; vertical-align:middle; margin-right:6px; }
+    .table-chat-role .table-thought { color:#54415d; font-style:italic; }
+    .table-chat-role .table-action { color:#634b35; font-size:12px; }
+    .table-chat-compose { flex:none; border-top:1px solid #72563764; padding:4px 0 0; gap:6px; }
+    #tableChatInput { flex:1; min-width:0; resize:none; padding:3px 5px; border:0; background:#fff7d54d; color:inherit; font:inherit; }
+    #tableChatInput:focus-visible { outline:1px solid #c9a874; border-radius:7px; }
+    #tableChatSend { border-radius:6px; border:1px solid #68472b; background:#745136; color:#fff1d6; padding:4px 9px; min-height:26px; }
+    #tableChatStatus { color:#713822; font-size:11px; }
+    #tableChatStatus:empty { display:none; }
+    #sceneSettings { color:#eadcc7; background:#211e19; border:1px solid #a38b62; border-radius:14px; padding:18px;
+      width:min(420px,calc(100vw - 32px)); max-height:85dvh; overflow:auto; font:14px/1.5 system-ui,sans-serif; }
+    #sceneSettings::backdrop { background:#090807ae; }
+    #sceneSettings h2 { margin:0 0 14px; font:700 21px/1.3 Georgia,"Songti SC",serif; }
+    .scene-setting-row { display:grid; grid-template-columns:1fr auto; align-items:center; gap:6px 12px; margin:12px 0; }
+    .scene-setting-row input[type="range"] { grid-column:1/-1; width:100%; accent-color:#c1a271; }
+    .scene-setting-row input[type="checkbox"] { accent-color:#c1a271; }
+    .scene-setting-footer { display:flex; justify-content:space-between; gap:8px; margin-top:18px; }
+    @media(max-width:600px) { #tableChat { font-size:12px; } .table-chat-role { grid-template-columns:35px minmax(0,1fr); gap:5px; } .table-chat-role .table-bust { width:35px; height:50px; } }
   </style>
 
 
@@ -1928,6 +1992,7 @@
   var DAYS = 15;
   var FIXED_KEKE_DAY = 10;
   var PARTICIPANTS = ['玩家', '林安', '穆裳希', '张曲溪', '王可可', '许知夏'];
+  var DECREE_ITEM_NAMES = ['软质手铐', '软质脚铐', '丝质束缚带', '缎面眼罩', '皮质项圈与牵引绳', '女仆装', '兔女郎装', '蕾丝内衣套装', '半透明罩袍', '长筒丝袜', '按摩油', '水性润滑剂', '安全套', '可调档震动器', '手持按摩棒', '软质拍板'];
   var SCHEDULE_CODES = ['bravo', 'delta', 'echo', 'alpha', 'charlie', 'foxtrot'];
   var CODE_TO_NAME = { alpha: '张曲溪', bravo: '玩家', charlie: '王可可', delta: '林安', echo: '穆裳希', foxtrot: '许知夏' };
   var NAME_TO_CODE = { '玩家': 'bravo', '林安': 'delta', '穆裳希': 'echo', '张曲溪': 'alpha', '王可可': 'charlie', '许知夏': 'foxtrot' };
@@ -2161,36 +2226,7 @@
   }
 
   function emptyDailyRuleFulfillment(day) {
-    return { '日期': normalizeDay(day), '义务人': {} };
-  }
-
-  function normalizeDailyFulfillmentEvidence(value) {
-    var list = Array.isArray(value) ? value : [];
-    var seen = Object.create(null);
-    var output = [];
-    list.forEach(function (entry) {
-      if (output.length >= 12 || !entry || typeof entry !== 'object') return;
-      var eventKey = typeof entry['事件键'] === 'string' ? entry['事件键'].trim().slice(0, 64) : '';
-      if (!eventKey || seen[eventKey]) return;
-      seen[eventKey] = true;
-      output.push({
-        '事件键': eventKey,
-        '摘要': typeof entry['摘要'] === 'string' ? entry['摘要'].trim().slice(0, 200) : '',
-        '次数': Math.max(1, Math.min(99, Math.floor(Number(entry['次数']) || 1)))
-      });
-    });
-    return output;
-  }
-
-  function normalizeDailyObligorFulfillment(value) {
-    var source = value && typeof value === 'object' ? value : {};
-    var evidence = normalizeDailyFulfillmentEvidence(source['证据']);
-    var completed = evidence.reduce(function (sum, entry) {
-      return Math.min(99, sum + entry['次数']);
-    }, 0);
-    var continuous = source['持续状态'];
-    if (continuous !== '待判定' && continuous !== '进行中' && continuous !== '违规') continuous = '不适用';
-    return { '完成次数': completed, '证据': evidence, '持续状态': continuous };
+    return { '状态': '待判定', '依据': '' };
   }
 
   function normalizeObligationDefinition(value) {
@@ -2207,9 +2243,9 @@
     var list = Array.isArray(value) ? value : [];
     var output = [];
     list.forEach(function (entry) {
-      if (output.length >= 12 || !entry || typeof entry !== 'object' || Array.isArray(entry)) return;
+      if (output.length >= 1 || !entry || typeof entry !== 'object' || Array.isArray(entry)) return;
       var name = typeof entry['名称'] === 'string' ? entry['名称'].trim().slice(0, 80) : '';
-      if (!name) return;
+      if (!name || DECREE_ITEM_NAMES.indexOf(name) < 0) return;
       var authorization = [];
       var seen = Object.create(null);
       (Array.isArray(entry['授权使用者']) ? entry['授权使用者'] : []).forEach(function (participant) {
@@ -2233,35 +2269,14 @@
   }
 
   function normalizeDailyRuleFulfillment(value, day, obligationDefinition) {
-    var normalizedDay = normalizeDay(day);
     var source = value && typeof value === 'object' ? value : {};
     var definition = normalizeObligationDefinition(obligationDefinition);
-    var sourceObligors = source['义务人'] && typeof source['义务人'] === 'object' ? source['义务人'] : {};
-    if (Number(source['日期']) !== normalizedDay) {
-      // 换日只清空有限义务的当日证据；跨夜时仍客观维持的持续/混合义务
-      // 必须在新日恢复为“进行中”，不能因台账日期变化被误判为尚未开始。
-      var carried = {};
-      if (definition) PARTICIPANTS.forEach(function (name) {
-        var kind = definition[name];
-        if (kind !== '持续' && kind !== '混合') return;
-        var previous = normalizeDailyObligorFulfillment(sourceObligors[name]);
-        if (previous['持续状态'] !== '进行中') return;
-        carried[name] = { '完成次数': 0, '证据': [], '持续状态': '进行中' };
-      });
-      return { '日期': normalizedDay, '义务人': carried };
-    }
-    var obligors = {};
-    PARTICIPANTS.forEach(function (name) {
-      if (definition && !Object.prototype.hasOwnProperty.call(definition, name)) return;
-      if (sourceObligors[name] && typeof sourceObligors[name] === 'object') {
-        var normalized = normalizeDailyObligorFulfillment(sourceObligors[name]);
-        if (definition && definition[name] === '有限') normalized['持续状态'] = '不适用';
-        if (definition && (definition[name] === '持续' || definition[name] === '混合')
-          && normalized['持续状态'] === '不适用') normalized['持续状态'] = '待判定';
-        obligors[name] = normalized;
-      }
-    });
-    return { '日期': normalizedDay, '义务人': obligors };
+    if (!definition || !Object.keys(definition).length) return { '状态': '无履行义务', '依据': '' };
+    var allowed = { '待判定': true, '履行中': true, '已履行': true, '未履行': true };
+    return {
+      '状态': allowed[source['状态']] ? source['状态'] : '待判定',
+      '依据': typeof source['依据'] === 'string' ? source['依据'].trim().slice(0, 240) : ''
+    };
   }
 
   function isCurrentRule(rule) {
@@ -2394,7 +2409,7 @@
       '撤销者': '',
       '义务定义': {},
       '物品定义': [],
-      '本日履行': { '日期': day, '义务人': {} }
+      '本日履行': emptyDailyRuleFulfillment(day)
     });
     return output;
   }
@@ -2449,7 +2464,9 @@
         nextRule['物品定义'] = normalizeRuleItems(rule['物品定义']);
         nextRule['状态'] = rule['状态'];
         nextRule['撤销者'] = PARTICIPANT_SET[rule['撤销者']] ? rule['撤销者'] : '';
-        nextRule['本日履行'] = normalizeDailyRuleFulfillment(rule['本日履行'], day, definition);
+        nextRule['本日履行'] = rule['状态'] === '失效'
+          ? { '状态': '无履行义务', '依据': '' }
+          : normalizeDailyRuleFulfillment(rule['本日履行'], day, definition);
         return nextRule;
       });
       if (!changed) return source;
@@ -2475,33 +2492,12 @@
   }
 
   function mergeDailyRuleFulfillment(baselineValue, candidateValue, day, obligationDefinition) {
-    var normalizedDay = normalizeDay(day);
-    var baseline = normalizeDailyRuleFulfillment(baselineValue, normalizedDay, obligationDefinition);
+    var baseline = normalizeDailyRuleFulfillment(baselineValue, day, obligationDefinition);
     var rawCandidate = candidateValue && typeof candidateValue === 'object' ? candidateValue : {};
-    var candidate = normalizeDailyRuleFulfillment(rawCandidate, normalizedDay, obligationDefinition);
-    var mergedObligors = {};
-    PARTICIPANTS.forEach(function (name) {
-      var baselineObligor = baseline['义务人'][name];
-      var candidateObligor = candidate['义务人'][name];
-      if (!baselineObligor && !candidateObligor) return;
-      var rawCandidateObligor = Number(rawCandidate['日期']) === normalizedDay
-        && rawCandidate['义务人'] && typeof rawCandidate['义务人'] === 'object'
-        ? rawCandidate['义务人'][name]
-        : null;
-      var evidence = [];
-      if (baselineObligor) evidence = evidence.concat(baselineObligor['证据']);
-      if (candidateObligor) evidence = evidence.concat(candidateObligor['证据']);
-      var continuous = baselineObligor ? baselineObligor['持续状态'] : '不适用';
-      if (rawCandidateObligor && typeof rawCandidateObligor === 'object'
-        && Object.prototype.hasOwnProperty.call(rawCandidateObligor, '持续状态')) {
-        continuous = candidateObligor['持续状态'];
-      }
-      mergedObligors[name] = normalizeDailyObligorFulfillment({
-        '证据': evidence,
-        '持续状态': continuous
-      });
-    });
-    return { '日期': normalizedDay, '义务人': mergedObligors };
+    // 过日不推断、重置或强制刷新履行结论；只有变量模型依据新剧情
+    // 明确提交状态时才改变整条法令的唯一总状态。
+    if (!Object.prototype.hasOwnProperty.call(rawCandidate, '状态')) return baseline;
+    return normalizeDailyRuleFulfillment(rawCandidate, day, obligationDefinition);
   }
 
   function reconcileDailyRuleFulfillment(candidateVariables, baselineVariables) {
@@ -2567,7 +2563,9 @@
               && String(rule['标题'] || '').trim().length > 0
               && String(rule['全文'] || '').trim().length > 0
               && definition
-              && (Object.keys(definition).length > 0 || itemDefinition.length > 0);
+              && (Object.keys(definition).length > 0 || itemDefinition.length > 0)
+              && (!/(?:设施|系统).{0,8}(?:投放|发放|提供)/.test(String(rule['全文'] || ''))
+                || (itemDefinition.length === 1 && String(rule['全文']).includes(itemDefinition[0]['名称'])));
             if (canCommitDraft) {
               nextRule['标题'] = String(rule['标题']);
               nextRule['全文'] = String(rule['全文']);
@@ -2591,12 +2589,9 @@
         } else {
           nextRule['状态'] = rule['状态'] === '生效' ? '生效' : '失效';
         }
-        nextRule['本日履行'] = mergeDailyRuleFulfillment(
-          previous && previous['本日履行'],
-          rule['本日履行'],
-          day,
-          nextRule['义务定义']
-        );
+        nextRule['本日履行'] = nextRule['状态'] === '失效'
+          ? { '状态': '无履行义务', '依据': '' }
+          : mergeDailyRuleFulfillment(previous && previous['本日履行'], rule['本日履行'], day, nextRule['义务定义']);
         changed = true;
         return nextRule;
       }).filter(function (rule) { return rule !== null; });
@@ -2610,6 +2605,7 @@
         var restored = {};
         Object.keys(rule).forEach(function (key) { restored[key] = rule[key]; });
         restored['状态'] = rule['状态'];
+        if (restored['状态'] === '失效') restored['本日履行'] = { '状态': '无履行义务', '依据': '' };
         nextRules.push(restored);
         changed = true;
       });
@@ -3374,7 +3370,7 @@
     return values.join(',');
   }
 
-  function orderedCandidates(seed, position, previous, remaining) {
+  function orderedCandidates(seed, position, previous, remaining, counts, first) {
     if (position === FIXED_KEKE_DAY - 1) {
       return previous !== '王可可' && remaining['王可可'] > 0 ? ['王可可'] : [];
     }
@@ -3382,6 +3378,14 @@
     var candidates = PARTICIPANTS.filter(function (name) {
       return name !== previous && remaining[name] > 0;
     });
+    if (position === 0) return candidates.filter(function (name) { return name === first; });
+    if (position === 1 && first !== '玩家' && first !== '王可可') {
+      candidates = candidates.filter(function (name) { return name === '玩家' || name === '王可可'; });
+    }
+    var required = position === 4 ? '玩家' : position === 7 ? '王可可' : '';
+    if (required && remaining[required] === counts[required]) {
+      candidates = candidates.filter(function (name) { return name === required; });
+    }
 
     candidates.sort(function (left, right) {
       var leftScore = fnv1a('order\u0000' + seed + '\u0000' + position + '\u0000' + left + '\u0000' + stateKey(remaining));
@@ -3405,6 +3409,11 @@
     var schedule = [];
     var remaining = {};
     var failedStates = Object.create(null);
+    // Draw day one independently of the backtracking candidate order.
+    var rng = createPrng('first-day-v2\u0000' + seed);
+    var draw = rng() / 4294967296;
+    var others = PARTICIPANTS.filter(function (name) { return name !== '玩家' && name !== '王可可'; });
+    var first = draw < .30 ? '王可可' : draw < .70 ? '玩家' : others[randomInt(rng, others.length)];
 
     PARTICIPANTS.forEach(function (name) {
       remaining[name] = counts[name];
@@ -3420,7 +3429,7 @@
         return false;
       }
 
-      var candidates = orderedCandidates(seed, position, previous, remaining);
+      var candidates = orderedCandidates(seed, position, previous, remaining, counts, first);
       for (var index = 0; index < candidates.length; index += 1) {
         var name = candidates[index];
         remaining[name] -= 1;
@@ -4318,6 +4327,7 @@
   var EXPECTED_CARD_NAME = "读心术者的匿名国王游戏（louisHM制作·完全免费）";
   var EXPECTED_WORLD_BOOK_NAME = "读心术者的匿名国王游戏（louisHM制作·完全免费）";
   var LOCAL_PREVIEW = false;
+  var DECREE_ITEMS = [{"id":"soft-cuffs","name":"软质手铐","category":"约束","note":"软垫内衬，可由钥匙或安全扣解开"},{"id":"ankle-cuffs","name":"软质脚铐","category":"约束","note":"可调节尺寸，配安全释放扣"},{"id":"silk-ribbon","name":"丝质束缚带","category":"约束","note":"柔软织物，可用于装饰或束缚"},{"id":"blindfold","name":"缎面眼罩","category":"约束","note":"不透光，佩戴者可自行摘下"},{"id":"collar-leash","name":"皮质项圈与牵引绳","category":"装扮","note":"独立道具，不改变设施项圈功能"},{"id":"maid-outfit","name":"女仆装","category":"服装","note":"普通量产成人尺码"},{"id":"bunny-outfit","name":"兔女郎装","category":"服装","note":"普通量产成人尺码"},{"id":"lace-lingerie","name":"蕾丝内衣套装","category":"服装","note":"普通量产成人尺码"},{"id":"sheer-robe","name":"半透明罩袍","category":"服装","note":"独立外搭衣物"},{"id":"stockings","name":"长筒丝袜","category":"服装","note":"普通量产款式"},{"id":"massage-oil","name":"按摩油","category":"护理","note":"密封瓶装，普通皮肤外用"},{"id":"water-lubricant","name":"水性润滑剂","category":"护理","note":"密封包装"},{"id":"condoms","name":"安全套","category":"护理","note":"独立包装"},{"id":"vibrator","name":"可调档震动器","category":"玩具","note":"离线电池式、可关闭"},{"id":"massage-wand","name":"手持按摩棒","category":"玩具","note":"离线电池式、可关闭"},{"id":"plush-paddle","name":"软质拍板","category":"玩具","note":"软面材质"}];
   var listeners = [];
   var cachedState = null;
   var actionPending = false;
@@ -4743,6 +4753,163 @@
   }
 
   window.addEventListener('pagehide', function () { setNativeComposerHidden(false); });
+
+  var immersiveRelease = null;
+  var previewOpening = "";
+  var immersivePreview = previewOpening ? [{ is_user: false, mes: previewOpening.replace(/\{\{user\}\}/gi, '你') }] : [];
+
+  function tableChatSource(value) {
+    return String(value || '')
+      .replace(/<\s*(KingGameButtonPromptImpl|UpdateVariable(?:variable)?|Analyze|think|script|style)\b[^>]*>[\s\S]*?(?:<\/\s*\1\s*>|$)/gi, '')
+      .replace(/<\s*KingGameActionImpl\b[^>]*>[\s\S]*?(?:<\/\s*KingGameActionImpl\s*>|$)/gi, function (block) {
+        return (block.match(/【前端操作】[^\r\n<]+/) || [''])[0];
+      })
+      .replace(/^【玩家前端(?:串行)?输入】\s*/g, '')
+      .trim();
+  }
+
+  function tableChatSegments(value) {
+    var source = tableChatSource(value)
+      .replace(/<GalgameCharacterImpl\s+speaker="([^"]+)"[^>]*>/gi, '<kg c="$1">')
+      .replace(/<GalgameUserImpl\b[^>]*>/gi, '<kg c="玩家">')
+      .replace(/<\/Galgame(?:Character|User)Impl>/gi, '</kg>')
+      .replace(/<(\/?)Galgame(?:User)?ActionImpl>/gi, '<$1small>')
+      .replace(/<(\/?)GalgameThoughtImpl>/gi, '<$1i>')
+      .replace(/<(\/?)Galgame(?:User)?SpeechImpl>/gi, '<$1b>');
+    var segments = [], cursor = 0, match;
+    var plain = function (text) { return text.replace(/<[^>]*>/g, '').trim(); };
+    var blocks = /<kg\s+((?:[^>"']|"[^"]*"|'[^']*')+)>([\s\S]*?)(?:<\/kg\s*>|$)/gi;
+    while ((match = blocks.exec(source))) {
+      var narrator = plain(source.slice(cursor, match.index));
+      if (narrator) segments.push({ text: narrator });
+      var attrs = match[1];
+      var name = (attrs.match(/(?:^|\s)c\s*=\s*(["'])([^"']{1,24})\1/) || [])[2];
+      var parts = [], part;
+      var entries = /<(small|i|b|ka|kt|ks)>([\s\S]*?)(?:<\/\1>|$)/gi;
+      while ((part = entries.exec(match[2]))) {
+        var text = plain(part[2]);
+        if (name === '玩家' && /^(i|kt)$/i.test(part[1])) continue;
+        if (text) parts.push({ kind: /^(i|kt)$/i.test(part[1]) ? 'thought' : /^(b|ks)$/i.test(part[1]) ? 'speech' : 'action', text: text });
+      }
+      if (!parts.length && plain(match[2])) parts.push({ kind: 'speech', text: plain(match[2]) });
+      if (parts.length) {
+        var previous = segments[segments.length-1];
+        if (name && previous?.parts && previous.name === name) previous.parts.push(...parts);
+        else segments.push({ name: name || '角色', parts: parts });
+      }
+      cursor = blocks.lastIndex;
+    }
+    var tail = plain(source.slice(cursor));
+    if (tail) segments.push({ text: tail });
+    return segments;
+  }
+
+  function readTableChat(limit) {
+    var ctx = context();
+    var chat = Array.isArray(ctx.chat) ? ctx.chat : (Array.isArray(hostWindow().chat) ? hostWindow().chat : immersivePreview);
+    if (!chat.length && !previewOpening) {
+      var card = currentCharacter();
+      var first = card?.first_mes || card?.data?.first_mes;
+      if (typeof first === 'string' && first.trim()) chat = [{ is_user: false, mes: first.replace(/\{\{user\}\}/gi, () => userName()) }];
+    }
+    var count = Math.max(1, Math.min(chat.length, Number(limit) || 40));
+    var start = Math.max(0, chat.length - count);
+    var messages = [];
+    for (var i = start; i < chat.length; i += 1) {
+      var item = chat[i];
+      if (!item || item.is_system || item.role === 'system') continue;
+      var segments = tableChatSegments(item.mes ?? item.message ?? item.content);
+      if (segments.length) messages.push({ id: i, user: item.is_user === true || item.role === 'user', segments: segments });
+    }
+    return { chatId: String(chatName()), messages: messages, hasOlder: start > 0, totalFloors:chat.length };
+  }
+
+  function setImmersivePresentation(enabled, scenePose, openChat = false) {
+    if (!enabled) {
+      if (immersiveRelease) immersiveRelease();
+      return true;
+    }
+    if (immersiveRelease) return true;
+    if (LOCAL_PREVIEW === true && !hasHostRuntime()) return true;
+    if (!programmaticSendAvailable()) return false;
+    var host = hostWindow();
+    if (window.__KING_GAME_IMMERSIVE_FRAME__ === true) {
+      var mountedDialog = window.frameElement?.parentElement;
+      if (!mountedDialog || mountedDialog.tagName !== 'DIALOG') return false;
+      setNativeComposerHidden(true);
+      // Transfer ownership to the persistent iframe. A callback created by
+      // the original message iframe stops working when that iframe unloads.
+      var releaseMounted = function () {
+        if (immersiveRelease !== releaseMounted) return;
+        immersiveRelease = null;
+        if (host.__KING_GAME_TABLE_PORTAL_CLOSE__ === releaseMounted) delete host.__KING_GAME_TABLE_PORTAL_CLOSE__;
+        setNativeComposerHidden(false);
+        mountedDialog.close();
+        window.dispatchEvent(new Event('kinggame:immersive-exit'));
+        if (!actionPending) mountedDialog.remove();
+        else {
+          var until = Date.now() + HOST_ACTION_LOCK_TTL;
+          var cleanup = host.setInterval(function () {
+            if (actionPending && Date.now() < until) return;
+            host.clearInterval(cleanup);
+            mountedDialog.remove();
+          }, 250);
+        }
+      };
+      immersiveRelease = releaseMounted;
+      host.__KING_GAME_TABLE_PORTAL_CLOSE__ = releaseMounted;
+      mountedDialog.querySelector(':scope > button')?.addEventListener('click', releaseMounted);
+      mountedDialog.addEventListener('cancel', function (event) { event.preventDefault(); releaseMounted(); });
+      return true;
+    }
+    var frontendUrl = window.__KING_GAME_FRONTEND_URL__;
+    if (frontendUrl && host !== window) {
+      // The message iframe is depth-limited and can be replaced after a reply.
+      // Give the immersive session an independent host-owned dialog instead.
+      var hostDoc = host.document;
+      var dialog = hostDoc.createElement('dialog');
+      var portal = hostDoc.createElement('iframe');
+      var exit = hostDoc.createElement('button');
+      if (typeof dialog.showModal !== 'function') return false;
+      if (typeof host.__KING_GAME_TABLE_PORTAL_CLOSE__ === 'function') host.__KING_GAME_TABLE_PORTAL_CLOSE__();
+      dialog.setAttribute('aria-label', '国王游戏全屏圆桌');
+      dialog.style.cssText = 'position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;background:#111;overflow:hidden';
+      portal.title = '国王游戏全屏圆桌';
+      portal.style.cssText = 'display:block;width:100%;height:100%;border:0';
+      exit.type = 'button';
+      exit.textContent = '退出 · 返回酒馆';
+      exit.style.cssText = 'position:absolute;z-index:1;top:max(16px,env(safe-area-inset-top));left:14px;padding:8px 12px;color:#eee1c4;background:#252525;border:1px solid #82704b;border-radius:5px';
+      var close = function () {
+        if (host.__KING_GAME_TABLE_PORTAL_CLOSE__ !== close) return;
+        delete host.__KING_GAME_TABLE_PORTAL_CLOSE__;
+        dialog.remove();
+      };
+      host.__KING_GAME_TABLE_PORTAL_CLOSE__ = close;
+      exit.addEventListener('click', close);
+      dialog.addEventListener('cancel', function (event) { event.preventDefault(); close(); });
+      var config = JSON.stringify({
+        __KING_GAME_IMMERSIVE_FRAME__: true,
+        __KING_GAME_OPEN_TABLE_CHAT__: openChat === true,
+        __KING_GAME_ENTRY_POSE__: scenePose,
+        __KING_GAME_FRONTEND_URL__: frontendUrl,
+        __KING_GAME_ASSET_BASE__: window.__KING_GAME_ASSET_BASE__,
+        __KING_GAME_3D_URL__: window.__KING_GAME_3D_URL__,
+        __KING_GAME_FRONTEND_COMMIT__: window.__KING_GAME_FRONTEND_COMMIT__,
+        __KING_GAME_PROVENANCE_VARIANT__: window.__KING_GAME_PROVENANCE_VARIANT__
+      }).replace(/</g, '\\u003c');
+      portal.srcdoc = '<!doctype html><meta charset="utf-8"><button id="kg-close-loading">退出 · 返回酒馆</button><p id="kg-portal-status">正在加载圆桌…</p>'
+        + '<scr' + 'ipt>Object.assign(window,' + config + ');'
+        + 'document.getElementById("kg-close-loading").onclick=function(){parent.__KING_GAME_TABLE_PORTAL_CLOSE__?.()};'
+        + 'fetch(window.__KING_GAME_FRONTEND_URL__,{cache:"force-cache"}).then(function(r){if(!r.ok)throw Error(r.status);return r.text()}).then(function(html){'
+        + 'document.body.innerHTML=html;Array.from(document.body.querySelectorAll("script")).forEach(function(old){var s=document.createElement("script");Array.from(old.attributes).forEach(function(a){s.setAttribute(a.name,a.value)});s.textContent=old.textContent;old.replaceWith(s)});'
+        + '}).catch(function(){var n=document.getElementById("kg-portal-status");if(n)n.textContent="加载失败，请返回酒馆重试。"});</scr' + 'ipt>';
+      dialog.append(portal, exit);
+      try { hostDoc.body.appendChild(dialog); dialog.showModal(); return 'portal'; }
+      catch (error) { close(); return false; }
+    }
+    return false;
+  }
+  window.addEventListener('pagehide', function () { setImmersivePresentation(false); });
 
   async function inspectAuthorization() {
     if (!hasProtectionMarks(EXPECTED_CARD_NAME) || !hasProtectionMarks(EXPECTED_WORLD_BOOK_NAME)) {
@@ -5206,14 +5373,15 @@
     return JSON.stringify(canonicalState(left)) === JSON.stringify(canonicalState(right));
   }
 
-  function compileButtonActionPrompt(state, transaction, apiName) {
+  function compileButtonActionPrompt(state, transaction, apiName, options) {
     var director = currentEventInjector();
     if (!director || typeof director.buttonActionPromptContents !== 'function') {
       throw new Error('按钮提示词编译器尚未就绪');
     }
     var contents = director.buttonActionPromptContents(clone(state), {
       apiName: apiName,
-      transactionId: transaction.id
+      transactionId: transaction.id,
+      stepCount: options && options.stepCount
     });
     if (!Array.isArray(contents) || !contents.length) throw new Error('本次按钮没有生成提示词');
     return contents.join('\n\n');
@@ -5355,8 +5523,11 @@
     // 卡内正则会在最近八层把它折叠，并在更旧楼层完全隐藏；提示词侧只去掉标签、保留指令正文。
     var text = privateAction === false ? String(message || '').trim() : wrapPrivateActionCommand(message);
     if (!text) throw new Error('不能发送空的操作请求');
+    window.dispatchEvent(new Event('kinggame:table-focus'));
 
     if (host === window && !host.SillyTavern && !host.TavernHelper) {
+      immersivePreview.push({ is_user: true, mes: text });
+      immersivePreview.push({ is_user: false, mes: '圆灯照在桌沿，厅内安静下来。\n<kg c="林安" p="a" s="1"><small>她朝圆桌抬了抬下巴。</small><b>先从你刚才说的开始吧。</b></kg>\n本地预览示例，不是模型回复。' });
       window.dispatchEvent(new CustomEvent('kinggame:preview-command', { detail: text }));
       console.info('[KingGame] 预览模式模拟发送', text);
       return 'preview';
@@ -5463,8 +5634,16 @@
         var buttonPrompt = compileButtonActionPrompt(after, transaction, apiName);
         publish(after);
         var command = typeof commandFactory === 'function' ? commandFactory(after, before) : commandFactory;
-        command = String(command || '').trim()
-          + '\n<KingGameButtonPromptImpl>\n' + buttonPrompt + '\n</KingGameButtonPromptImpl>';
+        // The intent summary is displayable; all director instructions stay in
+        // the hidden one-turn block, including this button's state-frozen payload.
+        var actionLabels = {
+          beginDecree: '提交本轮法令操作', submitInteraction: '提交本轮人物互动',
+          beginForcedCompliance: '修正法令履行', advanceDay: '结束本日',
+          rejectImpossiblePlayerDecree: '处理本轮无效法令提案'
+        };
+        command = '【前端操作】' + String(actionLabels[apiName] || apiName)
+          + '\n<KingGameButtonPromptImpl>\n' + buttonPrompt
+          + '\n\n' + String(command || '').trim() + '\n</KingGameButtonPromptImpl>';
         // 剧情 generate() 结束不等于 MVU 额外变量解析已落盘。
         // 发送前就注册屏障，避免错过快速更新，也避免立即读到
         // 仍为“待填充”的预建槽并误回滚。
@@ -5552,7 +5731,7 @@
     }
   }
 
-  async function submitPlayerInput(rawSteps) {
+  async function submitPlayerInput(rawSteps, plainText = false) {
     if (actionPending) throw new Error('上一项操作仍在提交，请稍候');
     var steps = (Array.isArray(rawSteps) ? rawSteps : [rawSteps]).map(function (item) {
       var value = item && typeof item === 'object' ? item : { kind: 'action', text: item };
@@ -5563,9 +5742,14 @@
     }) || steps.reduce(function (sum, step) { return sum + step.text.length; }, 0) > 2400) {
       throw new Error('请填写1至6项有效操作，单项不超过1200字、合计不超过2400字');
     }
+    if (LOCAL_PREVIEW === true && !hasHostRuntime()) {
+      await sendUserCommand(steps.map(function (step) { return step.text; }).join('\n'), false, false);
+      return cachedState;
+    }
     var lock = acquireHostActionLock('submitPlayerInput');
     actionPending = true;
     var waiter = null;
+    var transaction = null;
     try {
       await requireReady();
       var record = await readHostRecord();
@@ -5575,11 +5759,10 @@
       var body = steps.map(function (step, index) {
         return String(index + 1) + '. 【' + labels[step.kind] + '】' + step.text;
       }).join('\n');
-      var hiddenPrompt = steps.length > 1
-        ? '这些是玩家自己按顺序提交的多项操作。逐项依次展开；前一项的实际后果成为后一项的现场条件。未写出的台词、决定、内心与后续动作仍留给玩家。'
-        : '仅按玩家所填类型与内容继续，不擅自补写其未说明的台词、决定、内心或后续动作。';
-      var command = (steps.length > 1 ? '【玩家前端串行输入】\n' : '【玩家前端输入】\n')
-        + body + '\n<KingGameButtonPromptImpl>\n' + hiddenPrompt + '\n</KingGameButtonPromptImpl>';
+      transaction = beginGenerationTransaction(baseline, 'submitPlayerInput');
+      var hiddenPrompt = compileButtonActionPrompt(baseline, transaction, 'submitPlayerInput', { stepCount: steps.length });
+      var command = (plainText ? steps[0].text : (steps.length > 1 ? '【玩家前端串行输入】\n' : '【玩家前端输入】\n') + body)
+        + '\n<KingGameButtonPromptImpl>\n' + hiddenPrompt + '\n</KingGameButtonPromptImpl>';
       waiter = createMvuUpdateWaiter();
       var revision = waiter.revision();
       var sentVia = await sendUserCommand(command, true, false);
@@ -5589,6 +5772,7 @@
       return clone(cachedState);
     } finally {
       if (waiter) waiter.stop();
+      if (transaction) endGenerationTransaction(transaction);
       actionPending = false;
       releaseHostActionLock(lock);
     }
@@ -5597,7 +5781,13 @@
   async function initialize() {
     var record = await readHostRecord();
     var withDefaults = fillDefaults(record.state, INITIAL_STATE);
-    var initialized = window.KingGameState.initializeVariables(withDefaults, chatName());
+    var api = window.KingGameState;
+    var initialized = api.initializeVariables(withDefaults, chatName());
+    // The standalone scene preview is for immediate exploration. Only real
+    // SillyTavern sessions must stop at the opening schedule chooser.
+    if (LOCAL_PREVIEW === true && !hasHostRuntime() && initialized['系统']['$日程模式'] === '未选择') {
+      initialized['系统'] = api.chooseScheduleMode(initialized['系统'], '正常', chatName());
+    }
     if (!await writeHostRecord(record, initialized)) throw new Error('聊天变量初始化写入失败');
     // 每次载入都以当前楼的 $ 事件快照刷新隐藏注入，
     // 保证新聊天和重 Roll 不携带其他楼层的事件状态。
@@ -5793,10 +5983,14 @@
     getUserName: function () { return userName(); },
     getCardName: function () { return cardName(); },
     getAuthorizationState: function () { return authorizationReady.then(clone); },
+    isLocalPreview: function () { return LOCAL_PREVIEW === true && !hasHostRuntime(); },
     getState: function () { return requireReady().then(function () { return clone(cachedState); }); },
     getVariables: function () { return this.getState(); },
     getGalgameMode: getGalgameMode,
+    getDecreeItems: function () { return clone(DECREE_ITEMS); },
     setNativeComposerHidden: setNativeComposerHidden,
+    setImmersivePresentation: setImmersivePresentation,
+    readTableChat: readTableChat,
     setGalgameMode: setGalgameMode,
     toggleGalgameMode: async function () { return setGalgameMode(!(await getGalgameMode())); },
     chooseScheduleMode: chooseScheduleMode,
@@ -5820,8 +6014,19 @@
     prepareDecree: prepareDecree,
     requestDecree: async function (payload) {
       var request = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : { text: payload };
-      var mode = ['issue', 'modify', 'revoke'].indexOf(request.mode) >= 0 ? request.mode : 'issue';
+      var mode = ['issue', 'item', 'revoke'].indexOf(request.mode) >= 0 ? request.mode : 'issue';
       var submitted = String(request.text || request.body || '').trim();
+      var selectedItem = mode === 'item' ? DECREE_ITEMS.find(function (entry) { return entry.id === request.itemId; }) : null;
+      var itemQuantity = String(request.quantity == null ? '' : request.quantity).trim();
+      if (mode === 'item') {
+        if (!selectedItem) throw new Error('请从物品页选择一件预备物品');
+        if (!/^[1-9][0-9]*$/.test(itemQuantity)) throw new Error('物品数量必须是正整数');
+        if (!submitted) throw new Error('请填写这件物品的法令内容');
+        submitted = '设施投放' + String(itemQuantity) + '件「' + selectedItem.name + '」；' + submitted;
+      }
+      if (mode === 'issue' && /(?:设施|系统|国王平板).{0,10}(?:投放|发放|提供|补给)|(?:申请|索取|新增).{0,8}(?:物品|道具|衣物)/.test(submitted)) {
+        throw new Error('新增物品请使用物品页，从预备清单选择一种并填写数量');
+      }
       var targetRuleId = String(request.targetRuleId || '').trim();
       var delegateXu = request.delegate === '许知夏' || request.delegateName === '许知夏';
       var validationText = mode === 'revoke' ? '' : submitted;
@@ -5836,10 +6041,10 @@
       if ((submitted || targetRuleId) && preparedSystem['_当前国王'] !== '玩家' && !delegatedSubmission) {
         throw new Error('当前国王不是玩家，不能通过玩家法令输入框提交内容');
       }
-      if ((mode === 'modify' || mode === 'revoke') && !/^R\d+$/.test(targetRuleId)) {
-        throw new Error('修改或撤销必须选择一条有效法令');
+      if (mode === 'revoke' && !/^R\d+$/.test(targetRuleId)) {
+        throw new Error('撤销必须选择一条有效法令');
       }
-      if ((mode === 'issue' || mode === 'modify') && !submitted) throw new Error('请输入法令正文');
+      if ((mode === 'issue' || mode === 'item') && !submitted) throw new Error('请输入法令正文');
       if (violation === 'scientifically_impossible' || violation === 'protocol_override') {
         return commitAction('rejectImpossiblePlayerDecree', [], function (next) {
           var system = next['系统'] || {};
@@ -5861,18 +6066,19 @@
             + '，冻结value.颁布日=' + String(system['_当前天数'])
             + '。新增时JSONPatch只能对这个path执行一次整对象replace，并在value中逐字保留上述id与颁布日；不得生成“/法令槽/...”路径，不得按受约束者另选数组。若选择撤销，只改旧法令状态，前端会清理这个待填充数组项。'
           : '';
-        var operationLabel = mode === 'modify' ? '修改法令 ' + targetRuleId : mode === 'revoke' ? '撤销法令 ' + targetRuleId : '颁布新法令';
+        var operationLabel = mode === 'item' ? '颁布物品法令' : mode === 'revoke' ? '撤销法令 ' + targetRuleId : '颁布新法令';
         var playerSubmission = system['_当前国王'] === '玩家' || delegatedSubmission
           ? '玩家通过“' + operationLabel + '”分段页提交：' + (submitted ? '“' + submitted + '”' : targetRuleId) + '。'
             + (delegatedSubmission ? '这是许知夏完全信赖阶段授予的本次按钮事务代提交；授权不持久化，法令仍写入许知夏自己的数组。' : '')
-            + (mode === 'modify' ? '把目标旧版本置为失效并记录本日国王为撤销者，再用宿主预建槽写入修改后的新版本。' : mode === 'revoke' ? '只把目标规则置为失效并记录本日国王为撤销者；宿主会清理待填充槽。' : '按原意新增一条规则。')
+            + (mode === 'item' ? '只能投放本次选定的一种预备物品，数量为' + String(itemQuantity) + '；不得改成清单外物品或追加第二种物品。' : mode === 'revoke' ? '只把目标规则置为失效并记录本日国王为撤销者；对应专供物同时回收，宿主会清理待填充槽。' : '按原意新增一条规则。')
           : system['_当前国王'] === '许知夏'
             ? '许知夏自行决定本日行动；她优先撤销当前仍生效且客观威胁度最高的一条法令，不因威胁对象是谁而偏离。只有没有可撤销威胁时才按防御倾向新增保护性规则。'
             : '只由“' + system['_当前国王'] + '”依人设与当前关系决定新增或撤销。';
-        return '【每日流程·房间平板颁布法令】今日国王为“' + system['_当前国王'] + '”（仅玩家平板私知；不得重抽、改人或泄露来源）。六人仍锁在各自房间。' + playerSubmission + draftContract + '旧法令只读【当前公开局势】的唯一生效投影；新增、撤销、真冲突失效、义务冻结、广播开门与即时履行均按本轮隐藏注入合同执行，不在此重复正文或台账。叙事留在{{user}}房内直到广播开门；有效广播后在同一回复依次完成规定的圆桌短会与一次自动法令履行修正：正文先原地包在唯一一组<DecreeRoundtableImpl>与</DecreeRoundtableImpl>之间，再输出唯一一组非空<DecreeComplianceMeetingImpl>与</DecreeComplianceMeetingImpl>；没有到期缺漏时修正块只简短确认无需补做，不得虚构执行。修正闭标签后下一行只输出<StatusPlaceHolderImpl/>。两块均不计互动，不得输出<InteractionPairImpl>或抢占后续个人互动。';
+        return '【每日流程·房间平板颁布法令】今日国王为“' + system['_当前国王'] + '”（仅玩家平板私知；不得重抽、改人或泄露来源）。六人仍锁在各自房间。' + playerSubmission + draftContract + '旧法令使用【当前公开局势】的生效投影，叙事流程依当前世界书，输出包装依本次按钮协议。';
       });
     },
     submitPlayerInput: submitPlayerInput,
+    submitTableChat: function (text) { return submitPlayerInput([{ text: text }], true); },
     submitInteraction: function (roleNames, method) {
       var trimmed = String(method || '').trim();
       if (!trimmed) return Promise.reject(new Error('请输入非空的互动方式'));
@@ -5906,15 +6112,15 @@
         var system = next['系统'] || {};
         return '【前端私密操作，不是公开发言】【每日流程·法令履行修正】当前第'
           + String(system['_当前天数'] || 1)
-          + '日，调用一次OOC履行修正。完整生效法令、累计台账与逐人执行合同由本轮隐藏注入合同提供；请在同一回复内完成。';
+          + '日，调用一次OOC履行修正。剧情模型依据当前生效法令全文与可见现场判断具体执行；变量模型只在新事实改变整条法令总状态时更新，不存在按人累计台账。';
       });
     },
     overnight: function () {
       return commitAction('advanceDay', [], function (next) {
         var system = next['系统'] || {};
         return system['_每日阶段'] === '终局'
-          ? '【每日流程·过夜】第15日结束；只从{{user}}有限视角按当前隐藏注入的终局合同描写最后一夜与结局。'
-          : '【每日流程·过夜】结束本日并进入次日；无需另开履行会议。跨夜法令只读【当前公开局势】的唯一生效投影：有限义务按新日重置，仍在维持的持续或混合义务与其客观地点、接触和过程继续，不能用通常回房打断；中断者不得伪造为进行中。只描写{{user}}能感知的过夜与次晨，法令广播前房门保持锁闭，不切女性视角或提前进入大厅。地点只在人物实际移动时更新，未移动者不得输出同值replace。';
+          ? '【每日流程·过夜】第15日结束；按本次按钮携带的唯一终局合同描写最后一夜与结局。'
+          : '【每日流程·过夜】结束本日并进入次日；无需另开履行会议。法令总履行状态不会因为过日自动清空、刷新或被强制改写；只有后续剧情出现新事实时，变量模型才决定是否变更。仍在维持的持续义务不能凭过夜中断；具体执行由剧情模型按有效法令全文决定。只描写{{user}}能感知的过夜与次晨，法令广播前房门保持锁闭，不切女性视角或提前进入大厅。地点只在人物实际移动时更新。';
       });
     }
   };
@@ -5961,6 +6167,26 @@
       <button class="interaction-hit-target special-archive-hit-target" id="specialArchiveHitTarget" type="button" hidden aria-label="查看角色特别档案"></button>
       <button class="insight-hit-target" id="insightModeHitTarget" type="button" hidden aria-label="切换角色洞察模式" aria-pressed="false"></button>
     </main>
+    <dialog id="sceneSettings" aria-labelledby="sceneSettingsTitle">
+      <h2 id="sceneSettingsTitle">3D 设置</h2>
+      <label class="scene-setting-row">移动速度 <output id="sceneMoveValue" for="sceneMoveSpeed"></output><input id="sceneMoveSpeed" type="range" min="0.8" max="6" step="0.1"></label>
+      <label class="scene-setting-row">转向速度 <output id="sceneTurnValue" for="sceneTurnSpeed"></output><input id="sceneTurnSpeed" type="range" min="45" max="260" step="5"></label>
+      <label class="scene-setting-row">隐藏移动提示 <input id="sceneHideHints" type="checkbox"></label>
+      <label class="scene-setting-row">隐藏双摇杆 <input id="sceneHideJoysticks" type="checkbox"></label>
+      <label class="scene-setting-row">视角摇杆反向 <input id="sceneInvertLook" type="checkbox"></label>
+      <label class="scene-setting-row">隐藏小地图 <input id="sceneHideMap" type="checkbox"></label>
+      <label class="scene-setting-row">第一人称手部（空手手套，仅外观） <input id="sceneShowHands" type="checkbox"></label>
+      <footer class="scene-setting-footer"><button class="modal-btn" type="button" id="resetSceneSettings">恢复默认</button><button class="modal-btn" type="button" id="closeSceneSettings">完成</button></footer>
+    </dialog>
+    <section id="tableChat" aria-label="圆桌聊天" hidden>
+      <strong id="tableChatFloor">聊天楼层</strong><button class="modal-btn" id="tableChatOlder" type="button" hidden>更早</button><button class="modal-btn" id="tableChatExplore" type="button">收起</button>
+      <div id="tableChatHistory" tabindex="0" aria-label="聊天历史"></div>
+      <form class="table-chat-compose" id="tableChatForm">
+        <textarea id="tableChatInput" rows="2" maxlength="1200" aria-label="聊天消息" placeholder="输入消息…"></textarea>
+        <button class="modal-btn" id="tableChatSend" type="submit">发送</button>
+      </form>
+      <div id="tableChatStatus" role="status"></div>
+    </section>
     <div class="complex-panel-scrim" id="complexPanelScrim" aria-hidden="true"></div>
     <aside class="complex-info-panel" id="complexInfoPanel" aria-hidden="true" data-side="right">
       <h2 id="complexInfoTitle">人物信息</h2><button class="modal-btn" id="closeComplexInfo" type="button" aria-label="收回面板">×</button>
@@ -6001,7 +6227,7 @@
         <div class="flow-copy" id="flowStatus" aria-live="polite">正在读取今日流程……</div>
         <div class="flow-actions">
           <button class="flow-btn" id="primaryDailyAction" type="button" hidden></button>
-          <button class="flow-btn is-force" id="cousinTakeoverAction" type="button" hidden aria-pressed="false">接管许知夏国王日</button>
+          <button class="flow-btn is-force" id="cousinTakeoverAction" type="button" hidden aria-pressed="false">代许知夏提交法令</button>
           <button class="flow-btn is-force" id="forceComplianceAction" type="button" data-action="forcedCompliance" hidden>法令履行修正</button>
         </div>
       </section>
@@ -6077,16 +6303,32 @@
         <legend>参与角色（可多选）</legend>
         <div id="interactionRoleOptions"></div>
       </fieldset>
-      <div class="decree-segments" id="decreeSegments" hidden>
-        <button class="decree-segment is-active" type="button" data-decree-mode="issue">颁布</button>
-        <button class="decree-segment" type="button" data-decree-mode="modify">修改</button>
-        <button class="decree-segment" type="button" data-decree-mode="revoke">撤销</button>
+      <div class="decree-segments" id="decreeSegments" role="tablist" aria-label="法令操作" hidden>
+        <button class="decree-segment is-active" type="button" role="tab" data-decree-mode="issue"><b>01</b>颁布法令</button>
+        <button class="decree-segment" type="button" role="tab" data-decree-mode="item"><b>02</b>物品</button>
+        <button class="decree-segment" type="button" role="tab" data-decree-mode="revoke"><b>03</b>撤销</button>
       </div>
       <select class="decree-target" id="decreeTarget" hidden aria-label="选择已有法令"></select>
+      <div class="decree-issue-panel" id="decreeIssuePanel" hidden>
+        <span class="decree-issue-seal" aria-hidden="true">令</span>
+        <span class="decree-issue-copy"><strong>新法令草稿</strong><small>广播后即进入六人共同的历史</small></span>
+        <span class="decree-draft-count" id="decreeDraftCount">0 / 800</span>
+      </div>
+      <div class="decree-item-panel" id="decreeItemPanel" hidden>
+        <p class="decree-panel-kicker">设施预备库存 · 每次仅选一种</p>
+        <div class="decree-item-grid" id="decreeItemGrid" role="radiogroup" aria-label="可选物品"></div>
+        <label for="decreeItemQuantity">投放数量</label>
+        <input id="decreeItemQuantity" type="number" min="1" step="1" value="1" inputmode="numeric">
+      </div>
+      <div class="decree-revoke-panel" id="decreeRevokePanel" hidden>
+        <p class="decree-panel-kicker">选择一条仍生效的法令 · 撤销后仅保留历史记录</p>
+        <div class="decree-revoke-list" id="decreeRevokeList" role="radiogroup" aria-label="选择撤销法令"></div>
+      </div>
       <label for="interactionMethod" id="interactionLabel">互动方式</label>
       <textarea id="interactionMethod" maxlength="800" placeholder="例如：邀请她单独检查走廊，并先询问她昨晚最后记得的画面"></textarea>
       <div class="modal-error" id="interactionError" role="alert"></div>
       <div class="modal-actions">
+        <button class="modal-btn" id="letXuDecide" type="button" hidden>让许知夏自行决定</button>
         <button class="modal-btn" id="cancelInteraction" type="button">取消</button>
         <button class="modal-btn" id="submitInteraction" type="button">提交互动</button>
       </div>
@@ -6236,6 +6478,24 @@
     "use strict";
 
     const NAMES = ["林安", "穆裳希", "张曲溪", "王可可", "许知夏"];
+    const DECREE_ITEMS = typeof [{"id":"soft-cuffs","name":"软质手铐","category":"约束","note":"软垫内衬，可由钥匙或安全扣解开"},{"id":"ankle-cuffs","name":"软质脚铐","category":"约束","note":"可调节尺寸，配安全释放扣"},{"id":"silk-ribbon","name":"丝质束缚带","category":"约束","note":"柔软织物，可用于装饰或束缚"},{"id":"blindfold","name":"缎面眼罩","category":"约束","note":"不透光，佩戴者可自行摘下"},{"id":"collar-leash","name":"皮质项圈与牵引绳","category":"装扮","note":"独立道具，不改变设施项圈功能"},{"id":"maid-outfit","name":"女仆装","category":"服装","note":"普通量产成人尺码"},{"id":"bunny-outfit","name":"兔女郎装","category":"服装","note":"普通量产成人尺码"},{"id":"lace-lingerie","name":"蕾丝内衣套装","category":"服装","note":"普通量产成人尺码"},{"id":"sheer-robe","name":"半透明罩袍","category":"服装","note":"独立外搭衣物"},{"id":"stockings","name":"长筒丝袜","category":"服装","note":"普通量产款式"},{"id":"massage-oil","name":"按摩油","category":"护理","note":"密封瓶装，普通皮肤外用"},{"id":"water-lubricant","name":"水性润滑剂","category":"护理","note":"密封包装"},{"id":"condoms","name":"安全套","category":"护理","note":"独立包装"},{"id":"vibrator","name":"可调档震动器","category":"玩具","note":"离线电池式、可关闭"},{"id":"massage-wand","name":"手持按摩棒","category":"玩具","note":"离线电池式、可关闭"},{"id":"plush-paddle","name":"软质拍板","category":"玩具","note":"软面材质"}] === "undefined" ? [
+      {id:"soft-cuffs",name:"软质手铐",category:"约束",note:"安全释放扣"},
+      {id:"ankle-cuffs",name:"软质脚铐",category:"约束",note:"安全释放扣"},
+      {id:"silk-ribbon",name:"丝质束缚带",category:"约束",note:"柔软织物"},
+      {id:"blindfold",name:"缎面眼罩",category:"约束",note:"可自行摘下"},
+      {id:"collar-leash",name:"皮质项圈与牵引绳",category:"装扮",note:"独立道具"},
+      {id:"maid-outfit",name:"女仆装",category:"服装",note:"成人尺码"},
+      {id:"bunny-outfit",name:"兔女郎装",category:"服装",note:"成人尺码"},
+      {id:"lace-lingerie",name:"蕾丝内衣套装",category:"服装",note:"成人尺码"},
+      {id:"sheer-robe",name:"半透明罩袍",category:"服装",note:"独立外搭"},
+      {id:"stockings",name:"长筒丝袜",category:"服装",note:"量产款式"},
+      {id:"massage-oil",name:"按摩油",category:"护理",note:"皮肤外用"},
+      {id:"water-lubricant",name:"水性润滑剂",category:"护理",note:"密封包装"},
+      {id:"condoms",name:"安全套",category:"护理",note:"独立包装"},
+      {id:"vibrator",name:"可调档震动器",category:"玩具",note:"离线电池式"},
+      {id:"massage-wand",name:"手持按摩棒",category:"玩具",note:"离线电池式"},
+      {id:"plush-paddle",name:"软质拍板",category:"玩具",note:"软面材质"}
+    ] : [{"id":"soft-cuffs","name":"软质手铐","category":"约束","note":"软垫内衬，可由钥匙或安全扣解开"},{"id":"ankle-cuffs","name":"软质脚铐","category":"约束","note":"可调节尺寸，配安全释放扣"},{"id":"silk-ribbon","name":"丝质束缚带","category":"约束","note":"柔软织物，可用于装饰或束缚"},{"id":"blindfold","name":"缎面眼罩","category":"约束","note":"不透光，佩戴者可自行摘下"},{"id":"collar-leash","name":"皮质项圈与牵引绳","category":"装扮","note":"独立道具，不改变设施项圈功能"},{"id":"maid-outfit","name":"女仆装","category":"服装","note":"普通量产成人尺码"},{"id":"bunny-outfit","name":"兔女郎装","category":"服装","note":"普通量产成人尺码"},{"id":"lace-lingerie","name":"蕾丝内衣套装","category":"服装","note":"普通量产成人尺码"},{"id":"sheer-robe","name":"半透明罩袍","category":"服装","note":"独立外搭衣物"},{"id":"stockings","name":"长筒丝袜","category":"服装","note":"普通量产款式"},{"id":"massage-oil","name":"按摩油","category":"护理","note":"密封瓶装，普通皮肤外用"},{"id":"water-lubricant","name":"水性润滑剂","category":"护理","note":"密封包装"},{"id":"condoms","name":"安全套","category":"护理","note":"独立包装"},{"id":"vibrator","name":"可调档震动器","category":"玩具","note":"离线电池式、可关闭"},{"id":"massage-wand","name":"手持按摩棒","category":"玩具","note":"离线电池式、可关闭"},{"id":"plush-paddle","name":"软质拍板","category":"玩具","note":"软面材质"}];
     const STRAW_NAME = "韩璇";
     const DIARY_PAGES = [
       {
@@ -6324,14 +6584,7 @@
       if (location.protocol === "file:") return new URL(`../../assets/portraits/${file}`, location.href).href;
       return `assets/portraits/${file}`;
     };
-    const PORTRAITS = {
-      "林安": portraitAsset("lin-an.webp"),
-      "穆裳希": portraitAsset("mu-shangxi.webp"),
-      "张曲溪": portraitAsset("zhang-quxi.webp"),
-      "王可可": portraitAsset("wang-keke.webp"),
-      "许知夏": portraitAsset("xu-zhixia.webp"),
-      "韩璇": portraitAsset("han-xuan-scarecrow.webp")
-    };
+    const PORTRAITS = { "韩璇": portraitAsset("han-xuan-scarecrow.webp") };
     const OIL_PORTRAITS = {
       "林安": portraitAsset("oil/lin-an.webp"),
       "穆裳希": portraitAsset("oil/mu-shangxi.webp"),
@@ -6339,12 +6592,10 @@
       "王可可": portraitAsset("oil/wang-keke.webp"),
       "许知夏": portraitAsset("oil/xu-zhixia.webp")
     };
-    const SECOND_PORTRAITS = {
-      "林安": portraitAsset("lin-an-stage2.webp"),
-      "穆裳希": portraitAsset("mu-shangxi-stage2.webp"),
-      "张曲溪": portraitAsset("zhang-quxi-stage2.webp"),
-      "王可可": portraitAsset("wang-keke-stage2.webp"),
-      "许知夏": portraitAsset("xu-zhixia-stage2.webp")
+    const TABLE_AVATARS = {
+      "林安": portraitAsset("chibi/lin-an.webp"), "穆裳希": portraitAsset("chibi/mu-shangxi.webp"),
+      "张曲溪": portraitAsset("chibi/zhang-quxi.webp"), "王可可": portraitAsset("chibi/wang-keke.webp"),
+      "许知夏": portraitAsset("chibi/xu-zhixia.webp")
     };
     const ALBUM_PAGES = [
       {
@@ -6491,17 +6742,7 @@
       );
       return meter;
     };
-    const portraitSource = name => {
-      if (interfaceMode === "simple" && OIL_PORTRAITS[name]) return OIL_PORTRAITS[name];
-      const system = asObject(state.系统);
-      const unlocked = name === "林安" ? system._侦探日记已解锁 === true
-        : name === "穆裳希" ? system._创业事迹已解锁 === true
-        : name === "张曲溪" ? system._风流相册已解锁 === true
-        : name === "王可可" ? system._王可可嫉妒立绘 === true
-        : name === "许知夏" ? system._许知夏完全信赖已解锁 === true
-        : false;
-      return unlocked && SECOND_PORTRAITS[name] ? SECOND_PORTRAITS[name] : PORTRAITS[name];
-    };
+    const portraitSource = name => OIL_PORTRAITS[name] || PORTRAITS[name];
     const INSIGHT_MODES = {
       detective: { key: "_侦探状态洞察", owner: "林安", label: "侦探状态" },
       merchant: { key: "_商人远见洞察", owner: "穆裳希", label: "商人远见" },
@@ -6578,6 +6819,325 @@
     let albumPageIndex = 0;
     const activeInsightModes = new Set();
     let threeFrameReady = false;
+    let tableMode = false, tableChatOpen = false, tableFocused = false, tableSending = false;
+    let tableChatTimer, tableChatId, tableChatLimit = 40, tableChatSignature = "";
+    let tableTotalFloors = 0;
+    let tableProjection = null;
+    let currentScenePose = null;
+    let tablePet = null, petMounting = false, petMenuKey = "";
+    let sceneMenuState = { daily:false, decree:false };
+    const SCENE_PREFERENCES_KEY = "king-game-3d-preferences-v1";
+    const DEFAULT_SCENE_PREFERENCES = Object.freeze({ moveSpeed:3.6, turnSpeed:160, hideHints:false, hideJoysticks:false, showHands:false, invertLook:false, hideMap:false });
+    let scenePreferences = { ...DEFAULT_SCENE_PREFERENCES };
+    try {
+      const p = JSON.parse(localStorage.getItem(SCENE_PREFERENCES_KEY) || "{}") || {};
+      const bounded = (n,min,max,fallback) => Number.isFinite(n) ? Math.min(max,Math.max(min,n)) : fallback;
+      scenePreferences = { moveSpeed:bounded(p.moveSpeed,.8,6,3.6), turnSpeed:bounded(p.turnSpeed,45,260,160),
+        hideHints:p.hideHints===true, hideJoysticks:p.hideJoysticks===true, showHands:p.showHands===true, invertLook:p.invertLook===true, hideMap:p.hideMap===true };
+    } catch (error) {}
+
+    function updateSceneSettings(persist = false) {
+      document.documentElement.dataset.sceneMapHidden = String(scenePreferences.hideMap);
+      $("#sceneMoveSpeed").value = scenePreferences.moveSpeed;
+      $("#sceneTurnSpeed").value = scenePreferences.turnSpeed;
+      $("#sceneMoveValue").textContent = scenePreferences.moveSpeed.toFixed(1) + " m/s";
+      $("#sceneTurnValue").textContent = scenePreferences.turnSpeed + "°/秒";
+      $("#sceneHideHints").checked = scenePreferences.hideHints;
+      $("#sceneHideJoysticks").checked = scenePreferences.hideJoysticks;
+      $("#sceneShowHands").checked = scenePreferences.showHands;
+      $("#sceneInvertLook").checked = scenePreferences.invertLook;
+      $("#sceneHideMap").checked = scenePreferences.hideMap;
+      postSceneControl("preferences", { preferences:scenePreferences });
+      if (persist) try { localStorage.setItem(SCENE_PREFERENCES_KEY,JSON.stringify(scenePreferences)); } catch (error) {}
+    }
+
+    function openSceneSettings() {
+      if (interfaceMode !== "detailed") return;
+      const dialog = $("#sceneSettings");
+      updateSceneSettings();
+      if (!dialog.open) dialog.showModal();
+      postThreeOverlayState();
+    }
+
+    function bindSceneSettings() {
+      const dialog = $("#sceneSettings");
+      dialog.addEventListener("input", () => {
+        scenePreferences = { moveSpeed:$("#sceneMoveSpeed").valueAsNumber, turnSpeed:$("#sceneTurnSpeed").valueAsNumber,
+          hideHints:$("#sceneHideHints").checked, hideJoysticks:$("#sceneHideJoysticks").checked, showHands:$("#sceneShowHands").checked,
+          invertLook:$("#sceneInvertLook").checked, hideMap:$("#sceneHideMap").checked };
+        updateSceneSettings(true);
+      });
+      $("#resetSceneSettings").addEventListener("click", () => { scenePreferences = { ...DEFAULT_SCENE_PREFERENCES }; updateSceneSettings(true); });
+      $("#closeSceneSettings").addEventListener("click", () => dialog.close());
+      dialog.addEventListener("close", () => { postThreeOverlayState(); postSceneControl("focus-viewport"); });
+    }
+    const TABLE_PET_CDN = "https://cdn.jsdelivr.net/gh/5zyzz4msvd-spec/desktop-pet-cdn@ab628845f61befe9e08fa8b857d82d5dae5da727/";
+
+    function refreshTablePet() {
+      if (!tablePet) return;
+      tablePet.host.hidden = interfaceMode !== "detailed";
+      const key = JSON.stringify([tableMode,sceneMenuState]);
+      if (key === petMenuKey) return;
+      petMenuKey = key;
+      const entry = (id,label,iconText,visible=true) => ({id,label,iconText,visible,
+        onClick:()=>postSceneControl("menu-action",{action:id})});
+      tablePet.setMenu([
+        { id:"frontend", label:tableMode?"退出前端":"进入前端", iconText:tableMode?"↩":"↗",
+          onClick:()=>tableMode?leaveTableMode():enterTableMode(false) },
+        entry("open-character-list","人物档案","人"),
+        entry("open-rules","已有法令","律"), entry("open-items","法令物品","物"),
+        entry("open-decree","颁布法令","令",sceneMenuState.decree),
+        entry("daily","推进流程","→",sceneMenuState.daily),
+        entry("open-actions","行动栏","入"),
+        {id:"settings",label:"设置",iconText:"⚙",onClick:openSceneSettings},
+        entry("switch-simple","简洁前端","◈"), {id:"switch",label:"更换桌宠",iconText:"↔"}
+      ]);
+    }
+
+    async function mountTablePet() {
+      if (petMounting || tablePet) return;
+      petMounting = true;
+      let pet;
+      try {
+        const { createDesktopPet } = await import(TABLE_PET_CDN + "index.mjs");
+        pet = createDesktopPet({ container:document.body, assetBase:TABLE_PET_CDN+"assets/",
+          storageKey:"king-game-room-pet-v1", initialCharacter:"alisa", zIndex:24, menu:[] });
+        pet.host.style.visibility = "hidden";
+        const shadow = pet.host.shadowRoot;
+        const style = el("style");
+        style.textContent = '.dp-ring:not([hidden]){position:fixed;left:var(--kg-pet-left)!important;top:var(--kg-pet-top)!important;width:var(--kg-pet-width,min(174px,44vw));box-sizing:border-box;height:auto;max-height:60dvh;overflow:auto;display:flex;flex-direction:column;gap:3px;padding:4px;pointer-events:auto}.dp-ring button{position:static;transform:none;animation:none;margin:0;width:100%;height:auto;min-height:32px;padding:5px 8px;border-radius:6px;display:flex;align-items:center;justify-content:flex-start;gap:8px;text-align:left;background:#25201a;color:#f0dfbd}.dp-ring button[hidden]{display:none}';
+        shadow.append(style);
+        const ring=shadow.querySelector(".dp-ring"), sprite=shadow.querySelector(".dp-pet");
+        let raf=0;
+        const follow = () => {
+          if (ring.hidden || !pet.host.isConnected) { raf=0; return; }
+          const p=sprite.getBoundingClientRect(), m=ring.getBoundingClientRect();
+          const right=p.right+6, preferred=Math.min(174,innerWidth*.44);
+          const onRight=right+preferred<=innerWidth-5;
+          const width=onRight?preferred:Math.min(preferred,Math.max(70,p.left-11));
+          const x=onRight?right:Math.max(5,p.left-width-6);
+          const y=Math.max(5,Math.min(p.top,innerHeight-m.height-5));
+          ring.style.setProperty("--kg-pet-width",width+"px");
+          ring.style.setProperty("--kg-pet-left",x+"px");
+          ring.style.setProperty("--kg-pet-top",y+"px");
+          raf=requestAnimationFrame(follow);
+        };
+        const watcher=new MutationObserver(()=>{ if(!ring.hidden&&!raf) follow(); });
+        watcher.observe(ring,{attributes:true,attributeFilter:["hidden"]});
+        window.addEventListener("pagehide",()=>{ watcher.disconnect(); cancelAnimationFrame(raf); pet.destroy(); },{once:true});
+        await pet.ready;
+        tablePet=pet;
+        refreshTablePet();
+        pet.host.style.visibility="";
+        if (window.__KING_GAME_IMMERSIVE_FRAME__ === true) {
+          try { window.frameElement?.parentElement?.querySelector(":scope > button")?.setAttribute("hidden",""); } catch (error) {}
+        }
+      } catch(error) {
+        pet?.destroy();
+        postSceneControl("menu-failed");
+        console.warn("[KingGame] 桌宠加载失败",error);
+      } finally { petMounting=false; }
+    }
+
+    function layoutTableChat() {
+      const panel = $("#tableChat");
+      const wasHidden = panel.hidden;
+      panel.hidden = !(tableMode && tableChatOpen && tableFocused && tableProjection);
+      document.documentElement.toggleAttribute("data-table-reading", !panel.hidden);
+      if (panel.hidden) return;
+      const frame = $("#complexGameFrame").getBoundingClientRect();
+      const rect = tableProjection;
+      panel.style.left = (frame.left + frame.width * rect.left) + "px";
+      panel.style.top = (frame.top + frame.height * rect.top) + "px";
+      panel.style.width = (frame.width * rect.width) + "px";
+      panel.style.height = (frame.height * rect.height) + "px";
+      if (wasHidden) {
+        const history = $("#tableChatHistory");
+        history.scrollTop = history.children.length === 1 ? 0 : history.scrollHeight;
+      }
+      updateTableChatFloor();
+    }
+
+    function postTableFocus() {
+      const frame = $("#complexGameFrame");
+      if (threeFrameReady && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: "king-game-3d:table-focus", active: tableFocused }, threeFrameTargetOrigin());
+      }
+    }
+
+    function postSceneControl(type, extra = {}) {
+      const frame = $("#complexGameFrame");
+      if (threeFrameReady && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: "king-game-3d:" + type, ...extra }, threeFrameTargetOrigin());
+      }
+    }
+
+    function updateTableChatFloor() {
+      const history = $("#tableChatHistory");
+      const top = history.getBoundingClientRect().top;
+      const atEnd = history.scrollTop > 0 && history.scrollHeight - history.scrollTop - history.clientHeight < 4;
+      const row = atEnd ? history.lastElementChild :
+        (Array.from(history.children).find(node => node.getBoundingClientRect().bottom > top + 2) || history.lastElementChild);
+      const label = row ? "第 " + row.dataset.floor + " 楼 / 共 " + tableTotalFloors + " 楼" : "暂无聊天楼层";
+      if ($("#tableChatFloor").textContent !== label) $("#tableChatFloor").textContent = label;
+    }
+
+    function refreshTableChat(prepend = false) {
+      const snapshot = window.KingGameBridge?.readTableChat?.(tableChatLimit);
+      if (!snapshot) return;
+      if (tableChatId != null && snapshot.chatId !== tableChatId) { leaveTableMode(); return; }
+      tableChatId = snapshot.chatId;
+      tableTotalFloors = snapshot.totalFloors;
+      $("#tableChatOlder").hidden = !snapshot.hasOlder;
+      const signature = JSON.stringify(snapshot.messages);
+      if (signature === tableChatSignature) { updateTableChatFloor(); return; }
+      tableChatSignature = signature;
+      const history = $("#tableChatHistory");
+      const oldHeight = history.scrollHeight, oldTop = history.scrollTop;
+      const atEnd = oldHeight - oldTop - history.clientHeight < 42;
+      const rows = snapshot.messages.map(message => {
+        const row = el("article", message.user ? "table-chat-user" : "");
+        row.dataset.floor = String(message.id + 1);
+        let portraitIndex = 0;
+        for (const segment of message.segments) {
+          if (!segment.parts) {
+            row.append(el("p", "table-chat-line " + (message.user ? "table-chat-user" : "table-chat-narrator"), (message.user ? "你 · " : "") + segment.text));
+            continue;
+          }
+          const card = el("section", "table-chat-role");
+          card.dataset.speaker = segment.name;
+          if (hasOwn(OIL_PORTRAITS, segment.name)) card.dataset.side = portraitIndex++ % 2 ? "right" : "left";
+          const portrait = el("span");
+          if (hasOwn(OIL_PORTRAITS, segment.name)) {
+            const image = el("img", "table-bust"); image.src = OIL_PORTRAITS[segment.name]; image.alt = ""; portrait.append(image);
+          }
+          const body = el("div"), label = el("strong");
+          if (hasOwn(TABLE_AVATARS, segment.name)) {
+            const avatar = el("img", "table-avatar"); avatar.src = TABLE_AVATARS[segment.name]; avatar.alt = ""; label.append(avatar);
+          }
+          label.append(document.createTextNode(segment.name));
+          body.append(label);
+          for (const part of segment.parts) body.append(el("p", "table-chat-line table-" + part.kind, part.text));
+          card.append(portrait, body);
+          row.append(card);
+        }
+        return row;
+      });
+      history.replaceChildren(...rows);
+      if (prepend) history.scrollTop = oldTop + history.scrollHeight - oldHeight;
+      else history.scrollTop = atEnd ? history.scrollHeight : oldTop;
+      updateTableChatFloor();
+    }
+
+    function setTableChatOpen(open) {
+      tableChatOpen = tableMode && open;
+      if (tableChatOpen) {
+        tableFocused = true;
+        postTableFocus();
+        refreshTableChat();
+      } else {
+        tableFocused = false;
+        tableProjection = null;
+        postTableFocus();
+      }
+      layoutTableChat();
+      postThreeOverlayState();
+    }
+
+    function leaveTableMode(fromBridge = false) {
+      tableMode = false;
+      delete document.documentElement.dataset.tableMode;
+      tableFocused = false;
+      clearInterval(tableChatTimer);
+      tableChatId = null;
+      setTableChatOpen(false);
+      refreshTablePet();
+      if (!fromBridge) window.KingGameBridge?.setImmersivePresentation?.(false);
+    }
+
+    function enterTableMode(openChat = false) {
+        if (tableMode || interfaceMode !== "detailed") return;
+        const entered = window.KingGameBridge?.setImmersivePresentation?.(true, currentScenePose, openChat);
+        if (!entered) {
+          showActionError("当前环境无法打开全屏圆桌，请使用构建后的本地预览或在支持宿主桥的酒馆中打开。");
+          return;
+        }
+        if (entered === "portal") return;
+        tableMode = true;
+        document.documentElement.dataset.tableMode = "true";
+        tableChatId = null;
+        tableChatLimit = 40;
+        tableChatSignature = "";
+        setTableChatOpen(openChat);
+        refreshTablePet();
+        tableChatTimer = setInterval(() => refreshTableChat(), 450);
+        postSceneControl("focus-viewport");
+    }
+
+    function bindTableChat() {
+      $("#tableChatExplore").addEventListener("click", () => {
+        setTableChatOpen(false); postSceneControl("focus-viewport");
+      });
+      const older = () => {
+        if (!tableMode || $("#tableChatOlder").hidden) return;
+        tableChatLimit += 40; refreshTableChat(true);
+      };
+      $("#tableChatOlder").addEventListener("click", older);
+      $("#tableChatHistory").addEventListener("scroll", () => {
+        updateTableChatFloor();
+        if ($("#tableChatHistory").scrollTop <= 2) older();
+      });
+      $("#tableChatForm").addEventListener("submit", async event => {
+        event.preventDefault();
+        const input = $("#tableChatInput"), text = input.value.trim();
+        if (!text || tableSending || actionBusy) return;
+        tableSending = true;
+        $("#tableChatSend").disabled = true;
+        $("#tableChatStatus").textContent = "正在发送…";
+        try {
+          await window.KingGameBridge.submitTableChat(text);
+          if (input.value.trim() === text) input.value = "";
+          if (tableMode && tableChatOpen) {
+            refreshTableChat();
+            $("#tableChatHistory").scrollTop = $("#tableChatHistory").scrollHeight;
+          }
+          $("#tableChatStatus").textContent = "";
+        } catch (error) {
+          $("#tableChatStatus").textContent = error?.message || "发送失败，草稿已保留。";
+        } finally {
+          tableSending = false;
+          $("#tableChatSend").disabled = false;
+          if (tableMode) refreshTableChat();
+        }
+      });
+      window.addEventListener("kinggame:table-focus", () => {
+        if (!tableMode) return;
+        setTableChatOpen(true);
+      });
+      window.addEventListener("kinggame:immersive-exit", () => leaveTableMode(true));
+      window.addEventListener("resize", () => { layoutTableChat(); postThreeOverlayState(); });
+      const forwardedKeys = new Set();
+      function forwardSceneKey(event, down) {
+        const key = event.key.toLowerCase();
+        if (interfaceMode !== "detailed" || !threeFrameReady || !["w","a","s","d","q","e","arrowup","arrowdown","shift"].includes(key)) return;
+        if (down && (event.isComposing || event.ctrlKey || event.metaKey || event.altKey
+          || event.target?.closest?.("input,textarea,select,[contenteditable],#tableChatHistory")
+          || interfaceOverlayOpen() || document.documentElement.hasAttribute("data-complex-panel"))) return;
+        if (down) forwardedKeys.add(key);
+        else if (!forwardedKeys.delete(key)) return;
+        postSceneControl("key", { key, down });
+        if (down) event.preventDefault();
+      }
+      window.addEventListener("keydown", event => forwardSceneKey(event, true));
+      window.addEventListener("keyup", event => forwardSceneKey(event, false));
+      window.addEventListener("blur", () => {
+        for (const key of forwardedKeys) postSceneControl("key", { key, down: false });
+        forwardedKeys.clear();
+      });
+      window.addEventListener("keydown", event => {
+        if (event.key === "Escape" && tableMode && !interfaceOverlayOpen()) leaveTableMode();
+      });
+    }
     let complexCharacterName = "";
     let complexInteractionAllowed = false;
 
@@ -6586,7 +7146,9 @@
       const local = location.pathname.includes("/dist/")
         ? "../src/frontend-game-demo/index.html"
         : "../frontend-game-demo/index.html";
-      return new URL(local, location.href);
+      const url = new URL(local, location.href);
+      url.searchParams.set("v", "painterly-standees-1");
+      return url;
     }
 
     async function ensureThreeFrame() {
@@ -6597,7 +7159,8 @@
       frame.dataset.loaded = "loading";
       threeFrameReady = false;
       try {
-        if (url.protocol === "http:" || url.protocol === "https:") {
+        if ((url.protocol === "http:" || url.protocol === "https:") &&
+            !(window.KingGameBridge?.isLocalPreview?.() && url.origin === location.origin)) {
           const response = await fetch(url.href, { mode: "cors", cache: "force-cache" });
           if (!response.ok) throw new Error(`3D 页面 HTTP ${response.status}`);
           const source = await response.text();
@@ -6635,14 +7198,14 @@
     function postThreeSnapshot() {
       const frame = $("#complexGameFrame");
       if (!threeFrameReady || !frame.contentWindow) return;
-      frame.contentWindow.postMessage({ type: "king-game-3d:snapshot", state }, threeFrameTargetOrigin());
+      frame.contentWindow.postMessage({ type: "king-game-3d:snapshot", state, entryPose: window.__KING_GAME_ENTRY_POSE__ }, threeFrameTargetOrigin());
     }
 
     function postThreeOverlayState() {
       const frame = $("#complexGameFrame");
       if (!threeFrameReady || !frame.contentWindow) return;
       const blocked = document.documentElement.hasAttribute("data-complex-panel") || interfaceOverlayOpen();
-      frame.contentWindow.postMessage({ type: "king-game-3d:overlay", blocked }, threeFrameTargetOrigin());
+      frame.contentWindow.postMessage({ type: "king-game-3d:overlay", blocked, chatInset: 0 }, threeFrameTargetOrigin());
     }
 
     function postThreeActivity() {
@@ -6677,7 +7240,7 @@
       if (!NAMES.includes(name)) return;
       complexCharacterName = name;
       complexInteractionAllowed = allowInteraction === true;
-      const face = buildFace(name, asObject(asObject(state.角色)[name]));
+      const face = buildFace(name, asObject(asObject(state.角色)[name]), true);
       face.classList.add("is-active");
       face.setAttribute("aria-hidden", "false");
       face.querySelectorAll("button[aria-hidden='true']").forEach(button => {
@@ -6728,6 +7291,13 @@
     function handleThreeIntent(message) {
       const action = String(message.action || "");
       if (action === "switch-simple") setInterfaceMode("simple");
+      else if (action === "settings") openSceneSettings();
+      else if (action === "cancel-table-focus") setTableChatOpen(false);
+      else if (action === "exit-immersive" && tableMode && !interfaceOverlayOpen()) leaveTableMode();
+      else if (action === "table-chat") {
+        if (tableMode) setTableChatOpen(true);
+        else enterTableMode(true);
+      }
       else if (action === "character") showComplexCharacter(String(message.name || ""), message.nearby === true);
       else if (action === "party") showComplexParty();
       else if (action === "rules" || action === "items") showComplexRecords(action);
@@ -6764,6 +7334,22 @@
           postThreeSnapshot();
           postThreeOverlayState();
           postThreeActivity();
+          postTableFocus();
+          updateSceneSettings();
+          void mountTablePet();
+        } else if (message.type === "king-game-3d:menu-state") {
+          sceneMenuState={daily:message.daily===true,decree:message.decree===true};
+          refreshTablePet();
+        } else if (message.type === "king-game-3d:scene-pose") {
+          const p = message.pose;
+          if (p && ["hall","room"].includes(p.zone) && [p.x,p.z,p.yaw,p.pitch].every(Number.isFinite)) {
+            currentScenePose = { zone:p.zone, x:p.x, z:p.z, yaw:p.yaw, pitch:p.pitch };
+          }
+        } else if (message.type === "king-game-3d:table-projection") {
+          const r = message.rect;
+          tableProjection = r && [r.left,r.top,r.width,r.height].every(n => Number.isFinite(n) && n >= 0 && n <= 1)
+            && r.width > 0 && r.height > 0 && r.left + r.width <= 1 && r.top + r.height <= 1 ? r : null;
+          layoutTableChat();
         } else if (message.type === "king-game-3d:intent" && interfaceMode === "detailed") {
           handleThreeIntent(message);
         }
@@ -6801,12 +7387,14 @@
         if (event.key === "Escape" && document.documentElement.hasAttribute("data-complex-panel")) closeComplexPanel();
       });
       const observer = new MutationObserver(() => postThreeOverlayState());
-      ["interactionBackdrop", "portraitBackdrop", "diaryBackdrop", "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "testamentBackdrop", "endingBackdrop", "scheduleModeBackdrop", "galgameWarningBackdrop"].forEach(id => {
-        observer.observe($("#" + id), { attributes: true, attributeFilter: ["class"] });
+      ["playerRulesBackdrop", "interactionBackdrop", "portraitBackdrop", "diaryBackdrop", "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "testamentBackdrop", "endingBackdrop", "scheduleModeBackdrop", "galgameWarningBackdrop"].forEach(id => {
+        const node = $("#" + id);
+        if (node) observer.observe(node, { attributes: true, attributeFilter: ["class"] });
       });
     }
 
     function setInterfaceMode(mode, persist = true) {
+      if (mode === "simple" && tableMode) leaveTableMode();
       interfaceMode = mode === "simple" ? "simple" : "detailed";
       closeComplexPanel();
       document.documentElement.dataset.interfaceMode = interfaceMode;
@@ -6816,6 +7404,7 @@
       $("#closeComplexActions").hidden = interfaceMode !== "detailed";
       if (interfaceMode === "detailed") ensureThreeFrame();
       postThreeActivity();
+      refreshTablePet();
       if (persist) {
         try { localStorage.setItem("king-game-interface-mode", interfaceMode); } catch (error) {}
       }
@@ -6917,25 +7506,21 @@
         head.append(el("span", "rule-meta", `第${num(ruleData.颁布日, 1, 15, 1)}日 · ${ruleData.状态 || "生效"}${revoker}`));
         rule.append(head, el("p", "", ruleData.全文 || "暂无正文"));
         if (ruleData.状态 === "生效") {
-          const definition = asObject(ruleData.义务定义);
           const daily = asObject(ruleData.本日履行);
-          const obligors = asObject(daily.义务人);
           const fulfillment = el("div", "rule-fulfillment");
-          Object.entries(definition).forEach(([name, kind]) => {
-            const record = asObject(obligors[name]);
-            const ongoing = record.持续状态 === "进行中";
-            const completed = num(record.完成次数, 0, 99, 0) > 0;
-            const stateLabel = ongoing ? "进行中" : (kind === "有限" && completed ? "已履行" : "待履行");
-            const stateClass = ongoing ? "is-ongoing" : (stateLabel === "已履行" ? "is-complete" : "is-pending");
-            fulfillment.append(el("span", `rule-state ${stateClass}`, `${displayPerson(name, userName)} · ${stateLabel}`));
-          });
-          if (fulfillment.childElementCount) rule.append(fulfillment);
+          const stateLabel = String(daily.状态 || "待判定");
+          const stateClass = stateLabel === "履行中" ? "is-ongoing" : stateLabel === "已履行" ? "is-complete" : "is-pending";
+          fulfillment.append(el("span", `rule-state ${stateClass}`, `整条法令 · ${stateLabel}`));
+          if (daily.依据) fulfillment.append(el("small", "", String(daily.依据)));
+          rule.append(fulfillment);
+        } else {
+          rule.append(el("div", "rule-fulfillment", "已撤销 · 无履行义务 · 仅保留历史"));
         }
         root.append(rule);
       });
     }
 
-    function buildFace(name, data) {
+    function buildFace(name, data, useBust = false) {
       const visibleName = displayPerson(name, userName);
       const info = asObject(data.信息);
       const status = asObject(data.状态);
@@ -7042,13 +7627,13 @@
       portrait.dataset.portraitName = name;
       portrait.setAttribute("aria-label", `查看${visibleName}证件照全图`);
       const image = el("img");
-      image.src = portraitSource(name);
+      image.src = (useBust && OIL_PORTRAITS[name]) || portraitSource(name);
       image.alt = `${visibleName}的证件照`;
       image.loading = "eager";
       image.draggable = false;
       const fallback = el("span", "portrait-fallback", name.slice(-1));
       image.addEventListener("error", () => { image.hidden = true; fallback.style.display = "grid"; });
-      portrait.addEventListener("click", () => openPortrait(name, portrait));
+      portrait.addEventListener("click", () => openPortrait(name, portrait, image.currentSrc || image.src));
       portrait.append(image, fallback);
       const quick = el("div", "quick-state");
       [["身体", status.身体], ["当前行动", status.当前行动]].forEach(([label, value]) => {
@@ -7373,13 +7958,13 @@
       overlay.dataset.view = pitch >= 45 ? "top" : pitch <= -45 ? "bottom" : "side";
     }
 
-    function openPortrait(name, trigger) {
+    function openPortrait(name, trigger, source) {
       portraitLastFocused = trigger || document.activeElement;
       activePortraitName = name;
       $("#portraitViewerTitle").textContent = `${name} · 证件照全图`;
       const image = $("#portraitFullImage");
       const thumbnail = document.querySelector(`.portrait[data-portrait-name="${name}"] img`);
-      const resolvedSource = thumbnail?.currentSrc || thumbnail?.src || portraitSource(name) || "";
+      const resolvedSource = source || thumbnail?.currentSrc || thumbnail?.src || portraitSource(name) || "";
       $("#portraitFullStage").classList.remove("has-error");
       image.hidden = false;
       if (image.src !== resolvedSource) image.src = resolvedSource;
@@ -7801,7 +8386,7 @@
       const avatar = el("span", `schedule-avatar${name === "玩家" ? " is-player" : ""}${mystery ? " is-mystery" : ""}`);
       if (mystery) {
         avatar.textContent = "?";
-      } else if (name !== "玩家" && PORTRAITS[name]) {
+      } else if (name !== "玩家" && portraitSource(name)) {
         const image = document.createElement("img");
         image.src = portraitSource(name);
         image.alt = "";
@@ -8162,6 +8747,7 @@
         button.dataset.action = "decree";
         button.hidden = false;
         if (system._许知夏可接管 === true) {
+          button.textContent = actionBusy ? "正在提交……" : "让许知夏自行决定";
           takeoverButton.textContent = "代许知夏提交法令";
           takeoverButton.hidden = false;
         }
@@ -8328,6 +8914,10 @@
       $("#interactionRolePicker").hidden = false;
       $("#decreeSegments").hidden = true;
       $("#decreeTarget").hidden = true;
+      $("#decreeItemPanel").hidden = true;
+      $("#decreeRevokePanel").hidden = true;
+      $("#decreeIssuePanel").hidden = true;
+      $("#letXuDecide").hidden = true;
       renderInteractionRoleOptions();
       $("#interactionLabel").textContent = "互动方式";
       $("#interactionMethod").placeholder = "例如：邀请她单独检查走廊，并先询问她昨晚最后记得的画面";
@@ -8350,14 +8940,31 @@
     }
 
     function setDecreeMode(mode) {
-      decreeMode = ["issue", "modify", "revoke"].includes(mode) ? mode : "issue";
+      decreeMode = ["issue", "item", "revoke"].includes(mode) ? mode : "issue";
       $("#decreeSegments").querySelectorAll("[data-decree-mode]").forEach(button => {
         button.classList.toggle("is-active", button.dataset.decreeMode === decreeMode);
+        button.setAttribute("aria-selected", String(button.dataset.decreeMode === decreeMode));
       });
       const target = $("#decreeTarget");
-      const needsTarget = decreeMode !== "issue";
-      target.hidden = !needsTarget;
-      if (needsTarget) {
+      $("#decreeItemPanel").hidden = decreeMode !== "item";
+      $("#decreeRevokePanel").hidden = decreeMode !== "revoke";
+      $("#decreeIssuePanel").hidden = decreeMode !== "issue";
+      $("#interactionBackdrop").dataset.decreeMode = decreeMode;
+      target.hidden = true;
+      if (decreeMode === "item") {
+        const grid = $("#decreeItemGrid");
+        grid.replaceChildren(...DECREE_ITEMS.map((item, index) => {
+          const label = el("label", "decree-item-card");
+          const input = el("input");
+          input.type = "radio";
+          input.name = "decreeItem";
+          input.value = item.id;
+          input.checked = index === 0;
+          label.append(input, el("strong", "", item.name), el("small", "", `${item.category} · ${item.note}`));
+          return label;
+        }));
+      }
+      if (decreeMode === "revoke") {
         const rules = activeRuleOptions();
         target.replaceChildren(...rules.map(rule => {
           const option = document.createElement("option");
@@ -8365,9 +8972,22 @@
           option.textContent = `${rule.id} · ${displayPerson(rule.owner, userName)} · ${rule.title}`;
           return option;
         }));
+        $("#decreeRevokeList").replaceChildren(...rules.map((rule, index) => {
+          const label = el("label", "decree-revoke-card");
+          const input = el("input");
+          input.type = "radio";
+          input.name = "revokeRule";
+          input.value = rule.id;
+          input.checked = index === 0;
+          input.addEventListener("change", () => { target.value = rule.id; });
+          label.append(input, el("strong", "", `${rule.id} · ${rule.title}`), el("small", "", `原颁布者：${displayPerson(rule.owner, userName)} · 对应专供物也将回收`));
+          return label;
+        }));
+        if (!rules.length) $("#decreeRevokeList").append(el("p", "modal-note", "目前没有可撤销的生效法令。"));
       }
-      $("#interactionLabel").textContent = decreeMode === "issue" ? "新法令正文" : decreeMode === "modify" ? "修改后的法令正文" : "撤销说明（可留空）";
-      $("#interactionMethod").placeholder = decreeMode === "issue" ? "输入一条只有一个核心规则的新法令" : decreeMode === "modify" ? "输入替换目标法令的新版本" : "可选：说明撤销理由";
+      $("#interactionLabel").textContent = decreeMode === "issue" ? "新法令正文" : decreeMode === "item" ? "这件物品的法令" : "撤销说明（可留空）";
+      $("#interactionMethod").placeholder = decreeMode === "issue" ? "写下一条只有一个核心规则的新法令" : decreeMode === "item" ? "写清投放地点、授权使用者，以及围绕所选物品的唯一核心规则" : "可选：说明撤销理由";
+      $("#submitInteraction").textContent = decreeMode === "revoke" ? "确认撤销" : decreeMode === "item" ? "颁布物品法令" : "颁布法令";
     }
 
     function openDecree(delegate = "") {
@@ -8378,9 +8998,10 @@
       $("#interactionTitle").textContent = delegate === "许知夏" ? "代许知夏提交法令" : "法令管理";
       $("#interactionRolePicker").hidden = true;
       $("#decreeSegments").hidden = false;
-      $("#interactionNote").textContent = "选择颁布、修改或撤销。修改会让旧版本失效并写入新版本；撤销会记录实际撤销者。一次只能处理一个核心规则。可以命令说真话或禁止撒谎，但项圈无法识别真假，角色说谎不会因此触发电击。法令不能赋予超自然能力、破坏密室，或造成死亡、残疾及无法短期恢复的伤害。科学上不可能，或试图修改十五日时长、每日法令次数、国王抽取等基础游戏协议的提案，第一次会被警告并要求重提，第二次会直接执行终止处分。按 Ctrl/⌘ + Enter 可提交。";
-      $("#submitInteraction").textContent = "提交法令";
+      $("#interactionNote").textContent = "三种独立操作：颁布普通法令；从设施预备库存选择一种物品并写其相关法令；撤销一条现行法令及其对应专供物。每次只有一个核心规则。按 Ctrl/⌘ + Enter 可提交。";
+      $("#letXuDecide").hidden = delegate !== "许知夏";
       $("#interactionMethod").value = "";
+      $("#decreeDraftCount").textContent = "0 / 800";
       $("#interactionError").textContent = "";
       setDecreeMode("issue");
       const backdrop = $("#interactionBackdrop");
@@ -8425,7 +9046,7 @@
       showActionError();
       try {
         const result = modalMode === "decree"
-          ? await bridge.requestDecree({ mode: decreeMode, text: method, targetRuleId: $("#decreeTarget").value, delegate: decreeDelegate })
+          ? await bridge.requestDecree({ mode: decreeMode, text: method, targetRuleId: $("#decreeTarget").value, delegate: decreeDelegate, itemId: $("#decreeItemGrid input:checked")?.value, quantity: $("#decreeItemQuantity").value })
           : await bridge.submitInteraction(interactionRoles, method);
         if (
           modalMode === "decree" &&
@@ -8448,7 +9069,7 @@
       } finally {
         $("#submitInteraction").disabled = false;
         $("#cancelInteraction").disabled = false;
-        $("#submitInteraction").textContent = modalMode === "decree" ? "提交法令" : "提交互动";
+        $("#submitInteraction").textContent = modalMode === "decree" ? (decreeMode === "revoke" ? "确认撤销" : decreeMode === "item" ? "颁布物品法令" : "颁布法令") : "提交互动";
         render(state);
       }
     }
@@ -8474,8 +9095,9 @@
       render(state);
       try {
         if (action === "decree") {
+          const wasUnselected = !asObject(state.系统)._当前国王;
           let preparedState = state;
-          if (!asObject(preparedState.系统)._当前国王) {
+          if (wasUnselected) {
             if (typeof bridge.prepareDecree !== "function") throw new Error("宿主桥接缺少按键抽取国王能力，请刷新页面后重试。");
             preparedState = await bridge.prepareDecree();
             if (preparedState) render(preparedState);
@@ -8484,6 +9106,14 @@
             actionBusy = false;
             render(preparedState);
             openDecree();
+            return;
+          }
+          if (asObject(preparedState.系统)._当前国王 === "许知夏"
+            && asObject(preparedState.系统)._许知夏可接管 === true
+            && wasUnselected) {
+            actionBusy = false;
+            render(preparedState);
+            openDecree("许知夏");
             return;
           }
           await bridge.requestDecree();
@@ -8583,6 +9213,7 @@
     }
 
     function interfaceOverlayOpen() {
+      if ($("#sceneSettings")?.open) return true;
       return [
         "playerRulesBackdrop", "interactionBackdrop", "portraitBackdrop", "diaryBackdrop",
         "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "testamentBackdrop", "endingBackdrop", "scheduleModeBackdrop", "galgameWarningBackdrop"
@@ -8914,9 +9545,20 @@
       const backdrop = $("#interactionBackdrop");
       $("#primaryDailyAction").addEventListener("click", runDailyAction);
       $("#cousinTakeoverAction").addEventListener("click", () => openDecree("许知夏"));
+      $("#letXuDecide").addEventListener("click", async () => {
+        const bridge = window.KingGameBridge;
+        if (!bridge || typeof bridge.requestDecree !== "function") return;
+        $("#letXuDecide").disabled = true;
+        try { await bridge.requestDecree(); closeInteraction(); }
+        catch (error) { $("#interactionError").textContent = error?.message || "许知夏自行决定失败，请重试。"; }
+        finally { $("#letXuDecide").disabled = false; }
+      });
       $("#decreeSegments").addEventListener("click", event => {
         const button = event.target.closest("[data-decree-mode]");
         if (button) setDecreeMode(button.dataset.decreeMode);
+      });
+      $("#interactionMethod").addEventListener("input", event => {
+        $("#decreeDraftCount").textContent = `${event.target.value.length} / 800`;
       });
       $("#forceComplianceAction").addEventListener("click", runDailyAction);
       $("#interactionHitTarget").addEventListener("click", event => openInteraction(event.currentTarget.dataset.interactionName || activeSideName()));
@@ -9058,7 +9700,6 @@
         else if (typeof bridge.getVariables === "function") hostedState = await bridge.getVariables();
         else if (bridge.state) hostedState = bridge.state;
         if (hostedState) render(hostedState);
-        if (typeof bridge.setNativeComposerHidden === "function") bridge.setNativeComposerHidden(true);
 
         if (typeof bridge.subscribe === "function") {
           bridge.subscribe(nextState => { if (nextState) render(nextState); });
@@ -9091,19 +9732,19 @@
       bindDailyFlow();
       bindPlayerCommandComposer();
       bindThreeFrameBridge();
+      bindTableChat();
+      bindSceneSettings();
       bindGalgameToggle();
       bindScheduleMode();
-      if (bridge && typeof bridge.setNativeComposerHidden === "function" && !bridge.setNativeComposerHidden(true) && !sourcePreview) {
-        showActionError("当前宿主缺少可用的程序化发送 API；酒馆原生输入仍已隐藏，请检查 Tavern Helper 后再使用前端按钮。");
-      }
       $("#interfaceModeToggle").addEventListener("click", () => setInterfaceMode(interfaceMode === "simple" ? "detailed" : "simple"));
-      try { interfaceMode = localStorage.getItem("king-game-interface-mode") === "simple" ? "simple" : "detailed"; } catch (error) {}
+      try { interfaceMode = window.__KING_GAME_IMMERSIVE_FRAME__ !== true && localStorage.getItem("king-game-interface-mode") === "simple" ? "simple" : "detailed"; } catch (error) {}
       document.documentElement.dataset.interfaceMode = interfaceMode;
       $("#interfaceModeToggle").textContent = interfaceMode === "simple" ? "切换到复杂3D" : "切换到简洁";
       $("#interfaceModeToggle").setAttribute("aria-pressed", interfaceMode === "simple" ? "true" : "false");
       $("#closeComplexActions").hidden = interfaceMode !== "detailed";
-      render(PREVIEW_STATE);
+      render(bridge?.isLocalPreview?.() ? previewScheduleState("正常") : PREVIEW_STATE);
       void readBridge();
+      if (window.__KING_GAME_IMMERSIVE_FRAME__ === true) enterTableMode(window.__KING_GAME_OPEN_TABLE_CHAT__ === true);
       window.addEventListener("kinggame:state", event => { if (event.detail) render(event.detail); });
     }
 
