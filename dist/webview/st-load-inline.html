@@ -6044,7 +6044,9 @@
       if (mode === 'revoke' && !/^R\d+$/.test(targetRuleId)) {
         throw new Error('撤销必须选择一条有效法令');
       }
-      if ((mode === 'issue' || mode === 'item') && !submitted) throw new Error('请输入法令正文');
+      if (!submitted && (mode === 'item' || (mode === 'issue' && (preparedSystem['_当前国王'] === '玩家' || delegatedSubmission)))) {
+        throw new Error('请输入法令正文');
+      }
       if (violation === 'scientifically_impossible' || violation === 'protocol_override') {
         return commitAction('rejectImpossiblePlayerDecree', [], function (next) {
           var system = next['系统'] || {};
@@ -9720,7 +9722,9 @@
       } catch (error) {}
       if (!sourcePreview && (!authorization || authorization.authorized !== true)) {
         document.documentElement.setAttribute("data-card-mismatch", "true");
-        document.body.replaceChildren();
+        const status = el("p", "", "国王游戏未能读取当前角色卡或主世界书。请确认已启用酒馆助手、绑定主世界书，再重新打开。");
+        status.setAttribute("role", "status");
+        document.body.replaceChildren(status);
         return;
       }
       document.documentElement.setAttribute("data-card-authorized", "true");
@@ -9743,6 +9747,7 @@
       $("#interfaceModeToggle").setAttribute("aria-pressed", interfaceMode === "simple" ? "true" : "false");
       $("#closeComplexActions").hidden = interfaceMode !== "detailed";
       render(bridge?.isLocalPreview?.() ? previewScheduleState("正常") : PREVIEW_STATE);
+      void mountTablePet();
       void readBridge();
       if (window.__KING_GAME_IMMERSIVE_FRAME__ === true) enterTableMode(window.__KING_GAME_OPEN_TABLE_CHAT__ === true);
       window.addEventListener("kinggame:state", event => { if (event.detail) render(event.detail); });
