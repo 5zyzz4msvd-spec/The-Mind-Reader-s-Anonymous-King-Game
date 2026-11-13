@@ -999,31 +999,6 @@
     .face-dot { width: 9px; height: 9px; padding: 0; border: 1px solid var(--gold-dim); border-radius: 50%; background: transparent; cursor: pointer; font-size: 0; }
     .face-dot[aria-current="true"] { background: var(--gold); box-shadow: 0 0 0 3px rgba(198,163,91,.12); }
 
-    html[data-interface-mode="simple"] {
-      --prism-w: min(88vw, 920px);
-      --prism-h: min(60dvh, 620px);
-      --portrait-share: 38%;
-    }
-    html[data-interface-mode="simple"] body { background: #11110f; }
-    html[data-interface-mode="simple"] .map-card { display: none; }
-    html[data-interface-mode="simple"] .topbar { grid-template-columns: minmax(0, 1fr) auto; }
-    html[data-interface-mode="simple"] .face { background: #211f1c; box-shadow: 0 14px 35px #0009; }
-    html[data-interface-mode="simple"] .face-heading { min-height: 48px; background: #161512; }
-    html[data-interface-mode="simple"] .face-body { padding: 10px; gap: 10px; }
-    html[data-interface-mode="simple"] .portrait img { filter: none; object-position: 50% 30%; }
-    html[data-interface-mode="simple"] .face[data-name] .portrait img { object-position: 50% 30%; }
-    html[data-interface-mode="simple"] .portrait::after { content: "油画胸像 / 点击放大"; }
-    html[data-interface-mode="simple"] .face-dots { flex-wrap: wrap; gap: 6px; }
-    html[data-interface-mode="simple"] .face-dot {
-      width: auto; height: 28px; min-width: 60px; padding: 4px 9px;
-      border-radius: 2px; color: #d8c8a5; background: #201d17;
-      font: 700 11px/1 ui-sans-serif, system-ui, sans-serif;
-    }
-    html[data-interface-mode="simple"] .face-dot[aria-current="true"] { color: #1b1812; }
-    @media (max-width: 700px) {
-      html[data-interface-mode="simple"] .topbar { grid-template-columns: 1fr; }
-      html[data-interface-mode="simple"] .face-body { grid-template-columns: minmax(98px, 35%) minmax(0, 1fr); }
-    }
 
     .rules-btn { padding: 0 16px; white-space: nowrap; font: 700 12px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .08em; }
 
@@ -1899,24 +1874,20 @@
     .complex-info-panel .rules-sheet-body { display: block; }
     .complex-info-panel .decree-items { margin-top: 14px; }
     .complex-party-button { display: block; width: 100%; margin: 6px 0; padding: 10px; border: 1px solid var(--line); color: var(--ink); background: #22201c; text-align: left; cursor: pointer; }
-    html[data-interface-mode="detailed"] .app { height: 100dvh; min-height: 0; padding: 0; display: block; }
-    html[data-interface-mode="detailed"] .topbar { position: fixed; z-index: 19; top: max(26px,env(safe-area-inset-top)); right: 12px; width: auto; display: block; }
-    html[data-interface-mode="detailed"][data-scene-map-hidden="true"] .topbar { top: max(49px,calc(env(safe-area-inset-top) + 42px)); }
-    html[data-interface-mode="detailed"] .topbar .status-card { min-height: 0; padding: 6px 9px; }
-    html[data-interface-mode="detailed"] .topbar .eyebrow, html[data-interface-mode="detailed"] .topbar .scene-line, html[data-interface-mode="detailed"] .topbar .map-card, html[data-interface-mode="detailed"] .topbar .view-nav { display: none; }
-    html[data-interface-mode="detailed"] .topbar .status-head { margin: 0; }
-    html[data-interface-mode="detailed"] .topbar .king-line { font-size: 10px; }
-    html[data-interface-mode="detailed"] .viewport { height: 100dvh; min-height: 0; perspective: none; display: block; touch-action: auto; }
-    html[data-interface-mode="detailed"] .complex-game-frame { display: block; }
-    html[data-interface-mode="detailed"] .prism, html[data-interface-mode="detailed"] .surface-overlay, html[data-interface-mode="detailed"] .provenance-roommark, html[data-interface-mode="detailed"] .portrait-hit-target, html[data-interface-mode="detailed"] .interaction-hit-target, html[data-interface-mode="detailed"] .insight-hit-target { display: none !important; }
-    html[data-interface-mode="detailed"] .face-dots, html[data-interface-mode="detailed"] #openPlayerRules, html[data-interface-mode="detailed"] .provenance-footer { display: none; }
-    html[data-interface-mode="detailed"] .controls { position: fixed; z-index: 27; top: 0; right: 0; bottom: 0; width: min(450px,94vw); height: 100dvh; margin: 0; padding: 18px; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; overflow-y: auto; border-left: 1px solid var(--gold-dim); background: #111313; transform: translateX(104%); transition: transform .3s cubic-bezier(.22,.78,.2,1); }
-    html[data-interface-mode="detailed"][data-complex-panel="actions"] .controls { transform: translateX(0); }
-    html[data-interface-mode="detailed"][data-complex-panel] .complex-panel-scrim { display: block; }
-    html[data-interface-mode="detailed"] .modal-backdrop.interaction-modal-backdrop { justify-items: end; padding: 0; }
-    html[data-interface-mode="detailed"] .interaction-modal { width: min(480px,94vw); height: 100dvh; max-height: none; transform: translateX(104%); transition: transform .3s cubic-bezier(.22,.78,.2,1); }
-    html[data-interface-mode="detailed"] .modal-backdrop.is-open .interaction-modal { transform: translateX(0); }
-    @media (max-width: 700px) { .complex-info-panel .face-body { grid-template-columns: 105px minmax(0,1fr); } html[data-interface-mode="detailed"] .topbar .king-line { display: none; } }
+    html .app { height: 100dvh; min-height: 0; padding: 0; display: block; }
+    #viewport { position: fixed; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; perspective: none; display: block; touch-action: auto; }
+    #retryThreeScene { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); }
+    .topbar[hidden] { display: none !important; }
+    html .complex-game-frame { display: block; }
+    html .prism, html .surface-overlay, html .provenance-roommark, html .portrait-hit-target, html .interaction-hit-target, html .insight-hit-target { display: none !important; }
+    html .face-dots, html #openPlayerRules, html .provenance-footer { display: none !important; }
+    html .controls { position: fixed; z-index: 27; top: 0; right: 0; bottom: 0; width: min(450px,94vw); height: 100dvh; margin: 0; padding: 18px; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; overflow-y: auto; border-left: 1px solid var(--gold-dim); background: #111313; transform: translateX(104%); transition: transform .3s cubic-bezier(.22,.78,.2,1); }
+    html[data-complex-panel="actions"] .controls { transform: translateX(0); }
+    html[data-complex-panel] .complex-panel-scrim { display: block; }
+    html .modal-backdrop.interaction-modal-backdrop { justify-items: end; padding: 0; }
+    html .interaction-modal { width: min(480px,94vw); height: 100dvh; max-height: none; transform: translateX(104%); transition: transform .3s cubic-bezier(.22,.78,.2,1); }
+    html .modal-backdrop.is-open .interaction-modal { transform: translateX(0); }
+    @media (max-width: 700px) { .complex-info-panel .face-body { grid-template-columns: 105px minmax(0,1fr); } }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
@@ -6134,19 +6105,6 @@
   </div>
   <div class="app">
     
-      <section class="status-card">
-        <div class="status-head">
-          <p class="eyebrow">Private backdoor</p>
-          <div class="status-tools">
-            <button class="interface-toggle" id="interfaceModeToggle" type="button" aria-label="切换简洁立方体或复杂3D空间">切换到简洁</button>
-            <button class="schedule-toggle" id="openScheduleEditor" type="button" hidden>国王日程</button>
-            <button class="galgame-toggle" id="galgameModeToggle" type="button" data-enabled="true" aria-pressed="true" title="关闭 Galgame 模式脚本">Galgame On</button>
-          </div>
-        </div>
-        <div class="king-line"><span class="king-name" id="currentKing">—</span><span class="day-seal" id="currentDay">第 1 / 15 日</span></div>
-        <div class="scene-line"><span id="sceneInfo">第1日 08:10 · 个人房间 · 等待法令</span><br>玩家平板后门 · 仅你可见 · 请勿泄露</div>
-      </section>
-
       <nav class="map-card" id="mapCard" aria-label="密室档案地图"></nav>
 
       <nav class="view-nav" aria-label="视角切换">
@@ -6157,8 +6115,9 @@
       </nav>
     
 
-    <main class="viewport" id="viewport" aria-label="六面密室档案，使用WASD切换视角">
+    <main class="viewport" id="viewport" aria-label="3D 密室">
       <iframe class="complex-game-frame" id="complexGameFrame" title="国王游戏可行走的3D空间" loading="eager" referrerpolicy="no-referrer"></iframe>
+      <button class="modal-btn" id="retryThreeScene" type="button" hidden>重新加载 3D 场景</button>
       <span class="provenance-roommark" id="playerRoomProvenance" data-early="lo·u / is·HM — 类·脑 / 完全·免费" data-late="l/o/u — i·s/HM — 类/脑 · 完·全/免·费" hidden></span>
       <div class="prism" id="prism" data-view="side"></div>
       <div class="surface-overlay" id="surfaceOverlay" data-view="side" aria-live="polite"></div>
@@ -6221,6 +6180,16 @@
 
     <footer class="controls" aria-label="人物切换">
       <button class="modal-btn" id="closeComplexActions" type="button" hidden>收回操作面板</button>
+            <section class="status-card">
+        <div class="status-head">
+          <p class="eyebrow">Private backdoor</p>
+          <div class="status-tools">
+            <button class="schedule-toggle" id="openScheduleEditor" type="button" hidden>国王日程</button>
+          </div>
+        </div>
+        <div class="king-line"><span class="king-name" id="currentKing">—</span><span class="day-seal" id="currentDay">第 1 / 15 日</span></div>
+        <div class="scene-line"><span id="sceneInfo">第1日 08:10 · 个人房间 · 等待法令</span><br>玩家平板后门 · 仅你可见 · 请勿泄露</div>
+      </section>
       <div class="face-dots" id="faceDots"></div>
       <button class="rules-btn" id="openPlayerRules" type="button">你的法令</button>
       <section class="day-flow" aria-label="每日行动流程">
@@ -6337,18 +6306,6 @@
         <button class="modal-btn" id="letXuDecide" type="button" hidden>让许知夏自行决定</button>
         <button class="modal-btn" id="cancelInteraction" type="button">取消</button>
         <button class="modal-btn" id="submitInteraction" type="button">提交互动</button>
-      </div>
-    </section>
-  </div>
-
-  <div class="modal-backdrop" id="galgameWarningBackdrop" aria-hidden="true">
-    <section class="interaction-modal galgame-warning-modal" role="dialog" aria-modal="true" aria-labelledby="galgameWarningTitle" aria-describedby="galgameWarningCopy">
-      <h2 id="galgameWarningTitle">切换 Galgame 模式？</h2>
-      <p class="galgame-warning-state" id="galgameWarningState">即将切换 Galgame 输出协议。</p>
-      <p class="galgame-warning-copy" id="galgameWarningCopy">该开关只控制后续生成时是否注入 Galgame 格式合同。同一段对话中已经存在的上下文仍可能让模型继续沿用之前的格式，因此切换后不一定立即生效；需要稳定切换时，建议新建对话。</p>
-      <div class="modal-actions">
-        <button class="modal-btn" id="cancelGalgameToggle" type="button">取消</button>
-        <button class="modal-btn" id="confirmGalgameToggle" type="button">仍然切换</button>
       </div>
     </section>
   </div>
@@ -6803,10 +6760,6 @@
     let actionBusy = false;
     let playerCommandQueue = [];
     let playerCommandBusy = false;
-    let galgameModeEnabled = true;
-    let interfaceMode = "detailed";
-    let galgameToggleBusy = false;
-    let galgameWarningLastFocused = null;
     let scheduleModeBusy = false;
     let scheduleModeForced = false;
     let scheduleSelectedParticipant = "";
@@ -6857,7 +6810,6 @@
     }
 
     function openSceneSettings() {
-      if (interfaceMode !== "detailed") return;
       const dialog = $("#sceneSettings");
       updateSceneSettings();
       if (!dialog.open) dialog.showModal();
@@ -6880,7 +6832,6 @@
 
     function refreshTablePet() {
       if (!tablePet) return;
-      tablePet.host.hidden = interfaceMode !== "detailed";
       const key = JSON.stringify([tableMode,sceneMenuState]);
       if (key === petMenuKey) return;
       petMenuKey = key;
@@ -6896,7 +6847,7 @@
         entry("overnight","过夜","→",sceneMenuState.overnight),
         entry("open-actions","自定义行动","入"),
         {id:"settings",label:"设置",iconText:"⚙",onClick:openSceneSettings},
-        entry("switch-simple","简洁前端","◈"), {id:"switch",label:"更换桌宠",iconText:"↔"}
+        {id:"switch",label:"更换桌宠",iconText:"↔"}
       ]);
     }
 
@@ -7062,7 +7013,7 @@
     }
 
     function enterTableMode(openChat = false) {
-        if (tableMode || interfaceMode !== "detailed") return;
+        if (tableMode) return;
         const entered = window.KingGameBridge?.setImmersivePresentation?.(true, currentScenePose, openChat);
         if (!entered) {
           showActionError("当前环境无法打开全屏圆桌，请使用构建后的本地预览或在支持宿主桥的酒馆中打开。");
@@ -7125,7 +7076,7 @@
       const forwardedKeys = new Set();
       function forwardSceneKey(event, down) {
         const key = event.key.toLowerCase();
-        if (interfaceMode !== "detailed" || !threeFrameReady || !["w","a","s","d","q","e","arrowup","arrowdown","shift"].includes(key)) return;
+        if (!threeFrameReady || !["w","a","s","d","q","e","arrowup","arrowdown","shift"].includes(key)) return;
         if (down && (event.isComposing || event.ctrlKey || event.metaKey || event.altKey
           || event.target?.closest?.("input,textarea,select,[contenteditable],#tableChatHistory")
           || interfaceOverlayOpen() || document.documentElement.hasAttribute("data-complex-panel"))) return;
@@ -7157,11 +7108,14 @@
       return url;
     }
 
+    let threeFrameLoadTimer;
+
     async function ensureThreeFrame() {
       const frame = $("#complexGameFrame");
       if (frame.dataset.loaded === "true" || frame.dataset.loaded === "loading") return;
       const url = threeGameUrl();
       url.searchParams.set("embedded", "1");
+      $("#retryThreeScene").hidden = true;
       frame.dataset.loaded = "loading";
       threeFrameReady = false;
       try {
@@ -7182,13 +7136,13 @@
           frame.src = url.href;
         }
         frame.dataset.loaded = "true";
-        setTimeout(() => {
-          if (frame.dataset.loaded === "true" && !threeFrameReady && interfaceMode === "detailed") handleThreeIntent({ action: "3d-error" });
+        threeFrameLoadTimer = setTimeout(() => {
+          if (frame.dataset.loaded === "true" && !threeFrameReady) handleThreeIntent({ action: "3d-error" });
         }, 20000);
       } catch (error) {
         frame.dataset.loaded = "false";
         console.warn("[KingGame] 3D 场景加载失败", error);
-        if (interfaceMode === "detailed") handleThreeIntent({ action: "3d-error" });
+        handleThreeIntent({ action: "3d-error" });
       }
     }
 
@@ -7217,7 +7171,7 @@
     function postThreeActivity() {
       const frame = $("#complexGameFrame");
       if (!threeFrameReady || !frame.contentWindow) return;
-      frame.contentWindow.postMessage({ type: "king-game-3d:active", active: interfaceMode === "detailed" }, threeFrameTargetOrigin());
+      frame.contentWindow.postMessage({ type: "king-game-3d:active", active: true }, threeFrameTargetOrigin());
     }
 
     function closeComplexPanel() {
@@ -7296,8 +7250,7 @@
 
     function handleThreeIntent(message) {
       const action = String(message.action || "");
-      if (action === "switch-simple") setInterfaceMode("simple");
-      else if (action === "settings") openSceneSettings();
+      if (action === "settings") openSceneSettings();
       else if (action === "cancel-table-focus") setTableChatOpen(false);
       else if (action === "exit-immersive" && tableMode && !interfaceOverlayOpen()) leaveTableMode();
       else if (action === "table-chat") {
@@ -7327,8 +7280,10 @@
         const body = el("p", "", String(message.body || "这是当前空间中的可交互对象。"));
         showComplexInfo(String(message.title || "对象"), body);
       } else if (action === "3d-error") {
-        setInterfaceMode("simple");
-        showActionError("3D 场景暂不可用，已切回简洁立方体；前端按钮仍可继续使用。");
+        clearTimeout(threeFrameLoadTimer);
+        threeFrameReady = false;
+        $("#complexGameFrame").dataset.loaded = "false";
+        $("#retryThreeScene").hidden = false;
       }
     }
 
@@ -7342,6 +7297,8 @@
         const message = event.data;
         if (!message || typeof message !== "object") return;
         if (message.type === "king-game-3d:ready") {
+          clearTimeout(threeFrameLoadTimer);
+          $("#retryThreeScene").hidden = true;
           threeFrameReady = true;
           postThreeSnapshot();
           postThreeOverlayState();
@@ -7362,7 +7319,7 @@
           tableProjection = r && [r.left,r.top,r.width,r.height].every(n => Number.isFinite(n) && n >= 0 && n <= 1)
             && r.width > 0 && r.height > 0 && r.left + r.width <= 1 && r.top + r.height <= 1 ? r : null;
           layoutTableChat();
-        } else if (message.type === "king-game-3d:intent" && interfaceMode === "detailed") {
+        } else if (message.type === "king-game-3d:intent") {
           handleThreeIntent(message);
         }
       });
@@ -7399,28 +7356,10 @@
         if (event.key === "Escape" && document.documentElement.hasAttribute("data-complex-panel")) closeComplexPanel();
       });
       const observer = new MutationObserver(() => postThreeOverlayState());
-      ["playerRulesBackdrop", "interactionBackdrop", "portraitBackdrop", "diaryBackdrop", "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "testamentBackdrop", "endingBackdrop", "scheduleModeBackdrop", "galgameWarningBackdrop"].forEach(id => {
+      ["playerRulesBackdrop", "interactionBackdrop", "portraitBackdrop", "diaryBackdrop", "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "testamentBackdrop", "endingBackdrop", "scheduleModeBackdrop"].forEach(id => {
         const node = $("#" + id);
         if (node) observer.observe(node, { attributes: true, attributeFilter: ["class"] });
       });
-    }
-
-    function setInterfaceMode(mode, persist = true) {
-      if (mode === "simple" && tableMode) leaveTableMode();
-      interfaceMode = mode === "simple" ? "simple" : "detailed";
-      closeComplexPanel();
-      document.documentElement.dataset.interfaceMode = interfaceMode;
-      const toggle = $("#interfaceModeToggle");
-      toggle.textContent = interfaceMode === "simple" ? "切换到复杂3D" : "切换到简洁";
-      toggle.setAttribute("aria-pressed", interfaceMode === "simple" ? "true" : "false");
-      $("#closeComplexActions").hidden = interfaceMode !== "detailed";
-      if (interfaceMode === "detailed") ensureThreeFrame();
-      postThreeActivity();
-      refreshTablePet();
-      if (persist) {
-        try { localStorage.setItem("king-game-interface-mode", interfaceMode); } catch (error) {}
-      }
-      render(state);
     }
 
     function insightSnapshotAvailable(system, config) {
@@ -8719,10 +8658,8 @@
       syncScheduleModeUi(system);
       renderEnding(system);
       updateNavigation();
-      if (interfaceMode === "detailed") {
-        ensureThreeFrame();
-        postThreeSnapshot();
-      }
+      if ($("#complexGameFrame").dataset.loaded !== "false") ensureThreeFrame();
+      postThreeSnapshot();
       requestAnimationFrame(() => {
         prism.querySelectorAll(".face[data-name]").forEach(face => {
           const dossier = face.querySelector(".dossier-scroll");
@@ -9219,7 +9156,7 @@
       if ($("#sceneSettings")?.open) return true;
       return [
         "playerRulesBackdrop", "interactionBackdrop", "portraitBackdrop", "diaryBackdrop",
-        "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "testamentBackdrop", "endingBackdrop", "scheduleModeBackdrop", "galgameWarningBackdrop"
+        "careerBackdrop", "albumBackdrop", "sisterBackdrop", "relationshipBackdrop", "weaknessBackdrop", "testamentBackdrop", "endingBackdrop", "scheduleModeBackdrop"
       ].some(id => $(`#${id}`)?.classList.contains("is-open"));
     }
 
@@ -9595,107 +9532,12 @@
       });
     }
 
-    function renderGalgameToggle() {
-      const button = $("#galgameModeToggle");
-      if (!button) return;
-      button.dataset.enabled = galgameModeEnabled ? "true" : "false";
-      button.setAttribute("aria-pressed", galgameModeEnabled ? "true" : "false");
-      button.disabled = galgameToggleBusy;
-      button.textContent = galgameToggleBusy
-        ? "Galgame …"
-        : `Galgame ${galgameModeEnabled ? "On" : "Off"}`;
-      button.title = galgameModeEnabled ? "关闭 Galgame 模式脚本" : "开启 Galgame 模式脚本";
-    }
-
-    function openGalgameWarning() {
-      if (galgameToggleBusy) return;
-      galgameWarningLastFocused = document.activeElement;
-      $("#galgameWarningState").textContent = galgameModeEnabled
-        ? "即将关闭：后续回复将不再注入 Galgame 格式合同。"
-        : "即将开启：后续回复将开始注入 Galgame 格式合同。";
-      const backdrop = $("#galgameWarningBackdrop");
-      backdrop.classList.add("is-open");
-      backdrop.setAttribute("aria-hidden", "false");
-      requestAnimationFrame(() => $("#confirmGalgameToggle").focus());
-    }
-
-    function closeGalgameWarning() {
-      if (galgameToggleBusy) return;
-      const backdrop = $("#galgameWarningBackdrop");
-      backdrop.classList.remove("is-open");
-      backdrop.setAttribute("aria-hidden", "true");
-      if (galgameWarningLastFocused && typeof galgameWarningLastFocused.focus === "function") {
-        galgameWarningLastFocused.focus();
-      }
-      galgameWarningLastFocused = null;
-    }
-
-    async function toggleGalgameMode() {
-      if (galgameToggleBusy) return;
-      const bridge = window.KingGameBridge;
-      if (!bridge || typeof bridge.setGalgameMode !== "function") {
-        showActionError("Galgame 模式桥接尚未就绪，请刷新页面后重试。");
-        return;
-      }
-      galgameToggleBusy = true;
-      renderGalgameToggle();
-      showActionError("");
-      try {
-        galgameModeEnabled = Boolean(await bridge.setGalgameMode(!galgameModeEnabled));
-      } catch (error) {
-        showActionError(error?.message || "Galgame 模式切换失败，请稍后重试。");
-      } finally {
-        galgameToggleBusy = false;
-        renderGalgameToggle();
-        closeGalgameWarning();
-      }
-    }
-
-    function bindGalgameToggle() {
-      renderGalgameToggle();
-      const backdrop = $("#galgameWarningBackdrop");
-      const cancelButton = $("#cancelGalgameToggle");
-      const confirmButton = $("#confirmGalgameToggle");
-      $("#galgameModeToggle").addEventListener("click", openGalgameWarning);
-      cancelButton.addEventListener("click", closeGalgameWarning);
-      confirmButton.addEventListener("click", toggleGalgameMode);
-      backdrop.addEventListener("click", event => {
-        if (event.target === backdrop) closeGalgameWarning();
-      });
-      backdrop.addEventListener("keydown", event => {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          closeGalgameWarning();
-          return;
-        }
-        if (event.key !== "Tab") return;
-        const first = cancelButton;
-        const last = confirmButton;
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
-      });
-      window.addEventListener("kinggame:galgame-mode", event => {
-        if (!event.detail || typeof event.detail.enabled !== "boolean") return;
-        galgameModeEnabled = event.detail.enabled;
-        renderGalgameToggle();
-      });
-    }
-
     async function readBridge() {
       const bridge = window.KingGameBridge;
       if (!bridge) return;
       try {
         if (typeof bridge.getUserName === "function") userName = String(await bridge.getUserName() || "你");
         else if (bridge.userName) userName = String(bridge.userName);
-        if (typeof bridge.getGalgameMode === "function") {
-          galgameModeEnabled = Boolean(await bridge.getGalgameMode());
-          renderGalgameToggle();
-        }
         render(state);
 
         let hostedState;
@@ -9739,14 +9581,8 @@
       bindThreeFrameBridge();
       bindTableChat();
       bindSceneSettings();
-      bindGalgameToggle();
       bindScheduleMode();
-      $("#interfaceModeToggle").addEventListener("click", () => setInterfaceMode(interfaceMode === "simple" ? "detailed" : "simple"));
-      try { interfaceMode = window.__KING_GAME_IMMERSIVE_FRAME__ !== true && localStorage.getItem("king-game-interface-mode") === "simple" ? "simple" : "detailed"; } catch (error) {}
-      document.documentElement.dataset.interfaceMode = interfaceMode;
-      $("#interfaceModeToggle").textContent = interfaceMode === "simple" ? "切换到复杂3D" : "切换到简洁";
-      $("#interfaceModeToggle").setAttribute("aria-pressed", interfaceMode === "simple" ? "true" : "false");
-      $("#closeComplexActions").hidden = interfaceMode !== "detailed";
+      $("#retryThreeScene").addEventListener("click", ensureThreeFrame);
       render(bridge?.isLocalPreview?.() ? previewScheduleState("正常") : PREVIEW_STATE);
       void mountTablePet();
       void readBridge();

@@ -965,7 +965,7 @@ function dispatch(action) {
     const hostAction = {
       'open-rules': 'rules', 'open-items': 'items', 'open-character-list': 'party',
       'open-decree': 'decree', 'open-actions': 'actions', 'forced-compliance': 'forced-compliance', 'overnight': 'overnight',
-      'switch-simple': 'switch-simple', 'settings':'settings',
+      'settings':'settings',
     }[action];
     if (hostAction) { postHostIntent(hostAction); return; }
     if (action === 'toggle-standees') return;
@@ -1421,7 +1421,7 @@ if (EMBEDDED) {
       viewport.focus({ preventScroll: true });
     } else if (event.data?.type === 'king-game-3d:menu-action') {
       const action=event.data.action;
-      if (hostActive && !hostOverlayBlocked && ['table-chat','open-character-list','open-rules','open-items','forced-compliance','overnight','open-decree','open-actions','toggle-map','toggle-hints','toggle-joysticks','switch-simple'].includes(action)) dispatch(action);
+      if (hostActive && !hostOverlayBlocked && ['table-chat','open-character-list','open-rules','open-items','forced-compliance','overnight','open-decree','open-actions','toggle-map','toggle-hints','toggle-joysticks'].includes(action)) dispatch(action);
     } else if (event.data?.type === 'king-game-3d:preferences') {
       applyScenePreferences(event.data.preferences);
     } else if (event.data?.type === 'king-game-3d:menu-failed') {
