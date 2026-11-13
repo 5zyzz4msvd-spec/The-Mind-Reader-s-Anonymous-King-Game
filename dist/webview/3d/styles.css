@@ -198,7 +198,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; }
 .host-only { display: none !important; }
 .kg-game[data-embedded="true"] .host-only { display: grid !important; }
 .kg-game[data-embedded="true"] [data-kg-action="toggle-standees"] { display: none !important; }
-.kg-game[data-embedded="true"] [data-kg-action="daily"][hidden] { display: none !important; }
+.kg-game[data-embedded="true"] .host-only[hidden] { display: none !important; }
 .scene-hintbar { position: absolute; z-index: 7; left: 50%; bottom: 77px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 156px); border: 1px solid var(--line); background: rgba(7,8,10,.78); backdrop-filter: blur(7px); }
 .scene-controls { position: absolute; z-index: 8; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(900px,calc(100% - 150px)); margin: 0; padding: 6px; border: 1px solid var(--line); background: rgba(8,9,11,.82); box-shadow: 0 10px 35px rgba(0,0,0,.34); backdrop-filter: blur(8px); }
 .scene-controls button { min-height: 50px; }

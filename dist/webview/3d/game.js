@@ -669,11 +669,15 @@ function applyHostSnapshot(snapshot) {
   });
   root.querySelector('.scene-clock span').textContent='第 '+Number(system._当前天数||1)+' 日';
   root.querySelector('.scene-clock b').textContent=String(system.当前时间||'').replace(/^第\d+日\s*/,'')||'—';
-  const daily=root.querySelector('[data-kg-action="daily"]');
-  daily.hidden=system._每日阶段!=='待颁布法令'&&system._可过夜!==true;
-  daily.querySelector('small').textContent=system._每日阶段==='待颁布法令'?'开始法令':'过夜';
-  root.querySelector('[data-kg-action="open-decree"]').hidden=system._每日阶段!=='待颁布法令';
-  window.parent.postMessage({type:'king-game-3d:menu-state', daily:!daily.hidden, decree:system._每日阶段==='待颁布法令'},'*');
+  const menu = {
+    decree: system._每日阶段 === '待颁布法令',
+    compliance: system._每日阶段 === '自由互动' && Number(system._生效法令数量) > 0,
+    overnight: system._每日阶段 === '自由互动' && system._可过夜 === true,
+  };
+  root.querySelector('[data-kg-action="open-decree"]').hidden = !menu.decree;
+  root.querySelector('[data-kg-action="forced-compliance"]').hidden = !menu.compliance;
+  root.querySelector('[data-kg-action="overnight"]').hidden = !menu.overnight;
+  window.parent.postMessage({type:'king-game-3d:menu-state', ...menu},'*');
 }
 function validPosition(x,z) {
   const radius=Math.hypot(x,z);
@@ -960,7 +964,7 @@ function dispatch(action) {
     if (action === 'table-chat') { postHostIntent('table-chat'); return; }
     const hostAction = {
       'open-rules': 'rules', 'open-items': 'items', 'open-character-list': 'party',
-      'open-decree': 'decree', 'open-actions': 'actions', 'daily': 'daily',
+      'open-decree': 'decree', 'open-actions': 'actions', 'forced-compliance': 'forced-compliance', 'overnight': 'overnight',
       'switch-simple': 'switch-simple', 'settings':'settings',
     }[action];
     if (hostAction) { postHostIntent(hostAction); return; }
@@ -1417,7 +1421,7 @@ if (EMBEDDED) {
       viewport.focus({ preventScroll: true });
     } else if (event.data?.type === 'king-game-3d:menu-action') {
       const action=event.data.action;
-      if (hostActive && !hostOverlayBlocked && ['table-chat','open-character-list','open-rules','open-items','daily','open-decree','open-actions','toggle-map','toggle-hints','toggle-joysticks','switch-simple'].includes(action)) dispatch(action);
+      if (hostActive && !hostOverlayBlocked && ['table-chat','open-character-list','open-rules','open-items','forced-compliance','overnight','open-decree','open-actions','toggle-map','toggle-hints','toggle-joysticks','switch-simple'].includes(action)) dispatch(action);
     } else if (event.data?.type === 'king-game-3d:preferences') {
       applyScenePreferences(event.data.preferences);
     } else if (event.data?.type === 'king-game-3d:menu-failed') {

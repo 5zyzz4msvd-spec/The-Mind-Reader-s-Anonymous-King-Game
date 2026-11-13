@@ -1048,9 +1048,8 @@
     .command-composer { grid-column: 1 / -1; display: grid; gap: 8px; padding: 11px; border: 1px solid var(--line); background: rgba(12,14,14,.94); }
     .command-composer-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; color: #ead6a4; font: 700 12px/1.35 ui-sans-serif,system-ui,sans-serif; }
     .command-composer-head small { color: #9d9688; font-weight: 500; }
-    .command-kind, .command-actions { display: flex; flex-wrap: wrap; gap: 7px; }
-    .command-kind button, .command-actions button, .serial-list button { min-height: 31px; padding: 5px 10px; border: 1px solid var(--gold-dim); color: #e3d2ad; background: #211f1b; cursor: pointer; font: 700 11px/1.2 ui-sans-serif,system-ui,sans-serif; }
-    .command-kind button[aria-pressed="true"] { border-color: #e1bf75; color: #fff2cf; background: #4a3920; }
+    .command-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+    .command-actions button, .serial-list button { min-height: 31px; padding: 5px 10px; border: 1px solid var(--gold-dim); color: #e3d2ad; background: #211f1b; cursor: pointer; font: 700 11px/1.2 ui-sans-serif,system-ui,sans-serif; }
     .command-composer textarea { width: 100%; min-height: 82px; resize: vertical; padding: 10px 12px; border: 1px solid rgba(198,163,91,.38); color: var(--ink); background: #101212; font: 13px/1.6 ui-sans-serif,system-ui,sans-serif; }
     .command-composer textarea:focus-visible { outline: 2px solid #d2ae62; }
     .command-actions button:disabled, .serial-list button:disabled { opacity: .5; cursor: wait; }
@@ -5732,19 +5731,21 @@
     }
   }
 
-  async function submitPlayerInput(rawSteps, plainText = false) {
+  async function submitPlayerInput(rawSteps) {
     if (actionPending) throw new Error('上一项操作仍在提交，请稍候');
     var steps = (Array.isArray(rawSteps) ? rawSteps : [rawSteps]).map(function (item) {
-      var value = item && typeof item === 'object' ? item : { kind: 'action', text: item };
-      return { kind: String(value.kind || 'action'), text: String(value.text || '').trim() };
+      return String((item && typeof item === 'object' ? item.text : item) || '').trim();
     });
     if (!steps.length || steps.length > 6 || steps.some(function (step) {
-      return ['action', 'speech', 'observe'].indexOf(step.kind) < 0 || !step.text || step.text.length > 1200;
-    }) || steps.reduce(function (sum, step) { return sum + step.text.length; }, 0) > 2400) {
+      return !step || step.length > 1200;
+    }) || steps.reduce(function (sum, step) { return sum + step.length; }, 0) > 2400) {
       throw new Error('请填写1至6项有效操作，单项不超过1200字、合计不超过2400字');
     }
+    var body = steps.length === 1 ? steps[0] : steps.map(function (step, index) {
+      return String(index + 1) + '. ' + step;
+    }).join('\n');
     if (LOCAL_PREVIEW === true && !hasHostRuntime()) {
-      await sendUserCommand(steps.map(function (step) { return step.text; }).join('\n'), false, false);
+      await sendUserCommand(body, false, false);
       return cachedState;
     }
     var lock = acquireHostActionLock('submitPlayerInput');
@@ -5756,13 +5757,9 @@
       var record = await readHostRecord();
       var baseline = window.KingGameState.initializeVariables(fillDefaults(record.state, INITIAL_STATE), chatName());
       await syncStageEntriesForState(baseline, true);
-      var labels = { action: '行动', speech: '发言', observe: '观察' };
-      var body = steps.map(function (step, index) {
-        return String(index + 1) + '. 【' + labels[step.kind] + '】' + step.text;
-      }).join('\n');
       transaction = beginGenerationTransaction(baseline, 'submitPlayerInput');
       var hiddenPrompt = compileButtonActionPrompt(baseline, transaction, 'submitPlayerInput', { stepCount: steps.length });
-      var command = (plainText ? steps[0].text : (steps.length > 1 ? '【玩家前端串行输入】\n' : '【玩家前端输入】\n') + body)
+      var command = body
         + '\n<KingGameButtonPromptImpl>\n' + hiddenPrompt + '\n</KingGameButtonPromptImpl>';
       waiter = createMvuUpdateWaiter();
       var revision = waiter.revision();
@@ -6081,7 +6078,7 @@
       });
     },
     submitPlayerInput: submitPlayerInput,
-    submitTableChat: function (text) { return submitPlayerInput([{ text: text }], true); },
+    submitTableChat: function (text) { return submitPlayerInput(text); },
     submitInteraction: function (roleNames, method) {
       var trimmed = String(method || '').trim();
       if (!trimmed) return Promise.reject(new Error('请输入非空的互动方式'));
@@ -6185,7 +6182,7 @@
       <strong id="tableChatFloor">聊天楼层</strong><button class="modal-btn" id="tableChatOlder" type="button" hidden>更早</button><button class="modal-btn" id="tableChatExplore" type="button">收起</button>
       <div id="tableChatHistory" tabindex="0" aria-label="聊天历史"></div>
       <form class="table-chat-compose" id="tableChatForm">
-        <textarea id="tableChatInput" rows="2" maxlength="1200" aria-label="聊天消息" placeholder="输入消息…"></textarea>
+        <textarea id="tableChatInput" rows="2" maxlength="1200" aria-label="自定义行动" placeholder="输入自定义行动…"></textarea>
         <button class="modal-btn" id="tableChatSend" type="submit">发送</button>
       </form>
       <div id="tableChatStatus" role="status"></div>
@@ -6235,12 +6232,7 @@
         </div>
       </section>
       <section class="command-composer" aria-label="前端玩家输入">
-        <div class="command-composer-head"><span>玩家行动栏</span><small>在这里写你自己的内容；按钮负责发送</small></div>
-        <div class="command-kind" id="playerCommandKinds" role="group" aria-label="输入类型">
-          <button type="button" data-command-kind="action" aria-pressed="true">行动</button>
-          <button type="button" data-command-kind="speech" aria-pressed="false">发言</button>
-          <button type="button" data-command-kind="observe" aria-pressed="false">观察</button>
-        </div>
+        <div class="command-composer-head"><span>自定义行动</span></div>
         <label for="playerCommandText">本次内容</label>
         <textarea id="playerCommandText" maxlength="1200" placeholder="写下你要做、说或观察的内容；不会替你补充未写出的台词和决定"></textarea>
         <ol class="serial-list" id="playerCommandQueue" aria-label="待执行串行操作"></ol>
@@ -6798,7 +6790,6 @@
     let decreeDelegate = "";
     let interactionLastFocused = null;
     let actionBusy = false;
-    let playerCommandKind = "action";
     let playerCommandQueue = [];
     let playerCommandBusy = false;
     let galgameModeEnabled = true;
@@ -6828,7 +6819,7 @@
     let tableProjection = null;
     let currentScenePose = null;
     let tablePet = null, petMounting = false, petMenuKey = "";
-    let sceneMenuState = { daily:false, decree:false };
+    let sceneMenuState = { overnight:false, decree:false, compliance:false };
     const SCENE_PREFERENCES_KEY = "king-game-3d-preferences-v1";
     const DEFAULT_SCENE_PREFERENCES = Object.freeze({ moveSpeed:3.6, turnSpeed:160, hideHints:false, hideJoysticks:false, showHands:false, invertLook:false, hideMap:false });
     let scenePreferences = { ...DEFAULT_SCENE_PREFERENCES };
@@ -6890,8 +6881,9 @@
         entry("open-character-list","人物档案","人"),
         entry("open-rules","已有法令","律"), entry("open-items","法令物品","物"),
         entry("open-decree","颁布法令","令",sceneMenuState.decree),
-        entry("daily","推进流程","→",sceneMenuState.daily),
-        entry("open-actions","行动栏","入"),
+        entry("forced-compliance","法令履行修正","律",sceneMenuState.compliance),
+        entry("overnight","过夜","→",sceneMenuState.overnight),
+        entry("open-actions","自定义行动","入"),
         {id:"settings",label:"设置",iconText:"⚙",onClick:openSceneSettings},
         entry("switch-simple","简洁前端","◈"), {id:"switch",label:"更换桌宠",iconText:"↔"}
       ]);
@@ -7150,7 +7142,7 @@
         ? "../src/frontend-game-demo/index.html"
         : "../frontend-game-demo/index.html";
       const url = new URL(local, location.href);
-      url.searchParams.set("v", "painterly-standees-1");
+      url.searchParams.set("v", "custom-action-1");
       return url;
     }
 
@@ -7313,7 +7305,13 @@
         else if (system._许知夏可接管 === true) openDecree("许知夏");
         else void runDailyAction();
       }
-      else if (action === "daily") { closeComplexPanel(); void runDailyAction(); }
+      else if (action === "forced-compliance" || action === "overnight") {
+        const button = $(action === "forced-compliance" ? "#forceComplianceAction" : "#primaryDailyAction");
+        const expected = action === "forced-compliance" ? "forcedCompliance" : "overnight";
+        if (button.hidden || button.disabled || button.dataset.action !== expected) return;
+        showComplexActions();
+        void runDailyAction({ currentTarget: button });
+      }
       else if (action === "inspect") {
         const body = el("p", "", String(message.body || "这是当前空间中的可交互对象。"));
         showComplexInfo(String(message.title || "对象"), body);
@@ -7341,7 +7339,7 @@
           updateSceneSettings();
           void mountTablePet();
         } else if (message.type === "king-game-3d:menu-state") {
-          sceneMenuState={daily:message.daily===true,decree:message.decree===true};
+          sceneMenuState={overnight:message.overnight===true,decree:message.decree===true,compliance:message.compliance===true};
           refreshTablePet();
         } else if (message.type === "king-game-3d:scene-pose") {
           const p = message.pose;
@@ -8784,13 +8782,12 @@
       $("#actionError").textContent = message;
     }
 
-    const PLAYER_COMMAND_LABELS = { action: "行动", speech: "发言", observe: "观察" };
 
     function renderPlayerCommandQueue() {
       const list = $("#playerCommandQueue");
       list.replaceChildren(...playerCommandQueue.map((step, index) => {
         const item = el("li");
-        item.append(el("span", "", `${index + 1}. ${PLAYER_COMMAND_LABELS[step.kind]}：${step.text}`));
+        item.append(el("span", "", `${index + 1}. ${step.text}`));
         const remove = el("button", "", "移除");
         remove.type = "button";
         remove.dataset.queueIndex = String(index);
@@ -8806,7 +8803,7 @@
     function playerCommandDraft() {
       const text = $("#playerCommandText").value.trim();
       if (!text) throw new Error("请先填写本次内容。");
-      return { kind: playerCommandKind, text };
+      return { text };
     }
 
     async function submitPlayerCommandSteps(steps, clearQueue) {
@@ -8838,14 +8835,6 @@
     }
 
     function bindPlayerCommandComposer() {
-      $("#playerCommandKinds").addEventListener("click", event => {
-        const button = event.target.closest("[data-command-kind]");
-        if (!button || playerCommandBusy) return;
-        playerCommandKind = button.dataset.commandKind;
-        $("#playerCommandKinds").querySelectorAll("[data-command-kind]").forEach(node => {
-          node.setAttribute("aria-pressed", node === button ? "true" : "false");
-        });
-      });
       $("#queuePlayerCommand").addEventListener("click", () => {
         try {
           const step = playerCommandDraft();
